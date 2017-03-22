@@ -1,20 +1,19 @@
-###
-# Copyright Notice:
-# Copyright 2016 Distributed Management Task Force, Inc. All rights reserved.
-# License: BSD 3-Clause License. For full text see link: https://github.com/DMTF/python-redfish-library/blob/master/LICENSE.md
-###
-
 import sys
 import redfish
 
-# When running remotely connect using the address, account name, 
+# When running on the server locally use the following commented values
+# iLO_host = "blobstore://."
+# iLO_account = "None"
+# iLO_password = "None"
+
+# When running remotely connect using the iLO address, iLO account name, 
 # and password to send https requests
-login_host = "https://192.168.1.100"
+iLO_host = "https://10.0.0.100"
 login_account = "admin"
 login_password = "password"
 
 ## Create a REDFISH object
-REDFISH_OBJ = redfish.redfish_client(base_url=login_host, username=login_account, \
+REDFISH_OBJ = redfish.redfish_client(base_url=iLO_host,username=login_account, \
                           password=login_password, default_prefix='/redfish/v1')
 
 # Login into the server and create a session
