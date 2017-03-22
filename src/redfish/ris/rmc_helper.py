@@ -1,7 +1,17 @@
 ###
-# Copyright Notice:
-# Copyright 2016 Distributed Management Task Force, Inc. All rights reserved.
-# License: BSD 3-Clause License. For full text see link: https://github.com/DMTF/python-redfish-library/blob/master/LICENSE.md
+# Copyright 2016 Hewlett Packard Enterprise, Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 ###
 
 # -*- coding: utf-8 -*-
@@ -43,6 +53,10 @@ class FailureDuringCommitError(RdmcError):
     """Raised when there is an error while updating firmware"""
     pass
 
+class UserNotAdminError(RdmcError):
+    """Raised when user doesn't have admin priviledges"""
+    pass
+
 class UndefinedClientError(Exception):
     """Raised when there are no clients active (usually when user hasn't logged in"""
     pass
@@ -59,6 +73,10 @@ class NothingSelectedError(Exception):
     """Raised when attempting to access an object without first selecting it"""
     pass
 
+class NothingSelectedFilterError(Exception):
+    """Raised when the filter applied doesn't match any selection"""
+    pass
+
 class NothingSelectedSetError(Exception):
     """Raised when attempting to access an object
         without first selecting it"""
@@ -68,8 +86,16 @@ class InvalidSelectionError(Exception):
     """Raised when selection argument fails to match anything"""
     pass
 
+class IdTokenError(Exception):
+    """Raised when BIOS password credentials have not been provided"""
+    pass
+
 class SessionExpired(Exception):
-    """Raised when the session has expired"""
+    """Raised when BIOS password credentials have not been provided"""
+    pass
+
+class ValueChangedError(Exception):
+    """Raised if user tries to set/commit un-updated value from monolith"""
     pass
 
 class LoadSkipSettingError(Exception):
@@ -80,9 +106,28 @@ class InvalidPathError(Exception):
     """Raised when requested path is not found"""
     pass
 
+class UnableToObtainIloVersionError(Exception):
+    """Raised when iloversion is missing from default path"""
+    pass
+
+class ValidationError(Exception):
+    """Raised when there is a problem with user input"""
+    def __init__(self, errlist):
+        super(ValidationError, self).__init__(errlist)
+        self._errlist = errlist
+
+    def get_errors(self):
+        """Wrapper function to return error list"""
+        return self._errlist
+
+class IloResponseError(Exception):
+    """Raised when iLO returns with a non 200 response"""
+    pass
+
 class RmcClient(object):
     """RMC client base class"""
-    def __init__(self, url=None, username=None, password=None, sessionkey=None):
+    def __init__(self, url=None, username=None, password=None, sessionkey=None,\
+                            typepath=None, biospassword=None, is_redfish=False):
         """Initialized RmcClient
         :param url: redfish host name or IP address.
         :type url: str.
@@ -92,11 +137,27 @@ class RmcClient(object):
         :type password: str.
         :param sessionkey: session key credential for current login
         :type sessionkey: str
+        :param typepath: path to be used for client.
+        :type typepath: str.
+        :param biospassword: BIOS password for the server if set.
+        :type biospassword: str.
+        :param is_redfish: If True, a Redfish specific header (OData) will be
+            added to every request.
+        :type is_redfish: boolean.
 
         """
-        self._rest_client = redfish.rest.v1.redfish_client(base_url=url, \
-                   username=username, password=password, sessionkey=sessionkey)
+        if is_redfish:
+            self._rest_client = redfish.rest.v1.redfish_client(base_url=url, \
+                           username=username, password=password, \
+                           sessionkey=sessionkey, biospassword=biospassword, \
+                           is_redfish=is_redfish)
+        else:
+            self._rest_client = redfish.rest.v1.rest_client(base_url=url, \
+                            username=username, password=password, \
+                            sessionkey=sessionkey, biospassword=biospassword, \
+                            is_redfish=is_redfish)
 
+        self.typepath = typepath
         self._get_cache = dict()
         self._monolith = RisMonolith(self)
         self._selector = None
@@ -122,12 +183,26 @@ class RmcClient(object):
 
     def set_password(self, password):
         """Sets the rest clients's password
-        
+
         :param password: password to set for login
         :type password: str
 
         """
         self._rest_client.set_password(password)
+
+    def get_bios_password(self):
+        """The rest client's second level password"""
+        return self._rest_client.get_biospassword()
+
+    def set_bios_password(self, biospasswordword):
+        """Sets the rest client's second level password
+
+        :param biospassword: password to set for bios
+        :type biospassword: str
+
+        """
+        self._rest_client.set_biospassword(biospasswordword)
+    bios_password = property(get_bios_password, set_bios_password)
 
     def get_session_key(self):
         """The rest client's current session key"""
@@ -163,7 +238,7 @@ class RmcClient(object):
 
     def _set_selector(self, selectorval):
         """Sets the rest client's selector
-        
+
         :param selectorval: the type selection for the set operation.
         :type selectorval: str
 
@@ -177,10 +252,10 @@ class RmcClient(object):
 
     def _set_filter_attr(self, filterattr):
         """Sets the rest client's filter
-        
+
         :param filterattr: the type selection for the select operation.
         :type filterattr: str.
-        
+
         """
         self._filter_attr = filterattr
     filter_attr = property(_get_filter_attr, _set_filter_attr)
@@ -191,10 +266,10 @@ class RmcClient(object):
 
     def _set_filter_value(self, filterval):
         """Sets the rest client's filter value
-        
+
         :param filterval: value for the property to be modified.
         :type filterval: str.
-        
+
         """
         self._filter_value = filterval
     filter_value = property(_get_filter_value, _set_filter_value)
@@ -241,7 +316,8 @@ class RmcClient(object):
         resp = self._rest_client.head(path=path, args=args, headers=headers)
         return resp
 
-    def set(self, path, args=None, body=None, headers=None):
+    def set(self, path, args=None, body=None, headers=None, \
+                                    optionalpassword=None, providerheader=None):
         """Perform a PATCH request on path argument.
 
         :param path: The URL to perform a PATCH request on.
@@ -250,6 +326,12 @@ class RmcClient(object):
         :type args: str.
         :param body: contents of the PATCH request.
         :type body: str.
+        :param headers: list of headers to be appended.
+        :type headers: list.
+        :param optionalpassword: provide password for authentication.
+        :type optionalpassword: str.
+        :param provideheader: provider id for the header.
+        :type providerheader: str.
         :returns: a RestResponse object containing the response data.
         :rtype: redfish.rest.v1.RestResponse.
 
@@ -258,9 +340,11 @@ class RmcClient(object):
         self._get_cache[path] = resp
 
         return self._rest_client.patch(path=path, args=args, body=body, \
-                                                                headers=headers)
+                        headers=headers, optionalpassword=optionalpassword, \
+                        providerheader=providerheader)
 
-    def toolpost(self, path, args=None, body=None, headers=None):
+    def toolpost(self, path, args=None, body=None, headers=None, \
+                                                        providerheader=None):
         """Perform a POST request on path argument.
 
         :param path: The URL to perform a POST request on.
@@ -269,6 +353,10 @@ class RmcClient(object):
         :type args: str.
         :param body: contents of the POST request.
         :type body: str.
+        :param headers: list of headers to be appended.
+        :type headers: list.
+        :param provideheader: provider id for the header.
+        :type providerheader: str.
         :returns: a RestResponse object containing the response data.
         :rtype: redfish.rest.v1.RestResponse.
 
@@ -277,9 +365,10 @@ class RmcClient(object):
         self._get_cache[path] = resp
 
         return self._rest_client.post(path=path, args=args, body=body, \
-                                                                headers=headers)
+                                headers=headers, providerheader=providerheader)
 
-    def toolput(self, path, args=None, body=None, headers=None):
+    def toolput(self, path, args=None, body=None, headers=None, \
+                                    optionalpassword=None, providerheader=None):
         """
         Perform a PUT request on path argument.
 
@@ -289,6 +378,12 @@ class RmcClient(object):
         :type args: str.
         :param body: contents of the PUT request.
         :type body: str.
+        :param headers: list of headers to be appended.
+        :type headers: list.
+        :param optionalpassword: provide password for authentication.
+        :type optionalpassword: str.
+        :param provideheader: provider id for the header.
+        :type providerheader: str.
         :returns: a RestResponse object containing the response data.
         :rtype: redfish.rest.v1.RestResponse.
         """
@@ -296,9 +391,10 @@ class RmcClient(object):
         self._get_cache[path] = resp
 
         return self._rest_client.put(path=path, args=args, body=body, \
-                                                                headers=headers)
+                        headers=headers, optionalpassword=optionalpassword, \
+                        providerheader=providerheader)
 
-    def tooldelete(self, path, args=None, headers=None):
+    def tooldelete(self, path, args=None, headers=None, providerheader=None):
         """Perform a PUT request on path argument.
 
         :param path: The URL to perform a DELETE request on.
@@ -307,6 +403,10 @@ class RmcClient(object):
         :type args: str.
         :param body: contents of the DELETE request.
         :type body: str.
+        :param headers: list of headers to be appended.
+        :type headers: list.
+        :param provideheader: provider id for the header.
+        :type providerheader: str.
         :returns: a RestResponse object containing the response data.
         :rtype: redfish.rest.v1.RestResponse.
 
@@ -314,16 +414,17 @@ class RmcClient(object):
         resp = self._rest_client.get(path=path, args=args)
         self._get_cache[path] = resp
 
-        return self._rest_client.delete(path=path, args=args, headers=headers)
+        return self._rest_client.delete(path=path, args=args, headers=headers, \
+                                                providerheader=providerheader)
 
 class RmcConfig(AutoConfigParser):
     """RMC config object"""
     def __init__(self, filename=None):
         """Initialize RmcConfig
-        
+
         :param filename: file name to be used for Rmcconfig loading.
         :type filename: str
-        
+
         """
         AutoConfigParser.__init__(self, filename=filename)
         self._sectionname = 'redfish'
@@ -335,20 +436,23 @@ class RmcConfig(AutoConfigParser):
         self._ac__password = ''
         self._ac__commit = ''
         self._ac__format = ''
+        self._ac__iloschemadir = ''
+        self._ac__biosschemadir = ''
         self._ac__cachedir = ''
         self._ac__savefile = ''
         self._ac__loadfile = ''
+        self._ac__biospasswordword = ''
 
     def get_configfile(self):
         """The current configuration file"""
         return self._configfile
 
     def set_configfile(self, config_file):
-        """Set the current configuration file 
-       
+        """Set the current configuration file
+
         :param config_file: file name to be used for Rmcconfig loading.
         :type config_file: str
-        
+
         """
         self._configfile = config_file
 
@@ -358,10 +462,10 @@ class RmcConfig(AutoConfigParser):
 
     def set_logdir(self, value):
         """Set the current log directory
-        
+
         :param value: current working directory for logging
         :type value: str
-        
+
         """
         return self._set('logdir', value)
 
@@ -374,10 +478,10 @@ class RmcConfig(AutoConfigParser):
 
     def set_cache(self, value):
         """Get the config file cache status
-        
+
         :param value: status of config file cache
         :type value: bool
-        
+
         """
         return self._set('cache', value)
 
@@ -387,10 +491,10 @@ class RmcConfig(AutoConfigParser):
 
     def set_url(self, value):
         """Set the config file URL
-        
+
         :param value: URL path for the config file
         :type value: str
-        
+
         """
         return self._set('url', value)
 
@@ -400,10 +504,10 @@ class RmcConfig(AutoConfigParser):
 
     def set_username(self, value):
         """Set the config file user name
-        
+
         :param value: user name for config file
         :type value: str
-        
+
         """
         return self._set('username', value)
 
@@ -413,10 +517,10 @@ class RmcConfig(AutoConfigParser):
 
     def set_password(self, value):
         """Set the config file password
-        
+
         :param value: password for config file
         :type value: str
-        
+
         """
         return self._set('password', value)
 
@@ -426,10 +530,10 @@ class RmcConfig(AutoConfigParser):
 
     def set_commit(self, value):
         """Set the config file commit status
-        
+
         :param value: commit status
         :type value: str
-        
+
         """
         return self._set('commit', value)
 
@@ -439,12 +543,38 @@ class RmcConfig(AutoConfigParser):
 
     def set_format(self, value):
         """Set the config file default format
-        
+
         :param value: set the config file format
         :type value: str
-        
+
         """
         return self._set('format', value)
+
+    def get_schemadir(self):
+        """Get the config file schema directory"""
+        return self._get('iloschemadir')
+
+    def set_schemadir(self, value):
+        """Set the config file schema directory
+
+        :param value: config file schema directory
+        :type value: str
+
+        """
+        return self._set('iloschemadir', value)
+
+    def get_biosschemadir(self):
+        """Get the config file BIOS schema directory"""
+        return self._get('biosschemadir')
+
+    def set_biosschemadir(self, value):
+        """Set the config file BIOS schema directory
+
+        :param value: config file BIOS schema directory
+        :type value: str
+
+        """
+        return self._set('biosschemadir', value)
 
     def get_cachedir(self):
         """Get the config file cache directory"""
@@ -452,10 +582,10 @@ class RmcConfig(AutoConfigParser):
 
     def set_cachedir(self, value):
         """Set the config file cache directory
-               
+
         :param value: config file cache directory
         :type value: str
-        
+
         """
         return self._set('cachedir', value)
 
@@ -465,10 +595,10 @@ class RmcConfig(AutoConfigParser):
 
     def set_defaultsavefilename(self, value):
         """Set the config file default save name
-             
+
         :param value: config file save name
         :type value: str
-        
+
         """
         return self._set('savefile', value)
 
@@ -478,21 +608,34 @@ class RmcConfig(AutoConfigParser):
 
     def set_defaultloadfilename(self, value):
         """Set the config file default load name
-           
+
         :param value: name of config file to load by default
         :type value: str
-        
+
         """
         return self._set('loadfile', value)
+
+    def get_bios_password(self):
+        """Get the config file BIOS password"""
+        return self._get('biospasswordword')
+
+    def set_bios_password(self, value):
+        """Set the config file BIOS password
+
+        :param value: BIOS password for config file
+        :type value: str
+
+        """
+        return self._set('biospasswordword', value)
 
 class RmcCacheManager(object):
     """Manages caching/uncaching of data for RmcApp"""
     def __init__(self, rmc):
         """Initialize RmcCacheManager
-        
+
         :param rmc: RmcApp to be managed
         :type rmc: RmcApp object
-        
+
         """
         self._rmc = rmc
 
@@ -531,10 +674,15 @@ class RmcFileCacheManager(RmcCacheManager):
                             for item in data:
                                 if 'login' in item and 'session_location' in \
                                                                 item['login']:
-                                    loc = item['login']['session_location'].\
+                                    if 'blobstore' in item['login']['url']:
+                                        loc = item['login']['session_location'].\
+                                                split('//')[-1]
+                                        sesurl = None
+                                    else:
+                                        loc = item['login']['session_location'].\
                                                 split(item['login']['url'])[-1]
-                                    sesurl = item['login']['url']
-                                    sessionlocs.append((loc, sesurl, \
+                                        sesurl = item['login']['url']
+                                    sessionlocs.append((loc, sesurl,\
                                                 item['login']['session_key']))
 
                         os.remove(os.path.join(cachedir, index['href']))
@@ -584,11 +732,15 @@ class RmcFileCacheManager(RmcCacheManager):
                     if u'url' not in login_data:
                         continue
 
+                    self._rmc.getgen(url=login_data.get('url', None))
                     rmc_client = RmcClient(\
                         username=login_data.get('username', 'Administrator'), \
                         password=login_data.get('password', None), \
                         url=login_data.get('url', None), \
-                        sessionkey=login_data.get('session_key', None))
+                        sessionkey=login_data.get('session_key', None), \
+                        biospassword=login_data.get('bios_password', None), \
+                        typepath=self._rmc.typepath, \
+                        is_redfish=login_data.get('redfish', None))
 
                     rmc_client._rest_client.set_authorization_key(\
                                             login_data.get('authorization_key'))
@@ -664,7 +816,9 @@ class RmcFileCacheManager(RmcCacheManager):
                     password=client.get_password(), url=client.get_base_url(), \
                     session_key=client.get_session_key(), \
                     session_location=client.get_session_location(), \
-                    authorization_key=client.get_authorization_key())
+                    authorization_key=client.get_authorization_key(), \
+                    bios_password=client.bios_password, \
+                    redfish=client.monolith.is_redfish)
 
                 clients_cache.append(\
                     dict(selector=client.selector, login=login_data, \
@@ -677,4 +831,3 @@ class RmcFileCacheManager(RmcCacheManager):
 
                 json.dump(clients_cache, clientsfh, indent=2, cls=JSONEncoder)
                 clientsfh.close()
-

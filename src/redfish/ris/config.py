@@ -1,7 +1,17 @@
 ###
-# Copyright Notice:
-# Copyright 2016 Distributed Management Task Force, Inc. All rights reserved.
-# License: BSD 3-Clause License. For full text see link: https://github.com/DMTF/python-redfish-library/blob/master/LICENSE.md
+# Copyright 2016 Hewlett Packard Enterprise, Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 ###
 
 # -*- coding: utf-8 -*-
@@ -75,8 +85,8 @@ class AutoConfigParser(object):
         return None
 
     def load(self, filename=None):
-        """Load configuration settings from the file filename, if filename"""
-        """ is None then the value from get_configfile() is used
+        """Load configuration settings from the file filename, if filename
+        is None then the value from get_configfile() is used
 
         :param filename: file name to be used for config loading.
         :type filename: str.
@@ -113,8 +123,9 @@ class AutoConfigParser(object):
             pass
 
     def save(self, filename=None):
-        """Save configuration settings from the file filename, if filename"""
-        """ is None then the value from get_configfile() is used
+        #TODO: Maybe unused
+        """Save configuration settings from the file filename, if filename
+        is None then the value from get_configfile() is used
 
         :param filename: file name to be used for config saving.
         :type filename: str.
@@ -144,4 +155,3 @@ class AutoConfigParser(object):
     def get_configfile(self):
         """ The current configuration file location"""
         return self._configfile
-

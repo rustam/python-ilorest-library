@@ -1,17 +1,11 @@
-###
-# Copyright Notice:
-# Copyright 2016 Distributed Management Task Force, Inc. All rights reserved.
-# License: BSD 3-Clause License. For full text see link: https://github.com/DMTF/python-redfish-library/blob/master/LICENSE.md
-###
-
 """ Redfish restful library """
 
-__all__ = ['rest', 'ris']
+__all__ = ['rest', 'ris', 'hpilo']
 __version__ = "1.0.0"
 
-from redfish.rest.v1 import redfish_client
-from redfish.rest.v1 import AuthMethod
 import logging
+from redfish.rest.v1 import AuthMethod
+from redfish.rest.v1 import redfish_client, rest_client
 
 def redfish_logger(file_name, log_format, log_level=logging.ERROR):
     formatter = logging.Formatter(log_format)

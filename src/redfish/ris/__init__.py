@@ -1,9 +1,3 @@
-###
-# Copyright Notice:
-# Copyright 2016 Distributed Management Task Force, Inc. All rights reserved.
-# License: BSD 3-Clause License. For full text see link: https://github.com/DMTF/python-redfish-library/blob/master/LICENSE.md
-###
-
 # -*- coding: utf-8 -*-
 """
 RIS implementation
@@ -15,8 +9,8 @@ from .sharedtypes import (
 
 from .ris import (
     RisMonolithMemberBase,
-    RisMonolithMember_v1_0_0,
-    RisMonolith_v1_0_0,
+    RisMonolithMemberv100,
+    RisMonolithv100,
     RisMonolith,
 )
 
@@ -25,8 +19,13 @@ from .rmc_helper import (
     InstanceNotFoundError,
     CurrentlyLoggedInError,
     NothingSelectedError,
+    NothingSelectedFilterError,
     NothingSelectedSetError,
     InvalidSelectionError,
+    IdTokenError,
+    SessionExpired,
+    ValidationError,
+    ValueChangedError,
     RmcClient,
     RmcConfig,
     RmcCacheManager,
@@ -35,4 +34,9 @@ from .rmc_helper import (
 
 from .rmc import (
     RmcApp
+)
+
+from .validation import (
+    ValidationManager,
+    RegistryValidationError
 )
