@@ -1,4 +1,5 @@
 jsonpatch
 jsonpath_rw
 jsonpointer
+validictory
 urlparse2
