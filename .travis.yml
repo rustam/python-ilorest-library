@@ -1,18 +1,21 @@
 language: python
 python:
-- '2.7'
-install: pip install -r requirements.txt
+  - "2.7"
+
+# command to install dependencies
+install: "pip install -r requirements.txt"
+
+# command to run tests
 script: nosetests
+
 deploy:
-- provider: pypi
-  server: https://pypi.python.org/pypi
-  user: lumbajack
-  password:
-    secure: o9WW8rsVhjhZNTTvb30ArwnGIbKd1ZQ0KkQkQUIF9cskJxlkVLFQkcE8fCVVMhZ+BTXakHsAQ0nuKq29YB87dk6qf0Gvd3m/AcSjFSSxrtz4BeqA1vy8MmiUIztoJAGfEXaBKp52JnnIUbXuu+xzzOdFxeRul2GfYRT+KDKW/pk=
-  on:
-    branch: master
-    tags: true
-    condition: $TRAVIS_PYTHON_VERSION = "2.7"
-env:
-  global:
-    secure: NIcUvw0YQG3OFoMJhc6a7MEVpwRnwuJ+zKJoFiVI+NRLbIpNAduBemGIOXlVYB71zIa2dYGljS7FUxhWA2J1qILBAKtN15AHOJsFuplUzsjsRM/h8K7Tp7SKgbyz7X7dOGg3bzifnOGEZxgOA7pbut5DU0V00R7xegNcwaOB6/8=
+    # test pypi
+  - provider: pypi
+    server: https://pypi.python.org/pypi
+    user: "lumbajack"
+    password:
+      secure: NIcUvw0YQG3OFoMJhc6a7MEVpwRnwuJ+zKJoFiVI+NRLbIpNAduBemGIOXlVYB71zIa2dYGljS7FUxhWA2J1qILBAKtN15AHOJsFuplUzsjsRM/h8K7Tp7SKgbyz7X7dOGg3bzifnOGEZxgOA7pbut5DU0V00R7xegNcwaOB6/8=
+    on:
+      branch: master
+      tags: true
+      condition: $TRAVIS_PYTHON_VERSION = "2.7"
