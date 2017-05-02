@@ -43,8 +43,9 @@ from StringIO import StringIO
 from collections import (OrderedDict)
 
 import urlparse2 #pylint warning disable
-from redfish.hpilo.risblobstore2 import BlobStore2
+
 from redfish.hpilo.rishpilo import HpIloChifPacketExchangeError
+from redfish.hpilo.risblobstore2 import BlobStore2, Blob2OverrideError
 
 #---------End of imports---------
 
@@ -1242,18 +1243,30 @@ class Blobstore2RestClient(RestClientBase):
                 str1 += body
 
         bs2 = BlobStore2()
+
         if not isinstance(str1, bytearray):
             str1 = str1.encode("ASCII")
         if logging.getLogger().isEnabledFor(logging.DEBUG):
             try:
-                LOGGER.debug('Blobstore REQUEST: %s\n\tPATH: %s\n\tBODY: %s'% \
-                         (method, path, body))
+                LOGGER.debug('Blobstore REQUEST: %s\n' % str1)
+#                 LOGGER.debug('Blobstore REQUEST: %s\n\tPATH: %s\n\tBODY: %s'% \
+#                          (method, path, body))
             except:
                 LOGGER.debug('Blobstore REQUEST: %s\n\tPATH: %s\n\tBODY: %s'% \
                          (method, path, 'binary body'))                
 
         inittime = time.clock()
-        resp_txt = bs2.rest_immediate(str1)
+
+        for idx in range(5):
+            try:
+                resp_txt = bs2.rest_immediate(str1)
+                break
+            except Blob2OverrideError, excp:
+                if idx == 4:
+                    raise Blob2OverrideError(2)
+                else:
+                    continue
+        
         endtime = time.clock()
 
         bs2.channel.close()

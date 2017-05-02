@@ -22,6 +22,7 @@
 import os
 import sys
 import time
+import struct
 import select
 import logging
 
@@ -42,7 +43,12 @@ class BlobReturnCodes(object):
     """
 
     SUCCESS = 0
-
+    if os.name != 'nt':
+        CHIFERR_NoDriver = 19
+        CHIFERR_AccessDenied = 13
+    else:
+        CHIFERR_NoDriver = 2
+        CHIFERR_AccessDenied = 5
 
 class HpIloInitialError(Exception):
     """Raised when error during initialization of iLO Chif channel"""
@@ -87,7 +93,18 @@ class HpIlo(object):
                                             "to open a channel to iLO" % status)
 
                 self.fhandle = fhandle
-                self.dll.ChifSetRecvTimeout(self.fhandle, 120000)
+
+                status = self.dll.ChifPing(self.fhandle)
+                if status != BlobReturnCodes.SUCCESS:
+                    errmsg = "Error {0} occurred while trying to open a "\
+                                            "channel to iLO".format(status)
+                    if status == BlobReturnCodes.CHIFERR_NoDriver:
+                        errmsg = "iLO CHIF driver is not installed!"
+                    elif status == BlobReturnCodes.CHIFERR_AccessDenied:
+                        errmsg = "You must be root/Administrator to use this program!"                    
+                    raise HpIloInitialError(errmsg)
+
+                self.dll.ChifSetRecvTimeout(self.fhandle, 30000)
             except Exception, excp:
                 self.unload()
                 raise excp
@@ -189,7 +206,7 @@ class HpIlo(object):
 
         return pkt
 
-    def send_receive_raw(self, data, retries=3, datarecv=None):
+    def send_receive_raw(self, data, retries=10, datarecv=None):
         """ Function implementing proper send receive retry protocol
 
         :param data: data to be sent for packet exchange
@@ -201,6 +218,7 @@ class HpIlo(object):
 
         """
         tries = 0
+        sequence = struct.unpack("<H", bytes(data[2:4]))[0]
 
         while tries < retries:
             try:
@@ -214,17 +232,25 @@ class HpIlo(object):
                     if logging.getLogger().isEnabledFor(logging.DEBUG):
                         LOGGER.debug('Attempt %s for iLO read.\n'% \
                                                                 (tries+1))
-                    resp = self.read_raw(120)
+                    resp = self.read_raw(30)
 
+                if sequence != struct.unpack("<H", bytes(resp[2:4]))[0]:
+                    if logging.getLogger().isEnabledFor(logging.DEBUG):
+                        LOGGER.debug('Attempt %s has a bad sequence number.\n' % (tries+1))
+                    continue 
+                
                 return resp
-            except Exception:
+            except Exception, excp:
                 time.sleep(1)
 
                 if tries == (retries - 1):
                     if os.name == 'nt':
                         self.close()
                         self.unload()
-                    raise
+
+                    if logging.getLogger().isEnabledFor(logging.DEBUG) and excp:
+                        LOGGER.debug('Error while reading iLO: %s' % str(excp))
+                    raise excp
 
             tries += 1
 

@@ -1094,11 +1094,14 @@ class RepoRegistryEntry(RepoBaseEntry):
                                            ] == instance.resp.dict["oldtitle"]:
                                 location_file = instance.resp.dict
                                 break
-                            elif searchtype != "ob" and \
-                                    currdict[instance._typestring] \
-                                    in instance.resp.dict["RegistryPrefix"]:
-                                location_file = instance.resp.dict
-                                break
+                            elif searchtype != "ob":
+                                #added for smart storage differences in ids
+                                tname = currdict[instance._typestring].split('.')[0]
+                                if tname[0] == '#':
+                                    tname = tname[1:]
+                                if tname == instance.resp.dict["RegistryPrefix"]:
+                                    location_file = instance.resp.dict
+                                    break
                         except BaseException:
                             pass
                         else:
@@ -1119,10 +1122,12 @@ class RepoRegistryEntry(RepoBaseEntry):
                 jsonreg = json.loads(location_file)
 
             if skipcommit:
-                return jsonreg["Messages"]
+                return {jsonreg['RegistryPrefix']:jsonreg["Messages"]}
 
             if u'properties' in jsonreg:
                 regitem = jsonreg[u'properties']
+                if u'Properties' in regitem:
+                    regitem = regitem[u'Properties']
                 reg = HpPropertiesRegistry.parse(regitem)
 
                 if newarg:
