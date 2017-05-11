@@ -99,9 +99,9 @@ class HpIlo(object):
                     errmsg = "Error {0} occurred while trying to open a "\
                                             "channel to iLO".format(status)
                     if status == BlobReturnCodes.CHIFERR_NoDriver:
-                        errmsg = "iLO CHIF driver is not installed!"
+                        errmsg = "chif"
                     elif status == BlobReturnCodes.CHIFERR_AccessDenied:
-                        errmsg = "You must be root/Administrator to use this program!"                    
+                        errmsg = "You must be root/Administrator to use this program."                    
                     raise HpIloInitialError(errmsg)
 
                 self.dll.ChifSetRecvTimeout(self.fhandle, 30000)

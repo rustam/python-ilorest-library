@@ -22,11 +22,13 @@
 import os
 import sys
 import struct
+import random
+import string
 import logging
 
 from redfish.hpilo.rishpilo import HpIlo
 from ctypes import c_char_p, c_ubyte, c_uint, cdll, POINTER, \
-                    create_string_buffer
+                    create_string_buffer, c_ushort
 
 if os.name == 'nt':
     from ctypes import windll
