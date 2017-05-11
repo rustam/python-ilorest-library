@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='python-ilorest-library',
-      version='1.9.1',
+      version='1.9.2',
       description='iLO Rest Python Library',
 	  author = 'Hewlett Packard Enterprise',
 	  author_email = 'jackgarcia77@gmail.com',
