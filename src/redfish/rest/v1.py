@@ -20,6 +20,7 @@
 #---------Imports---------
 
 import os
+import six
 import sys
 import ssl
 import uuid
@@ -32,14 +33,12 @@ import urllib
 import ctypes
 import hashlib
 import logging
-import httplib
 import platform
 try:
     import io
 except ImportError:
     pass
 
-from StringIO import StringIO
 from collections import (OrderedDict)
 
 import urlparse2 #pylint warning disable
@@ -334,7 +333,7 @@ class JSONDecoder(json.JSONDecoder):
         parsed_dict = super(JSONDecoder, self).decode(json_string)
         return parsed_dict
 
-class _FakeSocket(StringIO):
+class _FakeSocket(six.StringIO):
     """
        slick way to parse a http response.
        http://pythonwise.blogspot.com/2010/02/parse-http-response.html
@@ -354,9 +353,9 @@ class RisRestResponse(RestResponse):
         :type resp_text: str
 
         """
-        self._respfh = StringIO(resp_txt)
+        self._respfh = six.StringIO(resp_txt)
         self._socket = _FakeSocket(self._respfh.read())
-        response = httplib.HTTPResponse(self._socket)
+        response = six.moves.http_client.HTTPResponse(self._socket)
         response.begin()
         super(RisRestResponse, self).__init__(rest_request, response)
 
@@ -411,7 +410,7 @@ class AuthMethod(object):
     SESSION = 'session'
 
 class MultipartFormdataEncoder(object):
-    """Python 2/3 implementation of multipart form data encoding 
+    """Python 2/3 implementation of multipart form data encoding
         http://stackoverflow.com/questions/1270518/python-standard-library-to-
         post-multipart-form-data-encoded-data"""
 
@@ -516,12 +515,12 @@ class RestClientBase(object):
         url = url if url else self.__url
         if url.scheme.upper() == "HTTPS":
             if sys.version_info < (2, 7, 9):
-                self._conn = httplib.HTTPSConnection(url.netloc)
+                self._conn = six.moves.http_client.HTTPSConnection(url.netloc)
             else:
-                self._conn = httplib.HTTPSConnection(url.netloc, \
-                                    context=ssl._create_unverified_context())
+                self._conn = six.moves.http_client.HTTPSConnection(
+                    url.netloc, context=ssl._create_unverified_context())
         elif url.scheme.upper() == "HTTP":
-            self._conn = httplib.HTTPConnection(url.netloc)
+            self._conn = six.moves.http_client.HTTPConnection(url.netloc)
         else:
             pass
 
@@ -640,7 +639,7 @@ class RestClientBase(object):
 
         try:
             root_data = json.loads(content, "ISO-8859-1")
-        except ValueError, excp:
+        except ValueError as excp:
             LOGGER.error(u"%s for JSON content %s", excp, content)
             raise
 
@@ -847,7 +846,7 @@ class RestClientBase(object):
 
                 try:
                     if resp.getheader('content-encoding') == 'gzip':
-                        buf = StringIO()
+                        buf = six.StringIO()
                         gfile = gzip.GzipFile(mode='wb', fileobj=buf)
 
                         try:
@@ -924,7 +923,7 @@ class RestClientBase(object):
 
                 try:
                     if restresp.getheader('content-encoding') == "gzip":
-                        compressedfile = StringIO(restresp.text)
+                        compressedfile = six.StringIO(restresp.text)
                         decompressedfile = gzip.GzipFile(fileobj=compressedfile)
                         restresp.text = decompressedfile.read()
                 except Exception as excp:
@@ -1200,7 +1199,7 @@ class Blobstore2RestClient(RestClientBase):
 
                 try:
                     if resp.getheader('content-encoding') == 'gzip':
-                        buf = StringIO()
+                        buf = six.StringIO()
                         gfile = gzip.GzipFile(mode='wb', fileobj=buf)
 
                         try:
@@ -1253,7 +1252,7 @@ class Blobstore2RestClient(RestClientBase):
 #                          (method, path, body))
             except:
                 LOGGER.debug('Blobstore REQUEST: %s\n\tPATH: %s\n\tBODY: %s'% \
-                         (method, path, 'binary body'))                
+                         (method, path, 'binary body'))
 
         inittime = time.clock()
 
@@ -1261,12 +1260,12 @@ class Blobstore2RestClient(RestClientBase):
             try:
                 resp_txt = bs2.rest_immediate(str1)
                 break
-            except Blob2OverrideError, excp:
+            except Blob2OverrideError as excp:
                 if idx == 4:
                     raise Blob2OverrideError(2)
                 else:
                     continue
-        
+
         endtime = time.clock()
 
         bs2.channel.close()
@@ -1294,7 +1293,7 @@ class Blobstore2RestClient(RestClientBase):
 
         try:
             if rest_response.getheader('content-encoding') == 'gzip':
-                compressedfile = StringIO(rest_response.text)
+                compressedfile = six.StringIO(rest_response.text)
                 decompressedfile = gzip.GzipFile(fileobj=compressedfile)
                 rest_response.text = decompressedfile.read()
         except StandardError:

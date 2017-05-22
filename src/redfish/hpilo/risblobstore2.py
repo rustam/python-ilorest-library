@@ -547,14 +547,14 @@ class BlobStore2(object):
 
             try:
                 self.delete(rsp_key, rsp_namespace)
-            except Exception, excp:
+            except Exception as excp:
                 raise excp
         else:
             try:
                 self.delete(rsp_key, rsp_namespace)
-            except Blob2OverrideError, excp:
+            except Blob2OverrideError as excp:
                 pass
-            except Exception, excp:
+            except Exception as excp:
                 raise excp
 
         return tmpresponse
