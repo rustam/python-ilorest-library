@@ -101,11 +101,11 @@ class HpIlo(object):
                     if status == BlobReturnCodes.CHIFERR_NoDriver:
                         errmsg = "chif"
                     elif status == BlobReturnCodes.CHIFERR_AccessDenied:
-                        errmsg = "You must be root/Administrator to use this program."                    
+                        errmsg = "You must be root/Administrator to use this program."
                     raise HpIloInitialError(errmsg)
 
                 self.dll.ChifSetRecvTimeout(self.fhandle, 30000)
-            except Exception, excp:
+            except Exception as excp:
                 self.unload()
                 raise excp
         else:
@@ -128,7 +128,7 @@ class HpIlo(object):
             while True:
                 try:
                     self.fhandle = os.open(self.file, os.O_NONBLOCK | \
-                                                os.O_EXCL | os.O_RDWR, 0666)
+                                                os.O_EXCL | os.O_RDWR, 0o666)
                     self.len = 0
                     self.seq = 0
                     return
@@ -175,7 +175,7 @@ class HpIlo(object):
             self.response = pkt[4] + 256*pkt[5]
 
             return pkt
-        except Exception, excp:
+        except Exception as excp:
             raise HpIloReadError("%s : %s" % (excp, sys.exc_info()[0]))
 
     def chif_packet_exchange(self, data, datarecv):
@@ -237,10 +237,10 @@ class HpIlo(object):
                 if sequence != struct.unpack("<H", bytes(resp[2:4]))[0]:
                     if logging.getLogger().isEnabledFor(logging.DEBUG):
                         LOGGER.debug('Attempt %s has a bad sequence number.\n' % (tries+1))
-                    continue 
-                
+                    continue
+
                 return resp
-            except Exception, excp:
+            except Exception as excp:
                 time.sleep(1)
 
                 if tries == (retries - 1):
