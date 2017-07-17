@@ -101,7 +101,7 @@ class HpIlo(object):
                     if status == BlobReturnCodes.CHIFERR_NoDriver:
                         errmsg = "chif"
                     elif status == BlobReturnCodes.CHIFERR_AccessDenied:
-                        errmsg = "You must be root/Administrator to use this program."
+                        errmsg = "You must be root/Administrator to use this program."                    
                     raise HpIloInitialError(errmsg)
 
                 self.dll.ChifSetRecvTimeout(self.fhandle, 30000)

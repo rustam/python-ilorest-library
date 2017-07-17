@@ -33,18 +33,20 @@ import urllib
 import ctypes
 import hashlib
 import logging
+import httplib
 import platform
 try:
     import io
 except ImportError:
     pass
 
+from StringIO import StringIO
 from collections import (OrderedDict)
 
 import urlparse2 #pylint warning disable
 
 from redfish.hpilo.rishpilo import HpIloChifPacketExchangeError
-from redfish.hpilo.risblobstore2 import BlobStore2, Blob2OverrideError
+from redfish.hpilo.risblobstore2 import BlobStore2, Blob2OverrideError, ChifDllMissingError
 
 #---------End of imports---------
 
@@ -77,6 +79,10 @@ class DecompressResponseError(Exception):
 
 class JsonDecodingError(Exception):
     """Raised when there is an error in json data."""
+    pass
+
+class SecurityStateError(Exception):
+    """Raised when there is a strict security state."""
     pass
 
 class RisObject(dict):
@@ -1419,7 +1425,7 @@ def get_client_instance(base_url=None, username=None, password=None, \
         if platform.system() == 'Windows':
             if not ctypes.windll.kernel32.LoadLibraryA('ilorest_chif'):
                 if not ctypes.windll.kernel32.LoadLibraryA('hprest_chif'):
-	                raise ChifDriverMissingOrNotFound()
+                    raise ChifDllMissingError()
         else:
             if not os.path.isdir('/dev/hpilo'):
                 raise ChifDriverMissingOrNotFound()

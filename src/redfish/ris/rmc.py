@@ -1842,6 +1842,7 @@ class RmcApp(object):
 
     def get_error_messages(self):
         """Handler of error messages from iLO"""
+        LOGGER.info("Entering validation...")
         errmessages = {}
         reglist = []
         iloversion = self.getiloversion()

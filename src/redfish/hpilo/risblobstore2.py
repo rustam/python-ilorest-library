@@ -79,12 +79,20 @@ class Blob2ListError(Exception):
     """Raised when list operation fails"""
     pass
 
+class Blob2SecurityError(Exception):
+    """Raised when list operation fails"""
+    pass
+
 class BlobNotFoundError(Exception):
     """Raised when blob not found in key/namespace"""
     pass
 
 class ChifDllMissingError(Exception):
     """Raised when unable to obtain ilorest_chif dll handle"""
+    pass
+
+class EncryptionEnabledError(Exception):
+    """Raised when high security encryption is enabled"""
     pass
 
 #----------------------------------------------------------
@@ -141,6 +149,43 @@ class BlobStore2(object):
             raise Blob2CreateError("create response larger than expected")
 
         if len(resp) < lib.size_of_createResponse():
+            raise Blob2CreateError("create response smaller than expected")
+
+        errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
+        if not (errorcode == BlobReturnCodes.SUCCESS or \
+                                    errorcode == BlobReturnCodes.NOTMODIFIED):
+            raise HpIloError(errorcode)
+
+        self.unloadchifhandle(lib)
+
+        return resp
+
+    def createbc(self, key, namespace):
+        """Create the blob
+
+        :param key: The blob key to create.
+        :type key: str.
+        :param namespace: The blob namespace to create the key in.
+        :type namespace: str.
+
+        """
+        lib = self.gethprestchifhandle()
+        lib.create_not_blobentrybc.argtypes = [c_char_p, c_char_p]
+        lib.create_not_blobentrybc.restype = POINTER(c_ubyte)
+
+        name = create_string_buffer(key)
+        namespace = create_string_buffer(namespace)
+
+        ptr = lib.create_not_blobentrybc(name, namespace)
+        data = ptr[:lib.size_of_srbuf()]
+        data = bytearray(data)
+
+        resp = self._send_receive_raw(data, lib.size_of_srbuf())
+
+        if len(resp) > lib.size_of_srbuf():
+            raise Blob2CreateError("create response larger than expected")
+
+        if len(resp) < lib.size_of_srbuf():
             raise Blob2CreateError("create response smaller than expected")
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]

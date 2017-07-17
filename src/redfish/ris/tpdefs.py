@@ -18,6 +18,8 @@
 """Typedefs implementation"""
 #---------Imports---------
 import logging
+
+from redfish.rest.v1 import SecurityStateError
 from redfish import redfish_client, rest_client
 from redfish.ris.rmc_helper import UnableToObtainIloVersionError
 #---------End of imports---------
@@ -49,6 +51,8 @@ class Typesandpathdefines(object):
                                username=None, password=None, \
                                default_prefix="/redfish/v1/", is_redfish=True)
             response = redfishclient.get(path="/redfish/v1/")
+        except SecurityStateError, excp:
+            raise excp
         except Exception as excp:
             try:
                 restclient = rest_client(base_url=self.url, username=None, \
