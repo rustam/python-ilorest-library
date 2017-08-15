@@ -33,14 +33,12 @@ import urllib
 import ctypes
 import hashlib
 import logging
-import httplib
 import platform
 try:
     import io
 except ImportError:
     pass
 
-from StringIO import StringIO
 from collections import (OrderedDict)
 
 import urlparse2 #pylint warning disable
