@@ -57,4 +57,3 @@ if __name__ == "__main__":
         raise excp
 
     ex3_change_bios_setting(REDFISH_OBJ, "AdminName", "New Name")
-  
