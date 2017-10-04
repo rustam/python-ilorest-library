@@ -26,7 +26,7 @@ def ex3_change_bios_setting(redfishobj, bios_property, property_value, \
                  " with the 2.50 firmware or earlier. \n")
 
     for instance in instances:
-        body = {bios_property: property_value}
+        body = {"Attributes":{bios_property: property_value}}
         response = redfishobj.redfish_patch(instance["@odata.id"], body, \
                                             optionalpassword=bios_password)
         redfishobj.error_handler(response)
