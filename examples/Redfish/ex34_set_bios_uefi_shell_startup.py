@@ -26,7 +26,7 @@ def ex34_set_bios_uefi_shell_startup(redfishobj, bios_properties, \
                  " with the 2.50 firmware or earlier. \n")
 
     for instance in instances:
-        response = redfishobj.rest_patch(instance["href"], bios_properties, \
+        response = redfishobj.redfish_patch(instance["@odata.id"], bios_properties, \
                                       bios_password)
         redfishobj.error_handler(response)
     
@@ -48,16 +48,17 @@ if __name__ == "__main__":
     # Create a REDFISH object
     try:
         REDFISH_OBJ = RedfishObject(iLO_https_url, iLO_account, iLO_password)
-    except ServerDownOrUnreachableError, excp:
+    except ServerDownOrUnreachableError as excp:
         sys.stderr.write("ERROR: server not reachable or doesn't support " \
                                                                 "RedFish.\n")
         sys.exit()
-    except Exception, excp:
+    except Exception as excp:
         raise excp
     
-    ex34_set_bios_uefi_shell_startup(REDFISH_OBJ,{"UefiShellStartup":"Enabled",\
+    ex34_set_bios_uefi_shell_startup(REDFISH_OBJ, {"UefiShellStartup":"Enabled",\
                                                "UefiShellStartupLocation": \
                                                "10.0.0.0", \
                                                "UefiShellStartupUrl": \
                                                "test.com"})
+    REDFISH_OBJ.redfish_client.logout()
  

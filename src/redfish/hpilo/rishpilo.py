@@ -58,6 +58,10 @@ class HpIloReadError(Exception):
     """Raised when errors encountered when reading from iLO"""
     pass
 
+class HpIloWriteError(Exception):
+    """Raised when errors encountered when writing to iLO"""
+    pass
+
 class HpIloSendReceiveError(Exception):
     """Raised when errors encountered when reading form iLO after sending"""
     pass
@@ -101,7 +105,7 @@ class HpIlo(object):
                     if status == BlobReturnCodes.CHIFERR_NoDriver:
                         errmsg = "chif"
                     elif status == BlobReturnCodes.CHIFERR_AccessDenied:
-                        errmsg = "You must be root/Administrator to use this program."                    
+                        errmsg = "You must be root/Administrator to use this program."
                     raise HpIloInitialError(errmsg)
 
                 self.dll.ChifSetRecvTimeout(self.fhandle, 30000)
@@ -150,6 +154,25 @@ class HpIlo(object):
         """
         return os.write(self.fhandle, data)
 
+    def write_raw_loop(self, data=None, retries=10):
+        """Loop of iLO write with retries
+
+        :param data: bytearray of data to send
+        :type data:bytearray
+        :param retries: number of retries for writing data
+        :type retries: int
+        """
+        tries = 0
+        excp = None
+        while tries < retries:
+            try:
+                resp = self.write_raw(data=data)
+                return resp
+            except Exception as excp:
+                tries = tries+1
+
+        raise HpIloWriteError("%s : %s" % (excp, sys.exc_info()[0]))
+
     def read_raw(self, timeout=5):
         """Read data from iLO. Use this if you need the response as is
         (without any parse)
@@ -160,7 +183,7 @@ class HpIlo(object):
         """
         try:
             pkt = bytearray()
-            if logging.getLogger().isEnabledFor(logging.DEBUG):
+            if LOGGER.isEnabledFor(logging.DEBUG):
                 LOGGER.debug('Reading iLO handle(Max wait time: %s '\
                                         'seconds)...\n'% (timeout))
             status = select.select([self.fhandle], [], [], timeout)
@@ -178,6 +201,25 @@ class HpIlo(object):
         except Exception as excp:
             raise HpIloReadError("%s : %s" % (excp, sys.exc_info()[0]))
 
+    def read_raw_loop(self, timeout=5, retries=10):
+        """Loop of iLO reads with retries
+
+        :param timeout: time to wait for iLO response
+        :type timeout: int (seconds)
+        :param retries: number of retries for reading data from iLO
+        :type retries: int
+        """
+        tries = 0
+        excp = None
+        while tries < retries:
+            try:
+                resp = self.read_raw(timeout=timeout)
+                return resp
+            except Exception as excp:
+                tries = tries+1
+
+        raise HpIloReadError("%s : %s" % (excp, sys.exc_info()[0]))
+
     def chif_packet_exchange(self, data, datarecv):
         """ Windows only function for handling chif packet exchange
 
@@ -187,7 +229,7 @@ class HpIlo(object):
         :type datarecv: int
 
         """
-        buff = create_string_buffer("".join(map(chr, data)))
+        buff = create_string_buffer(bytes(data))
 
         recbuff = create_string_buffer(datarecv)
 
@@ -200,9 +242,9 @@ class HpIlo(object):
         pkt = bytearray()
 
         if datarecv is None:
-            pkt.extend(recbuff)
+            bytearray(recbuff[:])
         else:
-            pkt.extend(recbuff[:datarecv])
+            pkt = bytearray(recbuff[:datarecv])
 
         return pkt
 
@@ -229,13 +271,13 @@ class HpIlo(object):
                     if retlen != len(data):
                         raise ValueError()
 
-                    if logging.getLogger().isEnabledFor(logging.DEBUG):
+                    if LOGGER.isEnabledFor(logging.DEBUG):
                         LOGGER.debug('Attempt %s for iLO read.\n'% \
                                                                 (tries+1))
                     resp = self.read_raw(30)
 
                 if sequence != struct.unpack("<H", bytes(resp[2:4]))[0]:
-                    if logging.getLogger().isEnabledFor(logging.DEBUG):
+                    if LOGGER.isEnabledFor(logging.DEBUG):
                         LOGGER.debug('Attempt %s has a bad sequence number.\n' % (tries+1))
                     continue
 
@@ -248,7 +290,7 @@ class HpIlo(object):
                         self.close()
                         self.unload()
 
-                    if logging.getLogger().isEnabledFor(logging.DEBUG) and excp:
+                    if LOGGER.isEnabledFor(logging.DEBUG) and excp:
                         LOGGER.debug('Error while reading iLO: %s' % str(excp))
                     raise excp
 

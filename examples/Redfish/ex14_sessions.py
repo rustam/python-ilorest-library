@@ -13,7 +13,7 @@
  # under the License.
 
 import sys
-import urlparse
+import urllib.parse
 from _redfishobject import RedfishObject
 from redfish.rest.v1 import ServerDownOrUnreachableError
 
@@ -25,7 +25,7 @@ def ex14_sessions(redfishobj, login_account, login_password):
     
     if response.status == 201:
         session_uri = response.getheader("location")
-        session_uri = urlparse.urlparse(session_uri)
+        session_uri = urllib.parse.urlparse(session_uri)
         sys.stdout.write("\tSession " + session_uri.path + " created\n")
 
         x_auth_token = response.getheader("x-auth-token")
@@ -55,12 +55,13 @@ if __name__ == "__main__":
     # Create a REDFISH object
     try:
         REDFISH_OBJ = RedfishObject(iLO_https_url, iLO_account, iLO_password)
-    except ServerDownOrUnreachableError, excp:
+    except ServerDownOrUnreachableError as excp:
         sys.stderr.write("ERROR: server not reachable or doesn't support " \
                                                                 "RedFish.\n")
         sys.exit()
-    except Exception, excp:
+    except Exception as excp:
         raise excp
 
     ex14_sessions(REDFISH_OBJ, "admin", "admin123")
+    REDFISH_OBJ.redfish_client.logout()
   

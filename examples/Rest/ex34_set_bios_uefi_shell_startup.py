@@ -29,7 +29,7 @@ def ex34_set_bios_uefi_shell_startup(restobj, uefienabled="Enabled", \
         setproperty(restobj, instance, "UefiShellStartupUrl", urlpath, \
                     bios_password)
 
-def setproperty (restobj,instance, bios_property, property_value, bios_password):
+def setproperty (restobj, instance, bios_property, property_value, bios_password):
     body = {bios_property: property_value}
     response = restobj.rest_patch(instance["href"], body, bios_password)
     restobj.error_handler(response)
@@ -52,5 +52,5 @@ if __name__ == "__main__":
     
     #Create a REST object
     REST_OBJ = RestObject(iLO_https_url, iLO_account, iLO_password)
-    ex34_set_bios_uefi_shell_startup(REST_OBJ,"Enabled", "10.0.0.0", "test.com")
+    ex34_set_bios_uefi_shell_startup(REST_OBJ, "Enabled", "10.0.0.0", "test.com")
  

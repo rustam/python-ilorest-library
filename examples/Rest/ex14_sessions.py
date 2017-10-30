@@ -13,7 +13,7 @@
  # under the License.
 
 import sys
-import urlparse
+import urllib.parse
 from _restobject import RestObject
 
 
@@ -25,7 +25,7 @@ def ex14_sessions(restobj, login_account, login_password):
     
     if response.status == 201:
         session_uri = response.getheader("location")
-        session_uri = urlparse.urlparse(session_uri)
+        session_uri = urllib.parse.urlparse(session_uri)
         sys.stdout.write("\tSession " + session_uri.path + " created\n")
 
         x_auth_token = response.getheader("x-auth-token")

@@ -95,10 +95,10 @@ class RedfishObject(object):
         self.SYSTEMS_RESOURCES = self.ex1_get_resource_directory()
         self.MESSAGE_REGISTRIES = self.ex2_get_base_registry()
 
-    def __del__(self):
+    def delete_obj(self):
         try:
             self.redfish_client.logout()
-        except AttributeError, excp:
+        except AttributeError as excp:
             pass
 
     def search_for_type(self, type):

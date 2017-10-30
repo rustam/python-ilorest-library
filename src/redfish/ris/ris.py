@@ -21,16 +21,22 @@
 
 import re
 import sys
-import json
 import logging
 import threading
-import urlparse2 #pylint warning disable
-from Queue import Queue
+
 from collections import (OrderedDict)
+
+#Added for py3 compatibility
+import six
+
+from six.moves.queue import Queue
+from six.moves.urllib.parse import urlparse, urlunparse
 
 import jsonpath_rw
 import jsonpointer
+
 from jsonpointer import set_pointer
+
 import redfish.rest.v1
 
 from redfish.ris.sharedtypes import Dictable
@@ -62,16 +68,16 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
         self._patches = list()
         self._type = None
         if isredfish:
-            self._typestring = u'@odata.type'
+            self._typestring = '@odata.type'
         else:
-            self._typestring = u'Type'
+            self._typestring = 'Type'
 
     def _get_type(self):
         """Return type from monolith"""
         if self._typestring in self._resp.dict:
             return self._resp.dict[self._typestring]
-        elif u'type' in self._resp.dict:
-            return self._resp.dict[u'type']
+        elif 'type' in self._resp.dict:
+            return self._resp.dict['type']
         return None
     type = property(_get_type, None)
 
@@ -96,27 +102,27 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
         """Convert monolith to dict"""
         result = OrderedDict()
         if self.type:
-            result[u'Type'] = self.type
+            result['Type'] = self.type
 
-            if self.maj_type == u'Collection.1' and \
-                                            u'MemberType' in self._resp.dict:
-                result[u'MemberType'] = self._resp.dict[u'MemberType']
+            if self.maj_type == 'Collection.1' and \
+                                            'MemberType' in self._resp.dict:
+                result['MemberType'] = self._resp.dict['MemberType']
 
-            result[u'links'] = OrderedDict()
-            result[u'links'][u'href'] = ''
+            result['links'] = OrderedDict()
+            result['links']['href'] = ''
             headers = dict()
 
             for header in self._resp.getheaders():
                 headers[header[0]] = header[1]
 
-            result[u'Headers'] = headers
+            result['Headers'] = headers
 
             if 'etag' in headers:
-                result[u'ETag'] = headers['etag']
+                result['ETag'] = headers['etag']
 
-            result[u'OriginalUri'] = self._resp.request.path
-            result[u'Content'] = self._resp.dict
-            result[u'Patches'] = self._patches
+            result['OriginalUri'] = self._resp.request.path
+            result['Content'] = self._resp.dict
+            result['Patches'] = self._patches
 
         return result
 
@@ -127,14 +133,14 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
         :type src: dict
 
         """
-        if u'Type' in src:
-            self._type = src[u'Type']
+        if 'Type' in src:
+            self._type = src['Type']
             restreq = redfish.rest.v1.RestRequest(method='GET', \
-                                                    path=src[u'OriginalUri'])
+                                                    path=src['OriginalUri'])
 
             src['restreq'] = restreq
             self._resp = redfish.rest.v1.StaticRestResponse(**src)
-            self._patches = src[u'Patches']
+            self._patches = src['Patches']
 
     def _reducer(self, indict, breadcrumbs=None, outdict=OrderedDict()):
         """Monolith reducer
@@ -152,14 +158,14 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
             breadcrumbs = []
 
         if isinstance(indict, dict):
-            for key, val in indict.items():
+            for key, val in list(indict.items()):
                 breadcrumbs.append(key) # push
 
                 if isinstance(val, dict):
                     self._reducer(val, breadcrumbs, outdict)
                 elif isinstance(val, list) or isinstance(val, tuple):
                     for i in range(0, len(val)):
-                        breadcrumbs.append(u'%s' % i) # push
+                        breadcrumbs.append('%s' % i) # push
                         self._reducer(val[i], breadcrumbs, outdict)
 
                         del breadcrumbs[-1] # pop
@@ -192,14 +198,14 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
             breadcrumbs = []
 
         if isinstance(indict, dict):
-            for key, val in indict.items():
+            for key, val in list(indict.items()):
                 breadcrumbs.append(key) # push
 
                 if isinstance(val, dict):
                     self._reducer(val, breadcrumbs, outdict)
                 elif isinstance(val, list) or isinstance(val, tuple):
                     for i in range(0, len(val)):
-                        breadcrumbs.append(u'[%s]' % i) # push
+                        breadcrumbs.append('[%s]' % i) # push
                         self._reducer(val[i], breadcrumbs, outdict)
 
                         del breadcrumbs[-1] # pop
@@ -211,7 +217,7 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
                 del breadcrumbs[-1] # pop
         else:
             outkey = '.'.join(breadcrumbs)
-            outkey = outkey.replace(u'.[', u'[')
+            outkey = outkey.replace('.[', '[')
             outdict[outkey] = indict
 
         return outdict
@@ -222,15 +228,15 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
         result = OrderedDict()
 
         if self.type:
-            result[u'Type'] = self.type
+            result['Type'] = self.type
 
-            if self.maj_type == u'Collection.1' and \
-                                            u'MemberType' in self._resp.dict:
-                result[u'MemberType'] = self._resp.dict[u'MemberType']
+            if self.maj_type == 'Collection.1' and \
+                                            'MemberType' in self._resp.dict:
+                result['MemberType'] = self._resp.dict['MemberType']
 
             self._reducer(self._resp.dict)
-            result[u'OriginalUri'] = self._resp.request.path
-            result[u'Content'] = self._reducer(self._resp.dict)
+            result['OriginalUri'] = self._resp.request.path
+            result['Content'] = self._reducer(self._resp.dict)
 
         return result
 
@@ -244,7 +250,7 @@ class RisMonolithv100(Dictable):
 
         """
         self._client = client
-        self.name = u"Monolithic output of RIS Service"
+        self.name = "Monolithic output of RIS Service"
         self.types = OrderedDict()
         self._visited_urls = list()
         self._current_location = '/' # "root"
@@ -257,16 +263,16 @@ class RisMonolithv100(Dictable):
 
         if self.is_redfish:
             self._resourcedir = '/redfish/v1/ResourceDirectory/'
-            self._typestring = u'@odata.type'
-            self._hrefstring = u'@odata.id'
+            self._typestring = '@odata.type'
+            self._hrefstring = '@odata.id'
         else:
             self._resourcedir = '/rest/v1/ResourceDirectory'
-            self._typestring = u'Type'
-            self._hrefstring = u'href'
+            self._typestring = 'Type'
+            self._hrefstring = 'href'
 
     def _get_type(self):
         """Return monolith version type"""
-        return u"Monolith.1.0.0"
+        return "Monolith.1.0.0"
 
     type = property(_get_type, None)
 
@@ -305,8 +311,8 @@ class RisMonolithv100(Dictable):
             if LOGGER.getEffectiveLevel() == 40:
                 sys.stdout.write("Discovering data...")
             else:
-                LOGGER.warning("Discovering data...")
-            self.name = self.name + u' at %s' % self._client.base_url
+                LOGGER.info("Discovering data...")
+            self.name = self.name + ' at %s' % self._client.base_url
 
             if not self.types:
                 self.types = OrderedDict()
@@ -329,7 +335,7 @@ class RisMonolithv100(Dictable):
             if LOGGER.getEffectiveLevel() == 40:
                 sys.stdout.write("Done\n")
             else:
-                LOGGER.warning("Done\n")
+                LOGGER.info("Done\n")
 
     def _load(self, path, skipcrawl=False, originaluri=None, includelogs=False,\
                         skipinit=False, loadtype='href', loadcomplete=False):
@@ -360,11 +366,12 @@ class RisMonolithv100(Dictable):
         #TODO: need to find a better way to support non ascii characters
         path = path.replace("|", "%7C")
         #remove fragments
-        newpath = urlparse2.urlparse(path)
-        newpath.fragment = ''
-        path = urlparse2.urlunparse(newpath)
+        newpath = urlparse(path)
+        newpath = list(newpath[:])
+        newpath[-1] = ''
+        path = urlunparse(tuple(newpath))
 
-        LOGGER.debug(u'_loading %s', path)
+        LOGGER.debug('_loading %s', path)
 
         if not self.reload:
             if path.lower() in self._visited_urls:
@@ -393,16 +400,16 @@ class RisMonolithv100(Dictable):
         if loadtype == 'href':
             #follow all the href attributes
             if self.is_redfish:
-                jsonpath_expr = jsonpath_rw.parse(u"$..'@odata.id'")
+                jsonpath_expr = jsonpath_rw.parse("$..'@odata.id'")
             else:
-                jsonpath_expr = jsonpath_rw.parse(u'$..href')
+                jsonpath_expr = jsonpath_rw.parse('$..href')
             matches = jsonpath_expr.find(resp.dict)
 
             if 'links' in resp.dict and 'NextPage' in resp.dict['links']:
                 if originaluri:
                     next_link_uri = originaluri + '?page=' + \
                                     str(resp.dict['links']['NextPage']['page'])
-                    href = u'%s' % next_link_uri
+                    href = '%s' % next_link_uri
 
                     self._load(href, originaluri=originaluri, \
                                includelogs=includelogs, skipcrawl=skipcrawl, \
@@ -411,7 +418,7 @@ class RisMonolithv100(Dictable):
                     next_link_uri = path + '?page=' + \
                                     str(resp.dict['links']['NextPage']['page'])
 
-                    href = u'%s' % next_link_uri
+                    href = '%s' % next_link_uri
                     self._load(href, originaluri=path, includelogs=includelogs,\
                                         skipcrawl=skipcrawl, skipinit=skipinit)
 
@@ -430,12 +437,12 @@ class RisMonolithv100(Dictable):
                     if match.value == path:
                         continue
 
-                    href = u'%s' % match.value
+                    href = '%s' % match.value
                     self._load(href, skipcrawl=skipcrawl, \
                            originaluri=originaluri, includelogs=includelogs, \
                            skipinit=skipinit)
             elif not skipcrawl:
-                href = u'%s' % dirmatch.value
+                href = '%s' % dirmatch.value
                 self._load(href, skipcrawl=skipcrawl, originaluri=originaluri, \
                                     includelogs=includelogs, skipinit=skipinit)
             if loadcomplete:
@@ -451,7 +458,7 @@ class RisMonolithv100(Dictable):
 
         """
         #pylint: disable=maybe-no-member
-        jsonpath_expr = jsonpath_rw.parse(u'$.."$ref"')
+        jsonpath_expr = jsonpath_rw.parse('$.."$ref"')
         matches = jsonpath_expr.find(resp.dict)
         respcopy = resp.dict
         typeregex = '([#,@].*?\.)'
@@ -500,11 +507,11 @@ class RisMonolithv100(Dictable):
 
                     instance = list()
 
-                    if u'st' in self.types:
-                        for stitem in self.types[u'st'][u'Instances']:
+                    if 'st' in self.types:
+                        for stitem in self.types['st']['Instances']:
                             instance.append(stitem)
-                    if u'ob' in self.types:
-                        for obitem in self.types[u'ob'][u'Instances']:
+                    if 'ob' in self.types:
+                        for obitem in self.types['ob']['Instances']:
                             instance.append(obitem)
 
                     for item in instance:
@@ -530,7 +537,7 @@ class RisMonolithv100(Dictable):
 
                                 for val in vals:
                                     try:
-                                        if '$ref' in end.resolve(val).iterkeys():
+                                        if '$ref' in six.iterkeys(end.resolve(val)):
                                             end.resolve(val).pop('$ref')
                                             end.resolve(val).update(dictcopy)
                                             replace_pointer = jsonpointer.\
@@ -548,8 +555,7 @@ class RisMonolithv100(Dictable):
                                 itempath = jsonpointer.JsonPointer(itempath)
                                 del itempath.parts[-1]
 
-                                if '$ref' in itempath.resolve(respcopy).\
-                                                                    iterkeys():
+                                if '$ref' in six.iterkeys(itempath.resolve(respcopy)):
                                     itempath.resolve(respcopy).pop('$ref')
                                     itempath.resolve(respcopy).update(dictcopy)
 
@@ -629,23 +635,23 @@ class RisMonolithv100(Dictable):
         """
         if member.maj_type not in self.types:
             self.types[member.maj_type] = OrderedDict()
-            self.types[member.maj_type][u'Instances'] = list()
+            self.types[member.maj_type]['Instances'] = list()
 
         found = False
 
-        for indices in xrange(len(self.types[member.maj_type][u'Instances'])):
-            inst = self.types[member.maj_type][u'Instances'][indices]
+        for indices in range(len(self.types[member.maj_type]['Instances'])):
+            inst = self.types[member.maj_type]['Instances'][indices]
 
             if inst.resp.request.path == member.resp.request.path:
-                self.types[member.maj_type][u'Instances'][indices] = member
-                self.types[member.maj_type][u'Instances'][indices].patches.\
+                self.types[member.maj_type]['Instances'][indices] = member
+                self.types[member.maj_type]['Instances'][indices].patches.\
                                     extend([patch for patch in inst.patches])
 
                 found = True
                 break
 
         if not found:
-            self.types[member.maj_type][u'Instances'].append(member)
+            self.types[member.maj_type]['Instances'].append(member)
 
     def load_from_dict(self, src):
         """Load data to monolith from dict
@@ -654,12 +660,12 @@ class RisMonolithv100(Dictable):
         :type src: str.
 
         """
-        self._type = src[u'Type']
-        self._name = src[u'Name']
+        self._type = src['Type']
+        self._name = src['Name']
         self.types = OrderedDict()
 
-        for typ in src[u'Types']:
-            for inst in typ[u'Instances']:
+        for typ in src['Types']:
+            for inst in typ['Instances']:
                 member = RisMonolithMemberv100(None, self.is_redfish)
                 member.load_from_dict(inst)
                 self.update_member(member)
@@ -669,40 +675,40 @@ class RisMonolithv100(Dictable):
     def to_dict(self):
         """Convert data to monolith from dict"""
         result = OrderedDict()
-        result[u'Type'] = self.type
-        result[u'Name'] = self.name
+        result['Type'] = self.type
+        result['Name'] = self.name
         types_list = list()
 
-        for typ in self.types.keys():
+        for typ in list(self.types.keys()):
             type_entry = OrderedDict()
-            type_entry[u'Type'] = typ
-            type_entry[u'Instances'] = list()
+            type_entry['Type'] = typ
+            type_entry['Instances'] = list()
 
-            for inst in self.types[typ][u'Instances']:
-                type_entry[u'Instances'].append(inst.to_dict())
+            for inst in self.types[typ]['Instances']:
+                type_entry['Instances'].append(inst.to_dict())
 
             types_list.append(type_entry)
 
-        result[u'Types'] = types_list
+        result['Types'] = types_list
         return result
 
     def reduce(self):
         """Reduce monolith data"""
         result = OrderedDict()
-        result[u'Type'] = self.type
-        result[u'Name'] = self.name
+        result['Type'] = self.type
+        result['Name'] = self.name
         types_list = list()
 
-        for typ in self.types.keys():
+        for typ in list(self.types.keys()):
             type_entry = OrderedDict()
-            type_entry[u'Type'] = typ
+            type_entry['Type'] = typ
 
-            for inst in self.types[typ][u'Instances']:
-                type_entry[u'Instances'] = inst.reduce()
+            for inst in self.types[typ]['Instances']:
+                type_entry['Instances'] = inst.reduce()
 
             types_list.append(type_entry)
 
-        result[u'Types'] = types_list
+        result['Types'] = types_list
         return result
 
     def _jsonpath2jsonpointer(self, instr):
@@ -739,15 +745,15 @@ class RisMonolithv100(Dictable):
 
         """
         results = list()
-        path_parts = [u'Types'] # Types is always assumed
+        path_parts = ['Types'] # Types is always assumed
 
         if isinstance(lspath, list) and len(lspath) > 0:
             lspath = lspath[0]
-            path_parts.extend(lspath.split(u'/'))
+            path_parts.extend(lspath.split('/'))
         elif not lspath:
-            lspath = u'/'
+            lspath = '/'
         else:
-            path_parts.extend(lspath.split(u'/'))
+            path_parts.extend(lspath.split('/'))
 
         currpos = self.to_dict()
         for path_part in path_parts:
@@ -760,7 +766,7 @@ class RisMonolithv100(Dictable):
                 currpos = currpos[path_part]
             elif isinstance(currpos, list):
                 for positem in currpos:
-                    if u'Type' in positem and path_part == positem[u'Type']:
+                    if 'Type' in positem and path_part == positem['Type']:
                         currpos = positem
                         break
 

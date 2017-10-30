@@ -42,7 +42,6 @@ if __name__ == "__main__":
     # iLO account name, and password to send https requests
     # iLO_https_url acceptable examples:
     # "https://10.0.0.100"
-    # "https://f250asha.americas.hpqcorp.net"
     iLO_https_url = "https://10.0.0.100"
     iLO_account = "admin"
     iLO_password = "password"
@@ -53,12 +52,13 @@ if __name__ == "__main__":
     # Create a REDFISH object
     try:
         REDFISH_OBJ = RedfishObject(iLO_https_url, iLO_account, iLO_password)
-    except ServerDownOrUnreachableError, excp:
+    except ServerDownOrUnreachableError as excp:
         sys.stderr.write("ERROR: server not reachable or doesn't support " \
                                                                 "RedFish.\n")
         sys.exit()
-    except Exception, excp:
+    except Exception as excp:
         raise excp
 
     ex38_set_ESKM_username_password(REDFISH_OBJ, eskm_username, eskm_password,\
                                 eskm_accountgroup)
+    REDFISH_OBJ.redfish_client.logout()

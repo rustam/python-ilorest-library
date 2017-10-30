@@ -24,11 +24,11 @@ import sys
 import struct
 import random
 import string
-import logging
 
-from redfish.hpilo.rishpilo import HpIlo
 from ctypes import c_char_p, c_ubyte, c_uint, cdll, POINTER, \
                     create_string_buffer, c_ushort
+
+from redfish.hpilo.rishpilo import HpIlo
 
 if os.name == 'nt':
     from ctypes import windll
@@ -117,6 +117,7 @@ class BlobStore2(object):
     """Blob store 2 class"""
     def __init__(self):
         self.channel = HpIlo()
+        self.MAX_RETRIES = 3
 
     def __del__(self):
         """Blob store 2 close channel function"""
@@ -136,8 +137,8 @@ class BlobStore2(object):
         lib.create_not_blobentry.argtypes = [c_char_p, c_char_p]
         lib.create_not_blobentry.restype = POINTER(c_ubyte)
 
-        name = create_string_buffer(key)
-        namespace = create_string_buffer(namespace)
+        name = create_string_buffer(key.encode('utf-8'))
+        namespace = create_string_buffer(namespace.encode('utf-8'))
 
         ptr = lib.create_not_blobentry(name, namespace)
         data = ptr[:lib.size_of_createRequest()]
@@ -197,7 +198,7 @@ class BlobStore2(object):
 
         return resp
 
-    def get_info(self, key, namespace):
+    def get_info(self, key, namespace, retries=0):
         """Get information for a particular blob
 
         :param key: The blob key to retrieve.
@@ -210,8 +211,8 @@ class BlobStore2(object):
         lib.get_info.argtypes = [c_char_p, c_char_p]
         lib.get_info.restype = POINTER(c_ubyte)
 
-        name = create_string_buffer(key)
-        namespace = create_string_buffer(namespace)
+        name = create_string_buffer(key.encode('utf-8'))
+        namespace = create_string_buffer(namespace.encode('utf-8'))
 
         ptr = lib.get_info(name, namespace)
         data = ptr[:lib.size_of_infoRequest()]
@@ -227,7 +228,11 @@ class BlobStore2(object):
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
         if errorcode == BlobReturnCodes.BADPARAMETER:
-            raise Blob2OverrideError(errorcode)
+            if retries < self.MAX_RETRIES:
+                self.get_info(key=key, namespace=namespace, retries=\
+                                                        retries+1)
+            else:
+                raise Blob2OverrideError(errorcode)
         elif errorcode == BlobReturnCodes.NOTFOUND:
             raise BlobNotFoundError(key, namespace)
 
@@ -241,7 +246,7 @@ class BlobStore2(object):
 
         return response
 
-    def read(self, key, namespace):
+    def read(self, key, namespace, retries=0):
         """Read a particular blob
 
         :param key: The blob key to be read.
@@ -277,7 +282,11 @@ class BlobStore2(object):
                                                             (newreadsize)]))[0]
 
             if bytesread == 0:
-                raise Blob2OverrideError()
+                if retries < self.MAX_RETRIES:
+                    self.read(key=key, namespace=namespace, retries=\
+                                                        retries+1)
+                else:
+                    raise Blob2OverrideError()
 
             data.extend(recvpkt[newreadsize:newreadsize + bytesread])
             bytes_read += bytesread
@@ -301,8 +310,8 @@ class BlobStore2(object):
         lib.read_fragment.argtypes = [c_uint, c_uint, c_char_p, c_char_p]
         lib.read_fragment.restype = POINTER(c_ubyte)
 
-        name = create_string_buffer(key)
-        namespace = create_string_buffer(namespace)
+        name = create_string_buffer(key.encode('utf-8'))
+        namespace = create_string_buffer(namespace.encode('utf-8'))
 
         ptr = lib.read_fragment(offset, count, name, namespace)
         data = ptr[:lib.size_of_readRequest()]
@@ -313,7 +322,7 @@ class BlobStore2(object):
         if len(resp) < lib.size_of_responseHeaderBlob():
             raise Blob2ReadError("read fragment response smaller than expected")
 
-        resp = resp + "\0" * (lib.size_of_readResponse() - len(resp))
+        resp = resp + b"\0" * (lib.size_of_readResponse() - len(resp))
 
         return resp
 
@@ -373,14 +382,14 @@ class BlobStore2(object):
         lib.write_fragment.argtypes = [c_uint, c_uint, c_char_p, c_char_p]
         lib.write_fragment.restype = POINTER(c_ubyte)
 
-        name = create_string_buffer(key)
-        namespace = create_string_buffer(namespace)
+        name = create_string_buffer(key.encode('utf-8'))
+        namespace = create_string_buffer(namespace.encode('utf-8'))
 
         ptr = lib.write_fragment(offset, count, name, namespace)
         sendpacket = ptr[:lib.size_of_writeRequest()]
 
         dataarr = bytearray(sendpacket)
-        dataarr.extend(buffer(data))
+        dataarr.extend(memoryview(data))
 
         resp = self._send_receive_raw(dataarr, lib.size_of_writeResponse())
 
@@ -397,7 +406,7 @@ class BlobStore2(object):
 
         return resp
 
-    def delete(self, key, namespace):
+    def delete(self, key, namespace, retries=0):
         """Delete the blob
 
         :param key: The blob key to be deleted.
@@ -410,8 +419,8 @@ class BlobStore2(object):
         lib.delete_blob.argtypes = [c_char_p, c_char_p]
         lib.delete_blob.restype = POINTER(c_ubyte)
 
-        name = create_string_buffer(key)
-        namespace = create_string_buffer(namespace)
+        name = create_string_buffer(key.encode('utf-8'))
+        namespace = create_string_buffer(namespace.encode('utf-8'))
 
         ptr = lib.delete_blob(name, namespace)
         data = ptr[:lib.size_of_deleteRequest()]
@@ -427,7 +436,11 @@ class BlobStore2(object):
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
         if errorcode == BlobReturnCodes.BADPARAMETER:
-            raise Blob2OverrideError(errorcode)
+            if retries < self.MAX_RETRIES:
+                self.delete(key=key, namespace=namespace, retries=\
+                                                    retries+1)
+            else:
+                raise Blob2OverrideError(errorcode)
         elif not (errorcode == BlobReturnCodes.SUCCESS or\
                                     errorcode == BlobReturnCodes.NOTMODIFIED):
             raise HpIloError(errorcode)
@@ -447,9 +460,9 @@ class BlobStore2(object):
         lib.list_blob.argtypes = [c_char_p]
         lib.list_blob.restype = POINTER(c_ubyte)
 
-        namespace = create_string_buffer(namespace)
+        namespace = create_string_buffer(namespace.encode('utf-8'))
 
-        ptr = lib.list_blob(namespace)
+        ptr = lib.list_blob(namespace.encode('utf-8'))
         data = ptr[:lib.size_of_listRequest()]
         data = bytearray(data)
 
@@ -482,8 +495,8 @@ class BlobStore2(object):
         lib.finalize_blob.argtypes = [c_char_p, c_char_p]
         lib.finalize_blob.restype = POINTER(c_ubyte)
 
-        name = create_string_buffer(key)
-        namespace = create_string_buffer(namespace)
+        name = create_string_buffer(key.encode('utf-8'))
+        namespace = create_string_buffer(namespace.encode('utf-8'))
 
         ptr = lib.finalize_blob(name, namespace)
         data = ptr[:lib.size_of_finalizeRequest()]
@@ -507,8 +520,7 @@ class BlobStore2(object):
         return errorcode
 
     def rest_immediate(self, req_data, rqt_key="RisRequest", \
-                                        rsp_key="RisResponse", \
-                                        rsp_namespace="volatile"):
+            rsp_key="RisResponse", rsp_namespace="volatile"):
         """Read/write blob via immediate operation
 
         :param req_data: The blob data to be read/written.
@@ -533,8 +545,8 @@ class BlobStore2(object):
             lib.rest_immediate.argtypes = [c_uint, c_char_p, c_char_p]
             lib.rest_immediate.restype = POINTER(c_ubyte)
 
-            name = create_string_buffer(rsp_key)
-            namespace = create_string_buffer(rsp_namespace)
+            name = create_string_buffer(rsp_key.encode('utf-8'))
+            namespace = create_string_buffer(rsp_namespace.encode('utf-8'))
 
             ptr = lib.rest_immediate(len(req_data), name, namespace)
             sendpacket = ptr[:lib.size_of_restImmediateRequest()]
@@ -547,9 +559,9 @@ class BlobStore2(object):
                                                                     c_char_p]
             lib.rest_immediate_blobdesc.restype = POINTER(c_ubyte)
 
-            name = create_string_buffer(rqt_key)
-            namespace = create_string_buffer(rsp_namespace)
-            rspname = create_string_buffer(rsp_key)
+            name = create_string_buffer(rqt_key.encode('utf-8'))
+            namespace = create_string_buffer(rsp_namespace.encode('utf-8'))
+            rspname = create_string_buffer(rsp_key.encode('utf-8'))
 
             ptr = lib.rest_immediate_blobdesc(name, rspname, namespace)
             sendpacket = ptr[:lib.size_of_restBlobRequest()]
@@ -603,6 +615,35 @@ class BlobStore2(object):
                 raise excp
 
         return tmpresponse
+
+    def get_security_state(self):
+        """Get information for the current security state"""
+        lib = self.gethprestchifhandle()
+        lib.get_security_state.argtypes = []
+        lib.get_security_state.restype = POINTER(c_ubyte)
+
+        ptr = lib.get_security_state()
+        data = ptr[:lib.size_of_securityStateRequest()]
+        data = bytearray(data)
+
+        resp = self._send_receive_raw(data, lib.size_of_securityStateResponse())
+
+        if len(resp) < lib.size_of_securityStateResponse():
+            raise Blob2SecurityError("get security response smaller than expected")
+
+        errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
+        if not (errorcode == BlobReturnCodes.SUCCESS or \
+                                    errorcode == BlobReturnCodes.NOTMODIFIED):
+            raise HpIloError(errorcode)
+
+        try:
+            securitystate = struct.unpack("<c", bytes(resp[72]))[0]
+        except:
+            securitystate = int(resp[72])
+
+        self.unloadchifhandle(lib)
+
+        return securitystate
 
     def mount_blackbox(self):
         """Operation to mount the blackbox partition"""
@@ -857,13 +898,19 @@ class BlobStore2(object):
 
     @staticmethod
     def setglobalhprestchifrandnumber(libbhndl):
+        """Set the random number for the chif handle
+        :param libbhndl: The library handle provided by loading the chif library.
+        :type libbhndl: library handle.
+        """
         rndval = random.randint(1, 65535)
         libbhndl.updaterandval.argtypes = [c_ushort]
         libbhndl.updaterandval(rndval)
 
     @staticmethod
     def checkincurrdirectory(libname):
-        """Check if the library is present in current directory."""
+        """Check if the library is present in current directory.
+        :param libname: The name of the library to search for.
+        :type libname: str."""
         libpath = libname
         if os.path.isfile(os.path.join(os.path.split(sys.executable)[0], libpath)):
             libpath = os.path.join(os.path.split(sys.executable)[0], libpath)

@@ -18,17 +18,28 @@ from redfish.rest.v1 import ServerDownOrUnreachableError
 
 def ex53_update_ilo_firmware(redfishobj, fw_url=None, tpm_flag=None):
     sys.stdout.write("\nEXAMPLE 53: Update iLO Firmware\n")
-    instances = redfishobj.search_for_type("Manager.")
+    if redfishobj.typepath.defs.isgen9:
+        instances = redfishobj.search_for_type("Manager.")
+    else:
+        instances = redfishobj.search_for_type("UpdateService.")
 
     for instance in instances:
         response = redfishobj.redfish_get(instance["@odata.id"])
         body = dict()
-        body["Action"] = "InstallFromURI"
-        body["FirmwareURI"] = fw_url
-        body["TPMOverrideFlag"] = tpm_flag
-        response = redfishobj.redfish_post(response.dict["Oem"]\
+
+        if redfishobj.typepath.defs.isgen9:
+            body["Action"] = "InstallFromURI"
+            body["FirmwareURI"] = fw_url
+            body["TPMOverrideFlag"] = tpm_flag
+            response = redfishobj.redfish_post(response.dict["Oem"]\
                                          ["Hp"]["Links"]["UpdateService"]\
                                          ["@odata.id"], body)
+        else:
+            body["ImageURI"] = fw_url
+            response = redfishobj.redfish_post(response.dict["Actions"]\
+										 ["#UpdateService.SimpleUpdate"]\
+										 ["target"], body)
+
         redfishobj.error_handler(response)
 
 if __name__ == "__main__":
@@ -49,11 +60,12 @@ if __name__ == "__main__":
     # Create a REDFISH object
     try:
         REDFISH_OBJ = RedfishObject(iLO_https_url, iLO_account, iLO_password)
-    except ServerDownOrUnreachableError, excp:
+    except ServerDownOrUnreachableError as excp:
         sys.stderr.write("ERROR: server not reachable or doesn't support " \
                                                                 "RedFish.\n")
         sys.exit()
-    except Exception, excp:
+    except Exception as excp:
         raise excp
 
-    ex53_update_ilo_firmware(REDFISH_OBJ, "http://test.com/ilo4_244.bin", False)
+    ex53_update_ilo_firmware(REDFISH_OBJ, "http://test.com/ilo5_115.bin", False)
+    REDFISH_OBJ.redfish_client.logout()

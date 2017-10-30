@@ -25,8 +25,10 @@ import time
 import copy
 import shutil
 import logging
+
 from collections import OrderedDict, Mapping
 
+import six
 import jsonpatch
 import jsonpath_rw
 import jsonpointer
@@ -65,6 +67,7 @@ class RmcApp(object):
         """
         self._rmc_clients = []
         configfile = None
+        self.logger = LOGGER
 
         foundsomething = False
         for item in Args:
@@ -93,7 +96,6 @@ class RmcApp(object):
 
         self._config = RmcConfig()
         self.config_file = configfile
-        self.logger = logging.getLogger()
         self._cm = RmcFileCacheManager(self)
         self._monolith = None
         self._validationmanager = None
@@ -163,9 +165,9 @@ class RmcApp(object):
         :type inner_except: str.
 
         """
-        LOGGER.warn(msg)
+        LOGGER.warning(msg)
         if inner_except is not None:
-            LOGGER.warn(inner_except)
+            LOGGER.warning(inner_except)
 
     def get_config(self):
         """Return config"""
@@ -276,7 +278,7 @@ class RmcApp(object):
 
     current_client = property(get_current_client, None)
 
-    def login(self, username=None, password=None, base_url=u'blobstore://.', \
+    def login(self, username=None, password=None, base_url='blobstore://.', \
               verbose=False, path=None, skipbuild=False, includelogs=False, \
               biospassword=None, is_redfish=False):
         """Main worker function for login command
@@ -316,7 +318,7 @@ class RmcApp(object):
                 self.add_rmc_client(RmcClient(username=username, \
                     password=password, url=base_url, typepath=self.typepath, \
                     biospassword=biospassword, is_redfish=is_redfish))
-            except Exception, excp:
+            except Exception as excp:
                 raise excp
 
         try:
@@ -325,7 +327,7 @@ class RmcApp(object):
                 self.current_client.login()
             elif username and password:
                 self.current_client.login()
-        except Exception, excp:
+        except Exception as excp:
             raise excp
 
         if not skipbuild:
@@ -350,7 +352,7 @@ class RmcApp(object):
         endtime = time.clock()
 
         if verbose:
-            sys.stdout.write(u"Monolith build process time: %s\n" % \
+            sys.stdout.write("Monolith build process time: %s\n" % \
                                                         (endtime - inittime))
 
     def logout(self, url=None):
@@ -414,12 +416,12 @@ class RmcApp(object):
                 currdict = jsonpatch.apply_patch(currdict, patch)
 
             if selector:
-                jsonpath_expr = jsonpath_rw.parse(u'%s' % selector)
+                jsonpath_expr = jsonpath_rw.parse('%s' % selector)
                 matches = jsonpath_expr.find(currdict)
                 temp_dict = OrderedDict()
 
                 for match in matches:
-                    json_pstr = u'/%s' % match.full_path
+                    json_pstr = '/%s' % match.full_path
                     json_node = jsonpointer.resolve_pointer(currdict, json_pstr)
                     temp_dict[str(match.full_path)] = json_node
                     results.append(temp_dict)
@@ -464,21 +466,21 @@ class RmcApp(object):
                 currdict = jsonpatch.apply_patch(currdict, patch)
 
             if selector:
-                for item in currdict.iterkeys():
+                for item in six.iterkeys(currdict):
                     if selector.lower() == item.lower():
                         selector = item
                         break
 
                 try:
-                    jsonpath_expr = jsonpath_rw.parse(u'"%s"' % selector)
-                except Exception, excp:
+                    jsonpath_expr = jsonpath_rw.parse('"%s"' % selector)
+                except Exception as excp:
                     raise InvalidCommandLineError(excp)
 
                 matches = jsonpath_expr.find(currdict)
                 temp_dict = OrderedDict()
 
                 for match in matches:
-                    json_pstr = u'/%s' % match.full_path
+                    json_pstr = '/%s' % match.full_path
                     json_node = jsonpointer.resolve_pointer(currdict, json_pstr)
                     temp_dict[str(match.full_path)] = json_node
 
@@ -574,14 +576,14 @@ class RmcApp(object):
 
                 if self.current_client.monolith.is_redfish and not \
                                         isinstance(regfound, RepoRegistryEntry):
-                    regfound = self.get_handler(regfound[u'@odata.id'], \
+                    regfound = self.get_handler(regfound['@odata.id'], \
                                 verbose=False, service=True, silent=True).obj
                     regloc = regfound
 
                     regfound = RepoRegistryEntry(regfound)
 
                 if not regfound:
-                    LOGGER.warn(u"Unable to locate registry/schema for '%s'", \
+                    self.warn("Unable to locate registry/schema for '%s'", \
                                                             currdict[type_str])
                     continue
                 elif float(iloversion) >= 4.210:
@@ -590,16 +592,16 @@ class RmcApp(object):
                         self.check_type_and_download(\
                                 self.current_client.monolith, \
                                 locationdict, skipcrawl=True, loadtype='ref')
-                    except Exception, excp:
+                    except Exception as excp:
                         raise excp
 
-                for item in currdict.iterkeys():
+                for item in six.iterkeys(currdict):
                     if selector.lower() == item.lower():
                         selector = item
                         break
 
                 newdict = currdict.copy()
-                jsonpath_expr = jsonpath_rw.parse(u'%s' % selector)
+                jsonpath_expr = jsonpath_rw.parse('%s' % selector)
                 matches = jsonpath_expr.find(currdict)
 
                 if not matches:
@@ -610,7 +612,7 @@ class RmcApp(object):
                 for match in matches:
                     listfound = False
                     newdict = currdict.copy()
-                    json_pstr = u'/%s' % match.full_path
+                    json_pstr = '/%s' % match.full_path
                     val = self.checkforintvalue(selector, val, iloversion, \
                                                 validation_manager, instance)
 
@@ -713,21 +715,31 @@ class RmcApp(object):
         """
 
         skip = False
-
+        try:
+            headervals = instance.resp._http_response.headers.keys()
+            if headervals is not None and len(headervals):
+                allow = list(filter(lambda x: x.lower() == "allow", headervals))
+                if len(allow):
+                    if not "PATCH" in instance.resp._http_response.headers\
+                                                        [allow[0]]:
+                        skip = True
+                return skip
+        except:
+            pass
         try:
             if not any("PATCH" in x for x in instance.resp._http_response.msg.\
                                                                     headers):
                 if verbose:
-                    self.warning_handler(u'Skipping read-only path: %s\n' % \
+                    self.warning_handler('Skipping read-only path: %s\n' % \
                                                     instance.resp.request.path)
                 skip = True
         except:
             try:
                 for item in instance.resp._headers:
-                    if item.keys()[0] == "allow":
-                        if not "PATCH" in item.values()[0]:
+                    if list(item.keys())[0] == "allow":
+                        if not "PATCH" in list(item.values())[0]:
                             if verbose:
-                                self.warning_handler(u'Skipping read-only ' \
+                                self.warning_handler('Skipping read-only ' \
                                      'path: %s' % instance.resp.request.path)
 
                             skip = True
@@ -736,12 +748,12 @@ class RmcApp(object):
                 if not ("allow" in instance.resp._headers and "PATCH" in \
                                             instance.resp._headers["allow"]):
                     if verbose:
-                        self.warning_handler(u'Skipping read-only path: ' \
+                        self.warning_handler('Skipping read-only path: ' \
                                             '%s\n' % instance.resp.request.path)
                     skip = True
                 elif not "allow" in instance.resp._headers:
                     if verbose:
-                        self.warning_handler(u'Skipping read-only path: %s\n' \
+                        self.warning_handler('Skipping read-only path: %s\n' \
                                                 % instance.resp.request.path)
                     skip = True
 
@@ -812,7 +824,7 @@ class RmcApp(object):
 
             for ind in range(len(dicttolist)):
                 try:
-                    dicttolist[ind] = (next(key for key in model.keys() if \
+                    dicttolist[ind] = (next(key for key in list(model.keys()) if \
                                     key.lower() == dicttolist[ind][0].lower()),\
                                      dicttolist[ind][1])
                 except:
@@ -820,11 +832,11 @@ class RmcApp(object):
 
             if model:
                 if biosmode:
-                    validator = map(model.get_validator_bios, (x[0] for x in \
-                                  dicttolist))
+                    validator = list(map(model.get_validator_bios, (x[0] for x in \
+                                  dicttolist)))
                 else:
-                    validator = map(model.get_validator, (x[0] for x in \
-                                  dicttolist))
+                    validator = list(map(model.get_validator, (x[0] for x in \
+                                  dicttolist)))
 
                 if validator:
                     try:
@@ -851,9 +863,9 @@ class RmcApp(object):
             currdictcopy = copy.deepcopy(currdict)
             templist = []
 
-            if newargs and len(dicttolist)==1 :
+            if newargs and len(dicttolist) == 1:
                 for i in range(len(newargs)):
-                    for item in currdictcopy.iterkeys():
+                    for item in six.iterkeys(currdictcopy):
                         if newarg[i].lower() == item.lower():
                             newarg[i] = item
 
@@ -864,7 +876,7 @@ class RmcApp(object):
 
                             break
             else:
-                items = currdict.keys()
+                items = list(currdict.keys())
                 items = sorted(items)
                 itemslower = [x.lower() for x in items]
 
@@ -876,7 +888,7 @@ class RmcApp(object):
                                                     item[0].lower())], item[1]
                             else:
                                 templist.append(item[0])
-                        except ValueError, excp:
+                        except ValueError as excp:
                             self.warning_handler("Skipping property {0}, not " \
                                  "found in current server.\n".format(item[0]))
 
@@ -886,7 +898,7 @@ class RmcApp(object):
                     if templist:
                         dicttolist = [x for x in dicttolist if x not in \
                                                                     templist]
-                except Exception, excp:
+                except Exception as excp:
                     raise excp
 
             selectors = [x[0] for x in dicttolist]
@@ -913,7 +925,7 @@ class RmcApp(object):
                                                                 item[nametype]]
                         except Exception:
                             continue
-                    except Exception, excp:
+                    except Exception as excp:
                         raise excp
             elif model:
                 templist = []
@@ -932,7 +944,7 @@ class RmcApp(object):
 
                         dicttolist = [x for x in tempdict if x[0] not in \
                                                                     templist]
-                except Exception, excp:
+                except Exception as excp:
                     raise excp
 
             if len(dicttolist) < 1:
@@ -942,7 +954,7 @@ class RmcApp(object):
             newdict = copy.deepcopy(currdict)
             patch = None
 
-            if newargs and len(dicttolist)==1 :
+            if newargs and len(dicttolist) == 1:
                 matches = self.setmultiworker(newargs, dicttolist, newdict)
 
                 if not matches:
@@ -952,7 +964,7 @@ class RmcApp(object):
                 dicttolist = []
 
             for (itersel, iterval) in dicttolist:
-                jsonpath_expr = jsonpath_rw.parse(u'%s' % itersel)
+                jsonpath_expr = jsonpath_rw.parse('%s' % itersel)
                 matches = jsonpath_expr.find(currdict)
 
                 if not matches:
@@ -962,7 +974,7 @@ class RmcApp(object):
 
                 for match in matches:
                     listfound = False
-                    json_pstr = u'/%s' % match.full_path
+                    json_pstr = '/%s' % match.full_path
 
                     if iterval:
                         if str(iterval)[0] == "[" and str(iterval)[-1] == "]":
@@ -1025,13 +1037,13 @@ class RmcApp(object):
                             entry = item.patch[0]["path"].split('/')[1:]
                         except Exception:
                             entry = item[0]["path"].split('/')[1:]
- 
+
                         if len(entry) == len(newarg):
                             check = 0
                             for ind, elem in enumerate(entry):
                                 if elem == newarg[ind]:
                                     check += 1
- 
+
                             if check == len(newarg):
                                 instance.patches.remove(item)
                                 patchremoved = True
@@ -1048,7 +1060,7 @@ class RmcApp(object):
 
     def validatechanges(self, validation_manager=None, instance=None, entrydict=\
                 None, entrymono=None, iloversion=None, attributeregistry=None, \
-                newdict=None, checkall=True, service=True, silent=True, oridict=None ):
+                newdict=None, checkall=True, service=True, silent=True, oridict=None):
         entrydict = None
         entrymono = None
         if float(iloversion) >= 4.210:
@@ -1109,7 +1121,7 @@ class RmcApp(object):
 
             if self.current_client.monolith.is_redfish and not \
                                     isinstance(regfound, RepoRegistryEntry):
-                regfound = self.get_handler(regfound[u'@odata.id'], \
+                regfound = self.get_handler(regfound['@odata.id'], \
                                 verbose=False, service=True, silent=True).obj
 
         if regfound:
@@ -1176,7 +1188,7 @@ class RmcApp(object):
                 newarg.append(name)
 
                 for i in range(len(newargs)):
-                    for item in currdictcopy.iterkeys():
+                    for item in six.iterkeys(currdictcopy):
                         if newarg[i].lower() == item.lower():
                             selector = item
                             newarg[i] = item
@@ -1213,12 +1225,12 @@ class RmcApp(object):
 
                 if self.current_client.monolith.is_redfish and not \
                                         isinstance(regfound, RepoRegistryEntry):
-                    regfound = self.get_handler(regfound[u'@odata.id'], \
+                    regfound = self.get_handler(regfound['@odata.id'], \
                                 verbose=False, service=True, silent=True).obj
                     regloc = regfound
 
                 if not regfound:
-                    LOGGER.warn(u"Unable to locate registry/schema for '%s'",\
+                    self.warn("Unable to locate registry/schema for '%s'",\
                                                         currdict[type_string])
                     continue
                 elif float(iloversion) >= 4.210:
@@ -1227,7 +1239,7 @@ class RmcApp(object):
                         self.check_type_and_download(\
                                 self.current_client.monolith, locationdict, \
                                 skipcrawl=True, loadtype='ref')
-                    except Exception, excp:
+                    except Exception as excp:
                         raise excp
 
                 newdict = copy.deepcopy(currdict)
@@ -1259,7 +1271,7 @@ class RmcApp(object):
                         newdictcopy = newdict
 
                         for elem in newarg:
-                            for item in newdictcopy.iterkeys():
+                            for item in six.iterkeys(newdictcopy):
                                 if elem.lower() == item.lower():
                                     if not elem.lower() == newarg[-1].lower():
                                         newdictcopy = newdictcopy[item]
@@ -1338,7 +1350,7 @@ class RmcApp(object):
         found = False
 
         if not newargs[current] == newargs[-1]:
-            for attr, val in currdict.iteritems():
+            for attr, val in six.iteritems(currdict):
                 if attr.lower() == newargs[current].lower():
                     current += 1
                     found = self.setmultiworker(newargs, change, val, current)
@@ -1346,7 +1358,7 @@ class RmcApp(object):
                 else:
                     continue
         else:
-            for attr, val in currdict.iteritems():
+            for attr, val in six.iteritems(currdict):
                 if attr.lower() == change[0][0].lower():
                     currdict[attr] = change[0][1]
                     found = True
@@ -1394,7 +1406,7 @@ class RmcApp(object):
 
                     for ind, elem in enumerate(newarg):
                         if isinstance(currdictcopy, dict):
-                            for item in currdictcopy.iterkeys():
+                            for item in six.iterkeys(currdictcopy):
                                 if elem.lower() == item.lower():
                                     selector = item
                                     newarg[ind] = item
@@ -1405,7 +1417,7 @@ class RmcApp(object):
                         else:
                             break
                 else:
-                    for item in currdict.iterkeys():
+                    for item in six.iterkeys(currdict):
                         if selector.lower() == item.lower():
                             selector = item
                             break
@@ -1426,7 +1438,7 @@ class RmcApp(object):
                     else:
                         break
                 else:
-                    LOGGER.warn(u"Unable to locate registry model for " \
+                    self.warn("Unable to locate registry model for " \
                                                             ":'%s'", selector)
                     continue
 
@@ -1434,16 +1446,16 @@ class RmcApp(object):
                 if newarg:
                     currdict = currdictcopy
 
-                jsonpath_expr = jsonpath_rw.parse(u'"%s"' % selector)
+                jsonpath_expr = jsonpath_rw.parse('"%s"' % selector)
                 matches = jsonpath_expr.find(currdict)
 
                 if matches:
                     for match in matches:
-                        json_pstr = u'/%s' % match.full_path
+                        json_pstr = '/%s' % match.full_path
                         jsonpointer.JsonPointer(json_pstr)
 
                         for key in currdict:
-                            matchpath = u'%s' % match.full_path
+                            matchpath = '%s' % match.full_path
                             if not key.lower() == matchpath.lower():
                                 continue
 
@@ -1457,7 +1469,7 @@ class RmcApp(object):
 
                             if found:
                                 if dumpjson:
-                                    print found
+                                    print(found)
                                 elif autotest:
                                     return True
                                 else:
@@ -1499,7 +1511,7 @@ class RmcApp(object):
             else:
                 path += '/?$expand=.'
 
-        members = self.get_handler(path,service=True, silent=True)
+        members = self.get_handler(path, service=True, silent=True)
         if members:
             try:
                 if self.typepath.defs.isgen10:
@@ -1523,8 +1535,8 @@ class RmcApp(object):
         monolith = self.current_client.monolith
 
         for ristype in monolith.types:
-            if u'Instances' in monolith.types[ristype]:
-                for instance in monolith.types[ristype][u'Instances']:
+            if 'Instances' in monolith.types[ristype]:
+                for instance in monolith.types[ristype]['Instances']:
                     if "computersystem." in instance.type.lower():
                         try:
                             if "Current" in instance.resp.obj["Bios"]:
@@ -1554,7 +1566,7 @@ class RmcApp(object):
         if not self._iloversion:
             results = self.get_handler(self.current_client._rest_client.\
                                        default_prefix, silent=True, service=True)
-    
+
             try:
                 if results.dict["Oem"][self.typepath.defs.oemhp]["Manager"]:
                     oemjson = results.dict["Oem"][self.typepath.defs.\
@@ -1583,8 +1595,8 @@ class RmcApp(object):
         (_, attributeregistry) = self.get_selection(setenable=True)
 
         for ristype in monolith.types:
-            if u'Instances' in monolith.types[ristype]:
-                for instance in monolith.types[ristype][u'Instances']:
+            if 'Instances' in monolith.types[ristype]:
+                for instance in monolith.types[ristype]['Instances']:
                     results = list()
 
                     if instance.patches and len(instance.patches) > 0:
@@ -1645,11 +1657,11 @@ class RmcApp(object):
         """Build and return the entire monolith"""
         monolith = self.current_client.monolith
         vistedurls = monolith.get_visited_urls()
- 
+
         monolith.set_visited_urls(list())
         monolith.load(includelogs=True, skipcrawl=False, loadcomplete=True)
         monolith.set_visited_urls(vistedurls)
-        
+
         results = list()
         instances = self.get_selection(selector='"*"')
 
@@ -1657,7 +1669,7 @@ class RmcApp(object):
             currdict = instance.resp.dict
             results.append({instance.resp.request.path: currdict})
 
-        return results
+        return monolith.to_dict()
 
     def commitworkerfunc(self, patch):
         """Helper function for the commit command
@@ -1739,7 +1751,7 @@ class RmcApp(object):
             for patch in instance.patches:
                 try:
                     self.checkforetagchange(instance=instance)
-                except Exception, excp:
+                except Exception as excp:
                     raise excp
 
                 if hasattr(patch, 'patch'):
@@ -1806,7 +1818,7 @@ class RmcApp(object):
             if currdict:
                 changesmade = True
                 if verbose:
-                    out.write(u'Changes made to path: %s\n' % \
+                    out.write('Changes made to path: %s\n' % \
                                                     instance.resp.request.path)
 
                 put_path = instance.resp.request.path
@@ -1831,7 +1843,7 @@ class RmcApp(object):
         :type currdict: dict.
 
         """
-        for k, itemv2 in newdict.items():
+        for k, itemv2 in list(newdict.items()):
             itemv1 = currdict.get(k)
 
             if isinstance(itemv1, Mapping) and\
@@ -1861,7 +1873,7 @@ class RmcApp(object):
                     reglist.append(reg['Schema'])
             except:
                 if reg:
-                    reg = reg[u'@odata.id'].split('/')
+                    reg = reg['@odata.id'].split('/')
                     reg = reg[len(reg)-2]
                     if not 'biosattributeregistry' in reg.lower():
                         reglist.append(reg)
@@ -1873,11 +1885,11 @@ class RmcApp(object):
 
             if regfound and self.current_client.monolith.is_redfish\
                                  and not isinstance(regfound, RepoRegistryEntry):
-                regfound = self.get_handler(regfound[u'@odata.id'], \
+                regfound = self.get_handler(regfound['@odata.id'], \
                                 verbose=False, service=True, silent=True).obj
                 regfound = RepoRegistryEntry(regfound)
             if not regfound:
-                LOGGER.warn(u"Unable to locate registry for '%s'", reg)
+                self.warn("Unable to locate registry for '%s'", reg)
             elif float(iloversion) >= 4.210:
                 try:
                     locationdict = self.geturidict(regfound.Location[0])
@@ -2164,9 +2176,9 @@ class RmcApp(object):
             if url == None:
                 url = 'blobstore://'
             if not self.typepath.defs:
-                rf = None
+                rflag = None
                 self.getgen(url=url)
-                rf=self.updatedefinesflag(redfishflag=rf)
+                rflag = self.updatedefinesflag(redfishflag=rflag)
 
             results = RmcClient(url=url, sessionkey=sessionid, is_redfish=\
                                                     self.updatedefinesflag()).\
@@ -2243,13 +2255,13 @@ class RmcApp(object):
         """
         qmatch = RmcApp._QUERY_PATTERN.search(querystr)
         if not qmatch:
-            raise InvalidSelectionError(u"Unable to locate instance for " \
+            raise InvalidSelectionError("Unable to locate instance for " \
                                                             "'%s'" % querystr)
 
         qgroups = qmatch.groupdict()
 
-        return dict(instance=qgroups[u'instance'], \
-                                            xpath=qgroups.get(u'xpath', None))
+        return dict(instance=qgroups['instance'], \
+                                            xpath=qgroups.get('xpath', None))
 
     def invalid_return_handler(self, results, verbose=False, errmessages=None):
         """Main worker function for handling all error messages
@@ -2272,13 +2284,18 @@ class RmcApp(object):
             except Exception:
                 if results.status == 200 or results.status == 201:
                     if verbose:
-                        self.warning_handler(u"[%d] The operation completed " \
+                        self.warning_handler("[%d] The operation completed " \
                                             "successfully.\n" % results.status)
                     else:
-                        self.warning_handler(u"[%d] The operation completed " \
+                        self.warning_handler("[%d] The operation completed " \
                                             "successfully.\n" % results.status)
+                elif results.status == 412:
+                    self.warning_handler("The property you are trying to change "\
+                                         "has been updated. Please check entry" \
+                                         " again  before manipulating it.\n")
+                    raise ValueChangedError("")
                 else:
-                    self.warning_handler(u"[%d] No message returned by iLO.\n" %\
+                    self.warning_handler("[%d] No message returned by iLO.\n" %\
                                                                 results.status)
 
                     raise IloResponseError("")
@@ -2295,7 +2312,7 @@ class RmcApp(object):
                                  " before manipulating it.\n")
             raise ValueChangedError()
         elif errmessages:
-            for messagetype in errmessages.keys():
+            for messagetype in list(errmessages.keys()):
                 if contents[0] == messagetype:
                     try:
                         if errmessages[messagetype][contents[-1]]["NumberOfArgs"] == 0:
@@ -2304,12 +2321,12 @@ class RmcApp(object):
                             output = errmessages[messagetype][contents[-1]]["Description"]
 
                         if verbose:
-                            self.warning_handler(u"[%d] %s\n" % (results.status, \
+                            self.warning_handler("[%d] %s\n" % (results.status, \
                                                                         output))
                         if results.status == 200 or results.status == 201:
-                            self.warning_handler(u"{0}\n".format(output))
+                            self.warning_handler("{0}\n".format(output))
                         if results.status is not 200 and results.status is not 201:
-                            self.warning_handler(u"iLO response with code [%d]: %s\n"%(\
+                            self.warning_handler("iLO response with code [%d]: %s\n"%(\
                                                         results.status, output))
                             raise IloResponseError("")
                         break
@@ -2321,17 +2338,17 @@ class RmcApp(object):
         else:
             if results.status == 200 or results.status == 201:
                 if verbose:
-                    self.warning_handler(u"[%d] The operation completed " \
+                    self.warning_handler("[%d] The operation completed " \
                                             "successfully.\n" % results.status)
                 else:
-                    self.warning_handler(u"The operation completed "\
+                    self.warning_handler("The operation completed "\
                                                             "successfully.\n")
             elif contents:
-                self.warning_handler(u"iLO responsed with code [{0}]: {1}\n".format(\
+                self.warning_handler("iLO responsed with code [{0}]: {1}\n".format(\
                                                         results.status, contents))
                 raise IloResponseError()
             else:
-                self.warning_handler(u"[%d] No message returned.\n" % \
+                self.warning_handler("[%d] No message returned.\n" % \
                                                                 results.status)
 
     def select(self, query, sel=None, val=None):
@@ -2349,7 +2366,7 @@ class RmcApp(object):
         if query:
             if isinstance(query, list):
                 if len(query) == 0:
-                    raise InstanceNotFoundError(u"Unable to locate instance " \
+                    raise InstanceNotFoundError("Unable to locate instance " \
                                                             "for '%s'" % query)
                 else:
                     query = query[0]
@@ -2376,10 +2393,10 @@ class RmcApp(object):
                 return selection
 
         if not sel is None and not val is None:
-            raise InstanceNotFoundError(u"Unable to locate instance for" \
+            raise InstanceNotFoundError("Unable to locate instance for" \
                                 " '%s' and filter '%s=%s'" % (query, sel, val))
         else:
-            raise InstanceNotFoundError(u"Unable to locate instance for" \
+            raise InstanceNotFoundError("Unable to locate instance for" \
                                                                 " '%s'" % query)
 
     def filter(self, query, sel, val):
@@ -2397,7 +2414,7 @@ class RmcApp(object):
         if query:
             if isinstance(query, list):
                 if len(query) == 0:
-                    raise InstanceNotFoundError(u"Unable to locate instance " \
+                    raise InstanceNotFoundError("Unable to locate instance " \
                                                             "for '%s'" % query)
                 else:
                     query = query[0]
@@ -2433,14 +2450,14 @@ class RmcApp(object):
                         newentry = copy.copy(entry)
 
                         for item in sellist:
-                            if item in newentry.keys():
+                            if item in list(newentry.keys()):
                                 if item == sellist[-1] and str(newentry[item])\
                                                                         == val:
                                     newoutput.append(entry)
                                 else:
                                     newentry = newentry[item]
                     else:
-                        if sel in entry.keys() and entry[sel] == val:
+                        if sel in list(entry.keys()) and entry[sel] == val:
                             newoutput.append(entry)
                 else:
                     return output
@@ -2461,18 +2478,18 @@ class RmcApp(object):
 
         if not founddir:
             for ristype in monolith.types:
-                if u'Instances' in monolith.types[ristype]:
-                    for instance in monolith.types[ristype][u'Instances']:
+                if 'Instances' in monolith.types[ristype]:
+                    for instance in monolith.types[ristype]['Instances']:
                         instances.append(instance.type)
         else:
-            if u'Instances' in monolith.types[entrytype]:
-                for instance in monolith.types[entrytype][u'Instances']:
+            if 'Instances' in monolith.types[entrytype]:
+                for instance in monolith.types[entrytype]['Instances']:
                     for item in instance.resp.dict["Instances"]:
-                        if item and instance._typestring in item.keys() and \
-                            not u'ExtendedError' in item[instance._typestring]:
+                        if item and instance._typestring in list(item.keys()) and \
+                            not 'ExtendedError' in item[instance._typestring]:
                             if not fulltypes and instance._typestring == \
-                                                                u'@odata.type':
-                                tval = item[u"@odata.type"].split('#')
+                                                                '@odata.type':
+                                tval = item["@odata.type"].split('#')
                                 tval = tval[-1].split('.')[:-1]
                                 tval = '.'.join(tval)
                                 instances.append(tval)
@@ -2488,11 +2505,13 @@ class RmcApp(object):
         monolith = self.current_client.monolith
 
         for ristype in monolith.types:
-            if u'Instances' in monolith.types[ristype]:
-                for instance in monolith.types[ristype][u'Instances']:
+            if 'Instances' in monolith.types[ristype]:
+                for instance in monolith.types[ristype]['Instances']:
                     instancepath[instance.type] = instance.resp.request.path
                     templist = instance.resp.getheaders()
-                    tempindex = [x[0] for x in templist].index('etag')
+                    for ind, val in enumerate(templist):
+                        if val[0] in ['etag', 'ETag']:
+                            tempindex = ind
                     instances[instance.type] = templist[tempindex][1]
 
         return [instances, instancepath]
@@ -2551,8 +2570,8 @@ class RmcApp(object):
 
         for itemtype in monolith.types:
             if itemtype.startswith("Collection.") and \
-                                    u'Instances' in monolith.types[itemtype]:
-                for instance in monolith.types[itemtype][u'Instances']:
+                                    'Instances' in monolith.types[itemtype]:
+                for instance in monolith.types[itemtype]['Instances']:
                     if instance.resp.request.path.lower() == schemaid:
                         schemasfound = True
                     elif instance.resp.request.path.lower() == regid:
@@ -2595,8 +2614,8 @@ class RmcApp(object):
         """
         found = False
         for ristype in monolith.types:
-            if u'Instances' in monolith.types[ristype]:
-                for instance in monolith.types[ristype][u'Instances']:
+            if 'Instances' in monolith.types[ristype]:
+                for instance in monolith.types[ristype]['Instances']:
                     if foundhref == instance.resp.request.path:
                         found = True
                         break
@@ -2613,7 +2632,7 @@ class RmcApp(object):
                       skipcrawl=skipcrawl, includelogs=True, loadtype=loadtype)
             except SessionExpiredRis:
                 raise SessionExpired()
-            except Exception, excp:
+            except Exception as excp:
                 try:
                     if excp.errno == 10053:
                         raise SessionExpired()
@@ -2636,11 +2655,11 @@ class RmcApp(object):
         :type skipcrawl: boolean.
 
         """
-        if u'Instances' in monolith.types[entrytype]:
-            for instance in monolith.types[entrytype][u'Instances']:
+        if 'Instances' in monolith.types[entrytype]:
+            for instance in monolith.types[entrytype]['Instances']:
                 try:
                     for item in instance.resp.dict["Instances"]:
-                        if item and monolith._typestring in item.keys() and \
+                        if item and monolith._typestring in list(item.keys()) and \
                             currtype.lower() in item[monolith._typestring].lower():
                             self.check_type_and_download(monolith, \
                                  item[monolith._hrefstring], skipcrawl=skipcrawl)
@@ -2648,7 +2667,7 @@ class RmcApp(object):
                             self.check_type_and_download(monolith, \
                                 item[monolith._hrefstring], skipcrawl=skipcrawl)
                 except:
-                    LOGGER.debug(u"Instance error, Instance contents: %s" % \
+                    LOGGER.debug("Instance error, Instance contents: %s" % \
                                  instance.resp.text)
                     raise
 
@@ -2700,16 +2719,16 @@ class RmcApp(object):
 
         if not selector == '"*"':
             qvars = self._parse_query(selector)
-            qinstance = qvars[u'instance']
-            xpath = qvars[u'xpath']
+            qinstance = qvars['instance']
+            xpath = qvars['xpath']
         else:
             qinstance = selector
 
         for ristype in monolith.types:
-            if u'Instances' in monolith.types[ristype]:
-                for instance in monolith.types[ristype][u'Instances']:
+            if 'Instances' in monolith.types[ristype]:
+                for instance in monolith.types[ristype]['Instances']:
                     try:
-                        odata = instance.resp.dict[u'@odata.type'].lower()
+                        odata = instance.resp.dict['@odata.type'].lower()
                     except Exception:
                         odata = ''
 
@@ -2724,7 +2743,7 @@ class RmcApp(object):
                                 pass
 
                             if self.get_save_helper(instance.resp.request.path,\
-                                        monolith.types[ristype][u'Instances']):
+                                        monolith.types[ristype]['Instances']):
                                 continue
 
                         if not sel is None and not val is None:
@@ -2752,7 +2771,7 @@ class RmcApp(object):
                                 continue
 
                         if xpath:
-                            raise RuntimeError(u"Not implemented")
+                            raise RuntimeError("Not implemented")
                         else:
                             instances.append(instance)
 
@@ -2787,7 +2806,7 @@ class RmcApp(object):
 
                 return False
 
-            keys = workdict.keys()
+            keys = list(workdict.keys())
             keyslow = [x.lower() for x in keys]
 
             if newargs[loopcount].lower() in keyslow:
@@ -2816,8 +2835,8 @@ class RmcApp(object):
         monolith = self.current_client.monolith
 
         for ristype in monolith.types:
-            if u'Instances' in monolith.types[ristype]:
-                for instance in monolith.types[ristype][u'Instances']:
+            if 'Instances' in monolith.types[ristype]:
+                for instance in monolith.types[ristype]['Instances']:
                     instances.append(instance)
 
         return instances
@@ -2847,10 +2866,12 @@ class RmcApp(object):
         if founddir:
             self.check_types_exists(entrytype, "ComputerSystem.", \
                                 self.current_client.monolith, skipcrawl=True)
+            self.check_types_exists(entrytype, "Bios.", \
+                                self.current_client.monolith, skipcrawl=True)
 
         for ristype in monolith.types:
-            if u'Instances' in monolith.types[ristype]:
-                for instance in monolith.types[ristype][u'Instances']:
+            if 'Instances' in monolith.types[ristype]:
+                for instance in monolith.types[ristype]['Instances']:
                     if "computersystem." in instance.type.lower():
                         try:
                             if instance.resp.obj["Manufacturer"]:
@@ -2871,7 +2892,18 @@ class RmcApp(object):
                                                                 oemjson["Date"]
                         except Exception:
                             pass
-
+                    if self.typepath.defs.biostype.lower() in \
+                                                        instance.type.lower():
+                        try:
+                            if "Attributes" in instance.resp.obj.keys() and \
+                                instance.resp.obj["Attributes"]["SerialNumber"]:
+                                instances["Comments"]["SerialNumber"] = \
+                                    instance.resp.obj["Attributes"]["SerialNumber"]
+                            elif instance.resp.obj["SerialNumber"]:
+                                instances["Comments"]["SerialNumber"] = \
+                                                instance.resp.obj["SerialNumber"]
+                        except Exception:
+                            pass
         return instances
 
     def get_selector(self):
@@ -2939,7 +2971,7 @@ class RmcApp(object):
 
         return validation_manager
 
-    def remove_readonly(self, body):
+    def remove_readonly(self, body, removeunique=True):
         """Removes all readonly items from a dictionary
 
         :param body: the body to the sent.
@@ -2954,7 +2986,7 @@ class RmcApp(object):
         type_str = self.current_client.monolith._typestring
         isredfish = self.current_client.monolith.is_redfish
 
-        (_, attributeregistry) = self.get_selection(selector= body[type_str], \
+        (_, attributeregistry) = self.get_selection(selector=body[type_str], \
                                                                 setenable=True)
         validation_manager = self.get_validation_manager(iloversion)
 
@@ -2972,18 +3004,18 @@ class RmcApp(object):
                 biosschemafound = validation_manager.find_schema(schematype)
 
                 if isredfish and not isinstance(biosschemafound, RepoRegistryEntry):
-                    regfound = self.get_handler(regfound[u'@odata.id'], \
+                    regfound = self.get_handler(regfound['@odata.id'], \
                                 verbose=False, service=True, silent=True).obj
                     regfound = RepoRegistryEntry(regfound)
         except Exception:
             regfound = validation_manager.find_schema(schematype)
 
         if isredfish and not isinstance(regfound, RepoRegistryEntry):
-            regfound = self.get_handler(regfound[u'@odata.id'], \
+            regfound = self.get_handler(regfound['@odata.id'], \
                                 verbose=False, service=True, silent=True).obj
             regfound = RepoRegistryEntry(regfound)
         if not regfound:
-            LOGGER.warn(u"Unable to locate registry/schema for '%s'", \
+            self.warn("Unable to locate registry/schema for '%s'", \
                                                                 body[type_str])
             return None, None, None
         elif float(iloversion) >= 4.210:
@@ -2992,7 +3024,7 @@ class RmcApp(object):
                 self.check_type_and_download(self.current_client.monolith, \
                                         locationdict, \
                                         skipcrawl=True, loadtype='ref')
-            except Exception, excp:
+            except Exception as excp:
                 raise excp
 
         if biosmode:
@@ -3004,13 +3036,13 @@ class RmcApp(object):
                                         monolith=self.current_client.monolith)
 
         if model and biosmode:
-            outdict = self.remove_readonly_helper_bios(body, model)
+            outdict = self.remove_readonly_helper_bios(body, model, removeunique)
         elif model:
             outdict = self.remove_readonly_helper(body, model)
 
         return outdict
 
-    def remove_readonly_helper_bios(self, body, model):
+    def remove_readonly_helper_bios(self, body, model, removeunique):
         """Helper function for remove readonly function for gen10 BIOS
 
         :param body: the body to the sent.
@@ -3021,9 +3053,9 @@ class RmcApp(object):
 
         """
         if 'Attributes' in body:
-            bodykeys = body['Attributes'].keys()
+            bodykeys = list(body['Attributes'].keys())
         else:
-            bodykeys = body.keys()
+            bodykeys = list(body.keys())
 
         templist = ["Name", "Modified", "Type", "Description", \
                     "AttributeRegistry", "links", "SettingsResult", "Status", \
@@ -3034,7 +3066,7 @@ class RmcApp(object):
                 try:
                     if item['ReadOnly']:
                         templist.append(item['AttributeName'])
-                    elif item['IsSystemUniqueProperty']:
+                    elif removeunique and item['IsSystemUniqueProperty']:
                         templist.append(item['AttributeName'])
                 except:
                     continue
@@ -3046,7 +3078,7 @@ class RmcApp(object):
                         body['Attributes'].pop(key)
                     else:
                         body.pop(key)
-                elif key in body.keys():
+                elif key in list(body.keys()):
                     body.pop(key)
 
         return body
@@ -3063,7 +3095,7 @@ class RmcApp(object):
         """
         templist = []
 
-        for key in model.keys():
+        for key in list(model.keys()):
             readonly = True
             try:
                 if isinstance(model[key], dict):
@@ -3075,8 +3107,8 @@ class RmcApp(object):
                     except:
                         pass
 
-                    if 'properties' in model[key].keys():
-                        if key in body.keys():
+                    if 'properties' in list(model[key].keys()):
+                        if key in list(body.keys()):
                             newdict = self.remove_readonly_helper(body[key], \
                                                     model[key]['properties'])
 
@@ -3085,13 +3117,13 @@ class RmcApp(object):
                             else:
                                 del body[key]
 
-                    elif 'items' in model[key].keys():
+                    elif 'items' in list(model[key].keys()):
                         try:
                             if model[key]['items'].readonly:
                                 templist.append(key)
                         except:
                             pass
-                        if key in body.keys():
+                        if key in list(body.keys()):
                             if isinstance(body[key], list):
                                 for item in body[key]:
                                     self.remove_readonly_helper(item, \
@@ -3103,7 +3135,7 @@ class RmcApp(object):
 
         if templist:
             for key in templist:
-                if key in body.keys():
+                if key in list(body.keys()):
                     body.pop(key)
 
         return body
@@ -3169,7 +3201,7 @@ class RmcApp(object):
 
                 if biosschemafound and isredfish and not \
                                 isinstance(biosschemafound, RepoRegistryEntry):
-                    biosschemafound = self.get_handler(biosschemafound[u'@odata.id'], \
+                    biosschemafound = self.get_handler(biosschemafound['@odata.id'], \
                                 verbose=False, service=True, silent=True).obj
                     biosschemafound = RepoRegistryEntry(biosschemafound)
 
@@ -3177,12 +3209,12 @@ class RmcApp(object):
             regfound = validation_manager.find_schema(schematype)
 
         if regfound and isredfish and not isinstance(regfound, RepoRegistryEntry):
-            regfound = self.get_handler(regfound[u'@odata.id'], \
+            regfound = self.get_handler(regfound['@odata.id'], \
                                 verbose=False, service=True, silent=True).obj
             regfound = RepoRegistryEntry(regfound)
 
         if not regfound:
-            LOGGER.warn(u"Unable to locate registry/schema for '%s'", \
+            self.warn("Unable to locate registry/schema for '%s'", \
                                                             currdict[type_str])
             return None, None, None
         elif float(iloversion) >= 4.210:
@@ -3195,7 +3227,7 @@ class RmcApp(object):
                     locationdict = self.geturidict(biosschemafound.Location[0])
                     self.check_type_and_download(self.current_client.monolith, \
                                  locationdict, skipcrawl=True, loadtype='ref')
-            except Exception, excp:
+            except Exception as excp:
                 raise excp
 
         if biosmode:
@@ -3238,9 +3270,9 @@ class RmcApp(object):
 
     def getgen(self, url=None):
         """Updates the defines object based on the iLO manager version"""
-        if self.typepath.adminpriv==False and url.startswith("blob"):
+        if self.typepath.adminpriv == False and url.startswith("blob"):
             raise UserNotAdminError("")
-        self.typepath.getgen(url=url, logger=LOGGER)
+        self.typepath.getgen(url=url, logger=self.logger)
 
     def updatedefinesflag(self, redfishflag=None):
         """Updates the redfish and rest flag depending on system and
@@ -3292,46 +3324,46 @@ class RmcApp(object):
         """
         try:
             if self.typepath.defs.flagforrest:
-                if u"Target" not in body and not patch:
-                    if u"/Oem/Hp" in path:
-                        body[u"Target"] = self.typepath.defs.oempath
+                if "Target" not in body and not patch:
+                    if "/Oem/Hp" in path:
+                        body["Target"] = self.typepath.defs.oempath
 
-                if path.startswith(u"/redfish/v1"):
-                    path = path.replace(u"/redfish", u"/rest", 1)
+                if path.startswith("/redfish/v1"):
+                    path = path.replace("/redfish", "/rest", 1)
 
-                if u"/Actions/" in path:
-                    ind = path.find(u"/Actions/")
+                if "/Actions/" in path:
+                    ind = path.find("/Actions/")
                     path = path[:ind]
-            elif path.startswith(u"/rest/") and self.typepath.defs.isgen9:
+            elif path.startswith("/rest/") and self.typepath.defs.isgen9:
                 results = self.get_handler(put_path=path, service=service, \
                               url=url, sessionid=sessionid, headers=headers, \
                               response=iloresponse, silent=silent)
                 if results and results.status == 200:
                     if results.dict:
-                        if u"Target" in body:
-                            actions = results.dict[u"Oem"][self.typepath.defs.\
-                                                            oemhp][u"Actions"]
-                        elif u"Actions" in body:
-                            actions = results.dict[u"Actions"]
+                        if "Target" in body:
+                            actions = results.dict["Oem"][self.typepath.defs.\
+                                                            oemhp]["Actions"]
+                        elif "Actions" in body:
+                            actions = results.dict["Actions"]
                         else:
                             return (path, body)
 
-                    allkeys = actions.keys()
+                    allkeys = list(actions.keys())
                     targetkey = [x for x in allkeys if x.endswith(body\
-                                                                  [u"Action"])]
+                                                                  ["Action"])]
 
-                    if targetkey[0].startswith(u"#"):
+                    if targetkey[0].startswith("#"):
                         targetkey[0] = targetkey[0][1:]
 
-                path = path.replace(u"/rest", u"/redfish", 1)
-                path = path+u"/Actions"
+                path = path.replace("/rest", "/redfish", 1)
+                path = path+"/Actions"
 
-                if u"Target" in body:
+                if "Target" in body:
                     path = path+self.typepath.defs.oempath
                     del body["Target"]
 
                 if targetkey:
-                    path = path + u"/" + targetkey[0] + u"/"
+                    path = path + "/" + targetkey[0] + "/"
 
             return (path, body)
         except Exception as excp:
@@ -3349,21 +3381,21 @@ class RmcApp(object):
         returnval = query
 
         if self.typepath.defs.isgen9:
-            if query.startswith((u"hpeeskm", u"#hpeeskm")) or \
-                                    query.startswith((u"hpeskm", u"#hpeskm")):
+            if query.startswith(("hpeeskm", "#hpeeskm")) or \
+                                    query.startswith(("hpeskm", "#hpeskm")):
                 returnval = self.typepath.defs.hpeskmtype
-            elif u'bios.' in query[:9].lower():
+            elif 'bios.' in query[:9].lower():
                 returnval = self.typepath.defs.biostype
-            elif query.startswith((u"hpe", u"#hpe")):
-                returnval = query[:4].replace(u"hpe", u"hp")+query[4:]
+            elif query.startswith(("hpe", "#hpe")):
+                returnval = query[:4].replace("hpe", "hp")+query[4:]
         else:
-            if query.startswith((u"hpeskm", u"#hpeskm")) or \
-                                    query.startswith((u"hpeeskm", u"#hpeeskm")):
+            if query.startswith(("hpeskm", "#hpeskm")) or \
+                                    query.startswith(("hpeeskm", "#hpeeskm")):
                 returnval = self.typepath.defs.hpeskmtype
-            elif u'bios.' in query[:9].lower():
+            elif 'bios.' in query[:9].lower():
                 returnval = self.typepath.defs.biostype
-            elif not query.startswith((u"hpe", u"#hpe")):
-                returnval = query[:3].replace(u"hp", u"hpe")+query[3:]
+            elif not query.startswith(("hpe", "#hpe")):
+                returnval = query[:3].replace("hp", "hpe")+query[3:]
 
         return returnval
 
@@ -3386,25 +3418,25 @@ class RmcApp(object):
         if isredfish:
             schematype = schematype[1:-1]
 
-            reglist = validation_manager._classes_registry[0][u'Members']
+            reglist = validation_manager._classes_registry[0]['Members']
             regs = [x[href_str] for x in reglist if\
                     'biosattributeregistry' in x[href_str].lower()]
             i = [reglist.index(x) for x in reglist if \
                             'biosattributeregistry' in x[href_str].lower()]
-            regs = zip(regs, i)
+            regs = list(zip(regs, i))
         else:
-            reglist = validation_manager._classes_registry[0][u'Items']
+            reglist = validation_manager._classes_registry[0]['Items']
 
-            for item in validation_manager._classes[0][u'Items']:
-                if item and item[u'Schema'].startswith(schematype):
-                    schematype = item[u'Schema']
+            for item in validation_manager._classes[0]['Items']:
+                if item and item['Schema'].startswith(schematype):
+                    schematype = item['Schema']
                     break
 
-            regs = [x[u'Schema'] for x in reglist if x[u'Schema']\
+            regs = [x['Schema'] for x in reglist if x['Schema']\
                     .lower().startswith('hpbiosattributeregistry')]
-            i = [reglist.index(x) for x in reglist if x[u'Schema']\
+            i = [reglist.index(x) for x in reglist if x['Schema']\
                  .lower().startswith('hpbiosattributeregistry')]
-            regs = zip(regs, i)
+            regs = list(zip(regs, i))
 
         for item in sorted(regs, reverse=True):
             if isredfish:
@@ -3412,7 +3444,7 @@ class RmcApp(object):
                             verbose=False, service=True, silent=True).dict
             else:
                 reg = reglist[item[1]]
-            locationdict = self.geturidict(reg[u'Location'][0])
+            locationdict = self.geturidict(reg['Location'][0])
             extref = self.get_handler(locationdict, verbose=False, \
                                                 service=True, silent=True)
 

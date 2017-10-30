@@ -51,17 +51,17 @@ class Typesandpathdefines(object):
                                username=None, password=None, \
                                default_prefix="/redfish/v1/", is_redfish=True)
             response = redfishclient.get(path="/redfish/v1/")
-        except SecurityStateError, excp:
+        except SecurityStateError as excp:
             raise excp
         except Exception as excp:
             try:
                 restclient = rest_client(base_url=self.url, username=None, \
-                                     password=None, default_prefix="/rest/v1")
+                                 password=None, default_prefix="/rest/v1")
                 response = restclient.get(path="/rest/v1")
             except Exception as excep:
                 logger = logger if not logger else LOGGER
                 if type(excep) != type(excp):
-                    logger.error(u"Gen get rest error:"+str(excep)+u"\n")
+                    logger.error("Gen get rest error:"+str(excep)+"\n")
                 raise excp
 
         self.ilogen = None
@@ -96,49 +96,50 @@ class Definevalstenplus(Definevals):
     # pylint: disable=too-many-instance-attributes
     # As a defines classt this will need all the attributes
     def __init__(self):
-        self.oemhp = u"Hpe"
+        self.oemhp = "Hpe"
 
-        self.oempath = u"/Oem/Hpe"
-        self.startpath = u"/redfish/v1/"
-        self.systempath = u"/redfish/v1/Systems/1/"
-        self.managerpath = u"/redfish/v1/Managers/1/"
-        self.biospath = u"/redfish/v1/systems/1/bios/"
-        self.addlicensepath = u"/redfish/v1/Managers/1/LicenseService/"
-        self.accountspath = u"/redfish/v1/AccountService/Accounts/"
-        self.federationpath = u"/redfish/v1/Managers/1/FederationGroups/"
+        self.oempath = "/Oem/Hpe"
+        self.startpath = "/redfish/v1/"
+        self.systempath = "/redfish/v1/Systems/1/"
+        self.managerpath = "/redfish/v1/Managers/1/"
+        self.biospath = "/redfish/v1/systems/1/bios/"
+        self.addlicensepath = "/redfish/v1/Managers/1/LicenseService/"
+        self.accountspath = "/redfish/v1/AccountService/Accounts/"
+        self.federationpath = "/redfish/v1/Managers/1/FederationGroups/"
 
-        self.biostype = u"Bios."
-        self.hpeskmtype = u"HpeESKM."
-        self.hpcommontype = u"HpeCommon"
-        self.hpilossotype = u"HpeiLOSSO."
-        self.hpsecureboot = u"SecureBoot."
-        self.logservicetype = u"#LogService."
-        self.iscsisource = u"iSCSISources"
-        self.iscsiattemptinstance = u"iSCSIAttemptInstance"
-        self.iscsiattemptname = u"iSCSIAttemptName"
-        self.hphttpscerttype = u"HpeHttpsCert."
-        self.snmpservice = u"HpeiLOSnmpService."
-        self.attributenametype = u"AttributeName"
-        self.hpilodatetimetype = u"HpeiLODateTime."
-        self.attributeregtype = u"#AttributeRegistry."
-        self.hpilofirmwareupdatetype = u"UpdateService."
-        self.resourcedirectorytype = u"HpeiLOResourceDirectory."
-        self.hpilofederationgrouptype = u"HpeiLOFederationGroup."
-        self.managernetworkservicetype = u"ManagerNetworkProtocol."
-        self.schemafilecollectiontype = u"#JsonSchemaFileCollection."
-        self.hpilolicensecollectiontype = u"HpeiLOLicenseCollection."
-        self.hpiloactivehealthsystemtype = u"#HpeiLOActiveHealthSystem."
-        self.hpiscsisoftwareinitiatortype = u"HpeiSCSISoftwareInitiator."
-        self.hpilofederationgrouptypecoll = u"HpeiLOFederationGroupCollection."        
-        self.bootoverridetargettype = u"BootSourceOverrideTarget@Redfish.AllowableValues"
-        self.messageregistrytype = u"#MessageRegistry."
+        self.biostype = "Bios."
+        self.hpeskmtype = "HpeESKM."
+        self.hpcommontype = "HpeCommon"
+        self.hpilossotype = "HpeiLOSSO."
+        self.hpsecureboot = "SecureBoot."
+        self.logservicetype = "#LogService."
+        self.iscsisource = "iSCSISources"
+        self.iscsiattemptinstance = "iSCSIAttemptInstance"
+        self.iscsiattemptname = "iSCSIAttemptName"
+        self.hphttpscerttype = "HpeHttpsCert."
+        self.snmpservice = "HpeiLOSnmpService."
+        self.attributenametype = "AttributeName"
+        self.hpilodatetimetype = "HpeiLODateTime."
+        self.attributeregtype = "#AttributeRegistry."
+        self.hpilofirmwareupdatetype = "UpdateService."
+        self.resourcedirectorytype = "HpeiLOResourceDirectory."
+        self.hpilofederationgrouptype = "HpeiLOFederationGroup."
+        self.managernetworkservicetype = "ManagerNetworkProtocol."
+        self.schemafilecollectiontype = "#JsonSchemaFileCollection."
+        self.regfilecollectiontype = "#MessageRegistryFileCollection."
+        self.hpilolicensecollectiontype = "HpeiLOLicenseCollection."
+        self.hpiloactivehealthsystemtype = "#HpeiLOActiveHealthSystem."
+        self.hpiscsisoftwareinitiatortype = "HpeiSCSISoftwareInitiator."
+        self.hpilofederationgrouptypecoll = "HpeiLOFederationGroupCollection."      
+        self.bootoverridetargettype = "BootSourceOverrideTarget@Redfish.AllowableValues"
+        self.messageregistrytype = "#MessageRegistry."
 
-        self.typestring = u"@odata.type"
-        self.hrefstring = u"@odata.id"
-        self.collectionstring = u"Members"
-        self.biossettingsstring = u"@Redfish.Settings"
-        self.attname = u"AttributeName"
-        self.iscsistring = u"iSCSISources"
+        self.typestring = "@odata.type"
+        self.hrefstring = "@odata.id"
+        self.collectionstring = "Members"
+        self.biossettingsstring = "@Redfish.Settings"
+        self.attname = "AttributeName"
+        self.iscsistring = "iSCSISources"
 
         self.isgen9 = False
         self.isgen10 = True
@@ -155,49 +156,50 @@ class DefinevalsNine(Definevals):
     # pylint: disable=too-many-instance-attributes
     # As a defines classt this will need all the attributes
     def __init__(self):
-        self.oemhp = u"Hp"
+        self.oemhp = "Hp"
 
-        self.oempath = u"/Oem/Hp"
-        self.startpath = u"/rest/v1"
-        self.systempath = u"/rest/v1/Systems/1"
-        self.managerpath = u"/rest/v1/Managers/1"
-        self.biospath = u"/rest/v1/systems/1/bios"
-        self.addlicensepath = u"/rest/v1/Managers/1/LicenseService"
-        self.accountspath = u"/rest/v1/AccountService/Accounts"
-        self.federationpath = u"/rest/v1/Managers/1/FederationGroups"
+        self.oempath = "/Oem/Hp"
+        self.startpath = "/rest/v1"
+        self.systempath = "/rest/v1/Systems/1"
+        self.managerpath = "/rest/v1/Managers/1"
+        self.biospath = "/rest/v1/systems/1/bios"
+        self.addlicensepath = "/rest/v1/Managers/1/LicenseService"
+        self.accountspath = "/rest/v1/AccountService/Accounts"
+        self.federationpath = "/rest/v1/Managers/1/FederationGroups"
 
-        self.biostype = u"HpBios."
-        self.hpeskmtype = u"HpESKM."
-        self.hpcommontype = u"HpCommon"
-        self.hpilossotype = u"HpiLOSSO."
-        self.snmpservice = u"SnmpService."
-        self.attributenametype = u"Name"
-        self.logservicetype = u"LogService."
-        self.iscsisource = u"iSCSIBootSources"
-        self.iscsiattemptinstance = u"iSCSIBootAttemptInstance"
-        self.iscsiattemptname = u"iSCSIBootAttemptName"
-        self.hpsecureboot = u"HpSecureBoot."
-        self.hphttpscerttype = u"HpHttpsCert."
-        self.hpilodatetimetype = u"HpiLODateTime."
-        self.hpilofirmwareupdatetype = u"HpiLOFirmwareUpdate."
-        self.resourcedirectorytype = u"HpiLOResourceDirectory."
-        self.hpilofederationgrouptype = u"HpiLOFederationGroup."
-        self.attributeregtype = u"HpBiosAttributeRegistrySchema."
-        self.schemafilecollectiontype = u"#SchemaFileCollection."
-        self.managernetworkservicetype = u"ManagerNetworkService."
-        self.hpiloactivehealthsystemtype = u"HpiLOActiveHealthSystem."
-        self.messageregistrytype = u"MessageRegistry."
+        self.biostype = "HpBios."
+        self.hpeskmtype = "HpESKM."
+        self.hpcommontype = "HpCommon"
+        self.hpilossotype = "HpiLOSSO."
+        self.snmpservice = "SnmpService."
+        self.attributenametype = "Name"
+        self.logservicetype = "LogService."
+        self.iscsisource = "iSCSIBootSources"
+        self.iscsiattemptinstance = "iSCSIBootAttemptInstance"
+        self.iscsiattemptname = "iSCSIBootAttemptName"
+        self.hpsecureboot = "HpSecureBoot."
+        self.hphttpscerttype = "HpHttpsCert."
+        self.hpilodatetimetype = "HpiLODateTime."
+        self.hpilofirmwareupdatetype = "HpiLOFirmwareUpdate."
+        self.resourcedirectorytype = "HpiLOResourceDirectory."
+        self.hpilofederationgrouptype = "HpiLOFederationGroup."
+        self.attributeregtype = "HpBiosAttributeRegistrySchema."
+        self.schemafilecollectiontype = "#SchemaFileCollection."
+        self.regfilecollectiontype = "#SchemaFileCollection."
+        self.managernetworkservicetype = "ManagerNetworkService."
+        self.hpiloactivehealthsystemtype = "HpiLOActiveHealthSystem."
+        self.messageregistrytype = "MessageRegistry."
         self.hpilolicensecollectiontype = None
         self.hpilofederationgrouptypecoll = None
-        self.bootoverridetargettype = u"BootSourceOverrideSupported"
-        self.hpiscsisoftwareinitiatortype = u"HpiSCSISoftwareInitiator"
+        self.bootoverridetargettype = "BootSourceOverrideSupported"
+        self.hpiscsisoftwareinitiatortype = "HpiSCSISoftwareInitiator"
 
-        self.typestring = u"Type"
-        self.hrefstring = u"href"
-        self.collectionstring = u"Items"
-        self.biossettingsstring = u"SettingsResult"
-        self.attname = u"Name"
-        self.iscsistring = u"iSCSIBootSources"
+        self.typestring = "Type"
+        self.hrefstring = "href"
+        self.collectionstring = "Items"
+        self.biossettingsstring = "SettingsResult"
+        self.attname = "Name"
+        self.iscsistring = "iSCSIBootSources"
 
         self.isgen9 = True
         self.isgen10 = False
@@ -206,20 +208,20 @@ class DefinevalsNine(Definevals):
 
     def redfishchange(self):
         """Function to update redfish variables"""
-        self.startpath = u"/redfish/v1/"
-        self.systempath = u"/redfish/v1/Systems/1/"
-        self.managerpath = u"/redfish/v1/Managers/1/"
-        self.biospath = u"/redfish/v1/systems/1/bios/"
-        self.addlicensepath = u"/redfish/v1/Managers/1/LicenseService/"
+        self.startpath = "/redfish/v1/"
+        self.systempath = "/redfish/v1/Systems/1/"
+        self.managerpath = "/redfish/v1/Managers/1/"
+        self.biospath = "/redfish/v1/systems/1/bios/"
+        self.addlicensepath = "/redfish/v1/Managers/1/LicenseService/"
 
-        self.typestring = u"@odata.type"
-        self.hrefstring = u"@odata.id"
-        self.collectionstring = u"Members"
+        self.typestring = "@odata.type"
+        self.hrefstring = "@odata.id"
+        self.collectionstring = "Members"
 
-        self.logservicetype = u"#LogService."
-        self.hpiloactivehealthsystemtype = u"#HpiLOActiveHealthSystem."
-        self.hpilolicensecollectiontype = u"HpiLOLicenseCollection."
-        self.hpilofederationgrouptypecoll = u"HpiLOFederationGroupCollection."
-        self.managernetworkservicetype = u"ManagerNetworkProtocol."
+        self.logservicetype = "#LogService."
+        self.hpiloactivehealthsystemtype = "#HpiLOActiveHealthSystem."
+        self.hpilolicensecollectiontype = "HpiLOLicenseCollection."
+        self.hpilofederationgrouptypecoll = "HpiLOFederationGroupCollection."
+        self.managernetworkservicetype = "ManagerNetworkProtocol."
 
         self.flagforrest = False

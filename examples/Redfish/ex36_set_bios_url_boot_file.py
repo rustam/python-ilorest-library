@@ -25,9 +25,9 @@ def ex36_set_bios_url_boot_file(redfishobj, path='', bios_password=None):
                  " with the 2.50 firmware or earlier.\n")
 
     for instance in instances:
-        print instance
+        print(instance)
         body = {"UrlBootFile": path}
-        response = redfishobj.rest_patch(instance["href"], body, bios_password)
+        response = redfishobj.redfish_patch(instance["@odata.id"], body, bios_password)
         redfishobj.error_handler(response)
 
 
@@ -49,12 +49,13 @@ if __name__ == "__main__":
     # Create a REDFISH object
     try:
         REDFISH_OBJ = RedfishObject(iLO_https_url, iLO_account, iLO_password)
-    except ServerDownOrUnreachableError, excp:
+    except ServerDownOrUnreachableError as excp:
         sys.stderr.write("ERROR: server not reachable or doesn't support " \
                                                                 "RedFish.\n")
         sys.exit()
-    except Exception, excp:
+    except Exception as excp:
         raise excp
 
     ex36_set_bios_url_boot_file(REDFISH_OBJ, "http://hp.com/test.efi")
+    REDFISH_OBJ.redfish_client.logout()
  

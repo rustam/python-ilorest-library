@@ -20,7 +20,6 @@
 #---------Imports---------
 
 import os
-import six
 import sys
 import ssl
 import uuid
@@ -29,19 +28,26 @@ import gzip
 import json
 import base64
 import codecs
-import urllib
 import ctypes
 import hashlib
 import logging
 import platform
+
+from collections import (OrderedDict)
+
+#Added for py3 compatibility
+import six
+
+from six import BytesIO
+from six import StringIO
+from six import string_types
+from six.moves import http_client
+from six.moves.urllib.parse import urlparse, urlencode
+
 try:
     import io
 except ImportError:
     pass
-
-from collections import (OrderedDict)
-
-import urlparse2 #pylint warning disable
 
 from redfish.hpilo.rishpilo import HpIloChifPacketExchangeError
 from redfish.hpilo.risblobstore2 import BlobStore2, Blob2OverrideError, ChifDllMissingError
@@ -97,7 +103,7 @@ class RisObject(dict):
         """
         super(RisObject, self).__init__()
         self.update(**dict((k, self.parse(value)) \
-                                                for k, value in d.iteritems()))
+                                                for k, value in d.items()))
 
     @classmethod
     def parse(cls, value):
@@ -165,7 +171,7 @@ class RestRequest(object):
         except BaseException:
             strvars['body'] = ''
 
-        return u"%(method)s %(path)s\n\n%(body)s" % strvars
+        return "%(method)s %(path)s\n\n%(body)s" % strvars
 
 class RestResponse(object):
     """Returned by Rest requests"""
@@ -189,6 +195,7 @@ class RestResponse(object):
             self._read = self._http_response.read()
         else:
             self._read = None
+        self.ori = self._read
 
     @property
     def read(self):
@@ -234,7 +241,11 @@ class RestResponse(object):
     @property
     def text(self):
         """Property for accessing the data as an unparsed string"""
-        return self.read
+        if isinstance(self.read, six.text_type):
+            value = self.read
+        else:
+            value = self.read.decode("utf-8", "ignore")
+        return value
 
     @text.setter
     def text(self, value):
@@ -249,7 +260,7 @@ class RestResponse(object):
     @property
     def dict(self):
         """Property for accessing the data as an dict"""
-        return json.loads(self.text.decode('utf-8', 'ignore'))
+        return json.loads(self.text)
 
     @property
     def obj(self):
@@ -291,11 +302,11 @@ class RestResponse(object):
         """Class string formatter"""
         headerstr = ''
         for header in self.getheaders():
-            headerstr += u'%s %s\n' % (header[0], header[1])
+            headerstr += '%s %s\n' % (header[0], header[1])
 
-        return u"%(status)s\n%(headerstr)s\n\n%(body)s" % \
+        return "%(status)s\n%(headerstr)s\n\n%(body)s" % \
                             {'status': self.status, 'headerstr': headerstr, \
-                             'body': self.text.decode('utf-8', 'ignore')}
+                             'body': self.text}
 
 class JSONEncoder(json.JSONEncoder):
     """JSON Encoder class"""
@@ -337,7 +348,7 @@ class JSONDecoder(json.JSONDecoder):
         parsed_dict = super(JSONDecoder, self).decode(json_string)
         return parsed_dict
 
-class _FakeSocket(six.StringIO):
+class _FakeSocket(BytesIO):
     """
        slick way to parse a http response.
        http://pythonwise.blogspot.com/2010/02/parse-http-response.html
@@ -357,9 +368,12 @@ class RisRestResponse(RestResponse):
         :type resp_text: str
 
         """
-        self._respfh = six.StringIO(resp_txt)
-        self._socket = _FakeSocket(self._respfh.read())
-        response = six.moves.http_client.HTTPResponse(self._socket)
+        if not isinstance(resp_txt, string_types):
+            resp_txt = "".join(map(chr, resp_txt))
+        self._respfh = StringIO(resp_txt)
+        self._socket = _FakeSocket(bytearray(map(ord, self._respfh.read())))
+
+        response = http_client.HTTPResponse(self._socket)
         response.begin()
         super(RisRestResponse, self).__init__(rest_request, response)
 
@@ -388,7 +402,7 @@ class StaticRestResponse(RestResponse):
         if 'Content' in kwargs:
             content = kwargs['Content']
 
-            if isinstance(content, basestring):
+            if isinstance(content, string_types):
                 self._read = content
             else:
                 self._read = json.dumps(content)
@@ -400,7 +414,7 @@ class StaticRestResponse(RestResponse):
         returnlist = list()
 
         if isinstance(self._headers, dict):
-            for key, value in self._headers.iteritems():
+            for key, value in self._headers.items():
                 returnlist.append((key, value))
         else:
             for item in self._headers:
@@ -423,12 +437,12 @@ class MultipartFormdataEncoder(object):
         self.content_type = 'multipart/form-data; boundary={}'.format(self.boundary)
 
     @classmethod
-    def u(cls, s):
-        if sys.hexversion < 0x03000000 and isinstance(s, str):
-            s = s.decode('utf-8')
-        if sys.hexversion >= 0x03000000 and isinstance(s, bytes):
-            s = s.decode('utf-8')
-        return s
+    def ukey(cls, skey):
+        if sys.hexversion < 0x03000000 and isinstance(skey, str):
+            skey = skey.decode('utf-8')
+        if sys.hexversion >= 0x03000000 and isinstance(skey, bytes):
+            skey = skey.decode('utf-8')
+        return skey
 
     def iter(self, fields, files):
         """
@@ -438,29 +452,30 @@ class MultipartFormdataEncoder(object):
         """
         encoder = codecs.getencoder('utf-8')
         for (key, value) in fields:
-            key = self.u(key)
+            key = self.ukey(key)
             yield encoder('--{}\r\n'.format(self.boundary))
-            yield encoder(self.u('Content-Disposition: form-data; name="{}"\r\n').format(key))
-            #yield encoder(self.u('Content-Type: application/json'))
+            yield encoder(self.ukey('Content-Disposition: form-data; name="{}"\r\n').format(key))
+            #yield encoder(self.ukey('Content-Type: application/json'))
             yield encoder('\r\n')
             if isinstance(value, int) or isinstance(value, float):
                 value = str(value)
-            yield encoder(self.u(value))
+            yield encoder(self.ukey(value))
             yield encoder('\r\n')
-        for (key, filename, fd) in files:
-            key = self.u(key)
-            filename = self.u(filename)
+        for (key, filename, fdest) in files:
+            key = self.ukey(key)
+            filename = self.ukey(filename)
             yield encoder('--{}\r\n'.format(self.boundary))
-            yield encoder(self.u('Content-Disposition: form-data; name="{}"; filename="{}"\r\n').format(key, filename))
+            yield encoder(self.ukey('Content-Disposition: form-data; name="{}"; filename="{}"\r\n').format(key, filename))
             #yield encoder('Content-Type: {}\r\n'.format(mimetypes.guess_type(filename)[0] or 'application/octet-stream'))
             yield encoder('\r\n')
-            with fd:
-                buff = fd.read()
+            with fdest:
+                buff = fdest.read()
                 yield (buff, len(buff))
             yield encoder('\r\n')
         yield encoder('--{}--\r\n'.format(self.boundary))
 
     def encode(self, fields, files):
+        """Encode for multipart form data"""
         body = io.BytesIO()
         for chunk, _ in self.iter(fields, files):
             body.write(chunk)
@@ -494,7 +509,7 @@ class RestClientBase(object):
         self.__username = username
         self.__password = password
         self.__biospassword = biospassword
-        self.__url = urlparse2.urlparse(base_url)
+        self.__url = urlparse(base_url)
         self.__session_key = sessionkey
         self.__authorization_key = None
         self.__session_location = None
@@ -519,12 +534,12 @@ class RestClientBase(object):
         url = url if url else self.__url
         if url.scheme.upper() == "HTTPS":
             if sys.version_info < (2, 7, 9):
-                self._conn = six.moves.http_client.HTTPSConnection(url.netloc)
+                self._conn = http_client.HTTPSConnection(url.netloc, timeout=30)
             else:
-                self._conn = six.moves.http_client.HTTPSConnection(
-                    url.netloc, context=ssl._create_unverified_context())
+                self._conn = http_client.HTTPSConnection(url.netloc, \
+                    context=ssl._create_unverified_context(), timeout=30)
         elif url.scheme.upper() == "HTTP":
-            self._conn = six.moves.http_client.HTTPConnection(url.netloc)
+            self._conn = http_client.HTTPConnection(url.netloc)
         else:
             pass
 
@@ -643,8 +658,10 @@ class RestClientBase(object):
 
         try:
             root_data = json.loads(content, "ISO-8859-1")
+        except TypeError:
+            root_data = json.loads(content)
         except ValueError as excp:
-            LOGGER.error(u"%s for JSON content %s", excp, content)
+            LOGGER.error("%s for JSON content %s", excp, content)
             raise
 
         self.root = RisObject.parse(root_data)
@@ -790,6 +807,9 @@ class RestClientBase(object):
             headers['X-HPRESTFULAPI-AuthToken'] = \
                                                 hash_object.hexdigest().upper()
         elif optionalpassword:
+        #TODO: check if optional password is unicde
+            optionalpassword = optionalpassword.encode('utf-8') if type(\
+                optionalpassword).__name__ in 'basestr' else optionalpassword
             hash_object = hashlib.sha256(optionalpassword)
             headers['X-HPRESTFULAPI-AuthToken'] = \
                                                 hash_object.hexdigest().upper()
@@ -839,18 +859,18 @@ class RestClientBase(object):
                         files.append(item)
                 headers['Content-Type'], body = MultipartFormdataEncoder().encode(fields, files)
             elif isinstance(body, dict) or isinstance(body, list):
-                headers['Content-Type'] = u'application/json'
+                headers['Content-Type'] = 'application/json'
                 body = json.dumps(body)
             else:
-                headers['Content-Type'] = u'application/x-www-form-urlencoded'
-                body = urllib.urlencode(body)
+                headers['Content-Type'] = 'application/x-www-form-urlencoded'
+                body = urlencode(body)
 
             if method == 'PUT':
                 resp = self._rest_request(path=path)
 
                 try:
                     if resp.getheader('content-encoding') == 'gzip':
-                        buf = six.StringIO()
+                        buf = StringIO()
                         gfile = gzip.GzipFile(mode='wb', fileobj=buf)
 
                         try:
@@ -871,16 +891,16 @@ class RestClientBase(object):
 
         if args:
             if method == 'GET':
-                reqpath += '?' + urllib.urlencode(args)
+                reqpath += '?' + urlencode(args)
             elif method == 'PUT' or method == 'POST' or method == 'PATCH':
-                headers['Content-Type'] = u'application/x-www-form-urlencoded'
-                body = urllib.urlencode(args)
+                headers['Content-Type'] = 'application/x-www-form-urlencoded'
+                body = urlencode(args)
 
         restreq = RestRequest(reqpath, method=method, body=body)
 
         attempts = 0
         while attempts < self.MAX_RETRY:
-            if logging.getLogger().isEnabledFor(logging.DEBUG):
+            if LOGGER.isEnabledFor(logging.DEBUG):
                 try:
                     logbody = None
                     if restreq.body:
@@ -888,8 +908,9 @@ class RestClientBase(object):
                             logbody = restreq.body
                         else:
                             raise
-                    LOGGER.debug('HTTP REQUEST: %s\n\tPATH: %s\n\tBODY: %s'% \
-                                    (restreq.method, restreq.path, logbody))
+                    LOGGER.debug('HTTP REQUEST: %s\n\tPATH: %s\n\t'\
+                                'HEADERS: %s\n\tBODY: %s'% \
+                                (restreq.method, restreq.path, headers, logbody))
                 except:
                     LOGGER.debug('HTTP REQUEST: %s\n\tPATH: %s\n\tBODY: %s'% \
                                 (restreq.method, restreq.path, 'binary body'))
@@ -913,12 +934,12 @@ class RestClientBase(object):
 
                     if resp.getheader('Connection') == 'close':
                         self.__destroy_connection()
-                    if resp.status not in range(300, 399) or \
+                    if resp.status not in list(range(300, 399)) or \
                                                             resp.status == 304:
                         break
 
                     newloc = resp.getheader('location')
-                    newurl = urlparse2.urlparse(newloc)
+                    newurl = urlparse(newloc)
 
                     reqpath = newurl.path
                     self.__init_connection(newurl)
@@ -927,9 +948,12 @@ class RestClientBase(object):
 
                 try:
                     if restresp.getheader('content-encoding') == "gzip":
-                        compressedfile = six.StringIO(restresp.text)
-                        decompressedfile = gzip.GzipFile(fileobj=compressedfile)
-                        restresp.text = decompressedfile.read()
+                        if hasattr(gzip, "decompress"):
+                            restresp.read = gzip.decompress(restresp.ori)
+                        else:
+                            compressedfile = BytesIO(restresp.ori)
+                            decompressedfile = gzip.GzipFile(fileobj=compressedfile)
+                            restresp.text = decompressedfile.read()
                 except Exception as excp:
                     LOGGER.error('Error occur while decompressing body: %s', \
                                                                         excp)
@@ -948,7 +972,7 @@ class RestClientBase(object):
 
         self.__destroy_connection()
         if attempts < self.MAX_RETRY:
-            if logging.getLogger().isEnabledFor(logging.DEBUG):
+            if LOGGER.isEnabledFor(logging.DEBUG):
                 headerstr = ''
 
                 for header in restresp._http_response.msg.headers:
@@ -987,7 +1011,7 @@ class RestClientBase(object):
         if auth == AuthMethod.BASIC:
             auth_key = base64.b64encode(('%s:%s' % (self.__username, \
                             self.__password)).encode('utf-8')).decode('utf-8')
-            self.__authorization_key = u'Basic %s' % auth_key
+            self.__authorization_key = 'Basic %s' % auth_key
 
             headers = dict()
             headers['Authorization'] = self.__authorization_key
@@ -1011,7 +1035,7 @@ class RestClientBase(object):
             resp = self._rest_request(self.login_url, method="POST", \
                                                     body=data, headers=headers)
 
-            LOGGER.info(json.loads(u'%s' % resp.text))
+            LOGGER.info(json.loads('%s' % resp.text))
             LOGGER.info('Login returned code %s: %s', resp.status, resp.text)
 
             self.__session_key = resp.session_key
@@ -1154,6 +1178,20 @@ class Blobstore2RestClient(RestClientBase):
 
         """
         self.is_redfish = is_redfish
+
+        try:
+            security_state = int(BlobStore2().get_security_state())
+            if security_state > 3:
+                raise SecurityStateError(security_state)
+        except HpIloChifPacketExchangeError as excp:
+            LOGGER.info("Exception: {0}".format(str(excp)))
+            raise ChifDriverMissingOrNotFound()
+        except Exception as excp:
+            if excp.message == 'chif':
+                raise ChifDriverMissingOrNotFound()
+            else:
+                raise excp
+
         super(Blobstore2RestClient, self).__init__(base_url, \
                         username=username, password=password, \
                         default_prefix=default_prefix, sessionkey=sessionkey)
@@ -1192,18 +1230,18 @@ class Blobstore2RestClient(RestClientBase):
         oribody = body
         if body is not None:
             if isinstance(body, dict) or isinstance(body, list):
-                headers['Content-Type'] = u'application/json'
+                headers['Content-Type'] = 'application/json'
                 body = json.dumps(body)
             else:
-                headers['Content-Type'] = u'application/x-www-form-urlencoded'
-                body = urllib.urlencode(body)
+                headers['Content-Type'] = 'application/x-www-form-urlencoded'
+                body = urlencode(body)
 
             if method == 'PUT':
                 resp = self._rest_request(path=path)
 
                 try:
                     if resp.getheader('content-encoding') == 'gzip':
-                        buf = six.StringIO()
+                        buf = StringIO()
                         gfile = gzip.GzipFile(mode='wb', fileobj=buf)
 
                         try:
@@ -1224,17 +1262,17 @@ class Blobstore2RestClient(RestClientBase):
 
         if args:
             if method == 'GET':
-                reqpath += '?' + urllib.urlencode(args)
+                reqpath += '?' + urlencode(args)
             elif method == 'PUT' or method == 'POST' or method == 'PATCH':
-                headers['Content-Type'] = u'application/x-www-form-urlencoded'
-                body = urllib.urlencode(args)
+                headers['Content-Type'] = 'application/x-www-form-urlencoded'
+                body = urlencode(args)
 
         str1 = '%s %s %s\r\n' % (method, reqpath, \
                                             Blobstore2RestClient._http_vsn_str)
 
         str1 += 'Host: \r\n'
         str1 += 'Accept-Encoding: identity\r\n'
-        for header, value in headers.iteritems():
+        for header, value in headers.items():
             str1 += '%s: %s\r\n' % (header, value)
 
         str1 += '\r\n'
@@ -1249,7 +1287,7 @@ class Blobstore2RestClient(RestClientBase):
 
         if not isinstance(str1, bytearray):
             str1 = str1.encode("ASCII")
-        if logging.getLogger().isEnabledFor(logging.DEBUG):
+        if LOGGER.isEnabledFor(logging.DEBUG):
             try:
                 LOGGER.debug('Blobstore REQUEST: %s\n' % str1)
 #                 LOGGER.debug('Blobstore REQUEST: %s\n\tPATH: %s\n\tBODY: %s'% \
@@ -1290,19 +1328,22 @@ class Blobstore2RestClient(RestClientBase):
         if rest_response.status in range(300, 399) and \
                                                     rest_response.status != 304:
             newloc = rest_response.getheader("location")
-            newurl = urlparse2.urlparse(newloc)
+            newurl = urlparse(newloc)
 
             rest_response = self._rest_request(newurl.path, method, args, \
                                oribody, headers, optionalpassword, providerheader)
 
         try:
             if rest_response.getheader('content-encoding') == 'gzip':
-                compressedfile = six.StringIO(rest_response.text)
-                decompressedfile = gzip.GzipFile(fileobj=compressedfile)
-                rest_response.text = decompressedfile.read()
-        except StandardError:
+                if hasattr(gzip, "decompress"):
+                    rest_response.read = gzip.decompress(rest_response.ori)
+                else:
+                    compressedfile = StringIO(rest_response.ori)
+                    decompressedfile = gzip.GzipFile(fileobj=compressedfile)
+                    rest_response.text = decompressedfile.read()
+        except Exception:
             pass
-        if logging.getLogger().isEnabledFor(logging.DEBUG):
+        if LOGGER.isEnabledFor(logging.DEBUG):
             headerstr = ''
             for header in rest_response._http_response.msg.headers:
                 headerstr += '\t' + header.rstrip() + '\n'
@@ -1421,8 +1462,8 @@ def get_client_instance(base_url=None, username=None, password=None, \
     """
     if not base_url or base_url.startswith('blobstore://'):
         if platform.system() == 'Windows':
-            if not ctypes.windll.kernel32.LoadLibraryA('ilorest_chif'):
-                if not ctypes.windll.kernel32.LoadLibraryA('hprest_chif'):
+            if not ctypes.cdll.LoadLibrary('ilorest_chif'):
+                if not ctypes.cdll.LoadLibrary('hprest_chif'):
                     raise ChifDllMissingError()
         else:
             if not os.path.isdir('/dev/hpilo'):

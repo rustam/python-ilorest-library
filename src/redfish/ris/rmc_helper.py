@@ -490,7 +490,7 @@ class RmcConfig(AutoConfigParser):
         url = self._get('url')
         url = url[:-1] if url.endswith('/') else url
 
-        return url 
+        return url
 
     def set_url(self, value):
         """Set the config file URL
@@ -655,7 +655,7 @@ class RmcFileCacheManager(RmcCacheManager):
 
         """
         cachedir = self._rmc.config.get_cachedir()
-        indexfn = u'%s/index' % cachedir
+        indexfn = '%s/index' % cachedir
         sessionlocs = []
 
         if os.path.isfile(indexfn):
@@ -689,15 +689,15 @@ class RmcFileCacheManager(RmcCacheManager):
                                                 item['login']['session_key']))
 
                         os.remove(os.path.join(cachedir, index['href']))
-            except BaseException, excp:
-                self._rmc.warn(u'Unable to read cache data %s' % excp)
+            except BaseException as excp:
+                self._rmc.warn('Unable to read cache data %s' % excp)
 
         return sessionlocs
 
     def uncache_rmc(self):
         """Simple monolith uncache function"""
         cachedir = self._rmc.config.get_cachedir()
-        indexfn = u'%s/index' % cachedir
+        indexfn = '%s/index' % cachedir
 
         if os.path.isfile(indexfn):
             try:
@@ -708,8 +708,8 @@ class RmcFileCacheManager(RmcCacheManager):
                 for index in index_cache:
                     clientfn = index['href']
                     self._uncache_client(clientfn)
-            except BaseException, excp:
-                self._rmc.warn(u'Unable to read cache data %s' % excp)
+            except BaseException as excp:
+                self._rmc.warn('Unable to read cache data %s' % excp)
 
     def _uncache_client(self, cachefn):
         """Complex monolith uncache function
@@ -719,7 +719,7 @@ class RmcFileCacheManager(RmcCacheManager):
 
         """
         cachedir = self._rmc.config.get_cachedir()
-        clientsfn = u'%s/%s' % (cachedir, cachefn)
+        clientsfn = '%s/%s' % (cachedir, cachefn)
 
         if os.path.isfile(clientsfn):
             try:
@@ -728,11 +728,11 @@ class RmcFileCacheManager(RmcCacheManager):
                 clientsfh.close()
 
                 for client in clients_cache:
-                    if u'login' not in client:
+                    if 'login' not in client:
                         continue
 
                     login_data = client['login']
-                    if u'url' not in login_data:
+                    if 'url' not in login_data:
                         continue
 
                     self._rmc.getgen(url=login_data.get('url', None))
@@ -752,19 +752,19 @@ class RmcFileCacheManager(RmcCacheManager):
                     rmc_client._rest_client.set_session_location(\
                                             login_data.get('session_location'))
 
-                    if u'selector' in client:
+                    if 'selector' in client:
                         rmc_client.selector = client['selector']
 
-                    if u'filter_attr' in client:
+                    if 'filter_attr' in client:
                         rmc_client.filter_attr = client['filter_attr']
 
-                    if u'filter_value' in client:
+                    if 'filter_value' in client:
                         rmc_client.filter_value = client['filter_value']
 
                     getdata = client['get']
                     rmc_client._get_cache = dict()
 
-                    for key in getdata.keys():
+                    for key in list(getdata.keys()):
                         restreq = redfish.rest.v1.RestRequest(\
                                                         method='GET', path=key)
 
@@ -776,8 +776,8 @@ class RmcFileCacheManager(RmcCacheManager):
                     rmc_client._monolith = RisMonolith(rmc_client)
                     rmc_client._monolith.load_from_dict(client['monolith'])
                     self._rmc._rmc_clients.append(rmc_client)
-            except BaseException, excp:
-                self._rmc.warn(u'Unable to read cache data %s' % excp)
+            except BaseException as excp:
+                self._rmc.warn('Unable to read cache data %s' % excp)
 
     def cache_rmc(self):
         """Caching function for monolith"""
@@ -788,7 +788,7 @@ class RmcFileCacheManager(RmcCacheManager):
         if not os.path.isdir(cachedir):
             try:
                 os.makedirs(cachedir)
-            except OSError, ex:
+            except OSError as ex:
                 if ex.errno == errno.EEXIST:
                     pass
                 else:
@@ -799,14 +799,14 @@ class RmcFileCacheManager(RmcCacheManager):
 
         for client in self._rmc._rmc_clients:
             md5 = hashlib.md5()
-            md5.update(client.get_base_url())
+            md5.update(client.get_base_url().encode('utf-8'))
             md5str = md5.hexdigest()
 
             index_map[client.get_base_url()] = md5str
-            index_data = dict(url=client.get_base_url(), href=u'%s' % md5str,)
+            index_data = dict(url=client.get_base_url(), href='%s' % md5str,)
             index_cache.append(index_data)
 
-        indexfh = open(u'%s/index' % cachedir, 'w')
+        indexfh = open('%s/index' % cachedir, 'w')
         json.dump(index_cache, indexfh, indent=2, cls=JSONEncoder)
         indexfh.close()
 
@@ -829,7 +829,7 @@ class RmcFileCacheManager(RmcCacheManager):
                          filter_value=client._filter_value, \
                          monolith=client.monolith, get=client._get_cache))
 
-                clientsfh = open(u'%s/%s' % (cachedir, \
+                clientsfh = open('%s/%s' % (cachedir, \
                                          index_map[client.get_base_url()]), 'w')
 
                 json.dump(clients_cache, clientsfh, indent=2, cls=JSONEncoder)

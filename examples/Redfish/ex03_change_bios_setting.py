@@ -26,7 +26,11 @@ def ex3_change_bios_setting(redfishobj, bios_property, property_value, \
                  " with the 2.50 firmware or earlier. \n")
 
     for instance in instances:
-        body = {"Attributes":{bios_property: property_value}}
+        if redfishobj.typepath.defs.isgen9:
+			body = {bios_property: property_value}
+        else:
+			body = {"Attributes": {bios_property: property_value}}
+
         response = redfishobj.redfish_patch(instance["@odata.id"], body, \
                                             optionalpassword=bios_password)
         redfishobj.error_handler(response)
@@ -49,11 +53,13 @@ if __name__ == "__main__":
     # Create a REDFISH object
     try:
         REDFISH_OBJ = RedfishObject(iLO_https_url, iLO_account, iLO_password)
-    except ServerDownOrUnreachableError, excp:
+    except ServerDownOrUnreachableError as excp:
         sys.stderr.write("ERROR: server not reachable or doesn't support " \
                                                                 "RedFish.\n")
         sys.exit()
-    except Exception, excp:
+    except Exception as excp:
         raise excp
 
     ex3_change_bios_setting(REDFISH_OBJ, "AdminName", "New Name")
+    REDFISH_OBJ.redfish_client.logout()
+  

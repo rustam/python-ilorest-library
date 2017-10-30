@@ -27,7 +27,8 @@ import locale
 import zipfile
 import logging
 import textwrap
-import validictory
+
+import six
 
 from redfish.rest.v1 import (RisObject)
 from .sharedtypes import JSONEncoder
@@ -98,19 +99,19 @@ class ValidationManager(object):
                                                         "hp-rest-classes-ilo4"))
 
                         local_path = os.path.join(schemamainfolder, \
-                                                        u'hp-rest-classes-ilo4')
+                                                        'hp-rest-classes-ilo4')
                     else:
                         raise SchemaValidationError(\
-                                    u'No valid iLO schema zip file found.\n' \
-                                    u'Please refer to our documentation for ' \
-                                    u'further instructions on downloading the' \
-                                    u' appropriate schemas.')
+                                    'No valid iLO schema zip file found.\n' \
+                                    'Please refer to our documentation for ' \
+                                    'further instructions on downloading the' \
+                                    ' appropriate schemas.')
                 else:
                     local_path = defaultilopath
             else:
                 if not os.path.isdir(local_path):
-                    raise SchemaValidationError(u"iLO schema directory '%s' "
-                                                u"doesn't exist" % local_path)
+                    raise SchemaValidationError("iLO schema directory '%s' "
+                                                "doesn't exist" % local_path)
 
             # bios schema location defaults
             if not bios_local_path:
@@ -125,9 +126,9 @@ class ValidationManager(object):
                                                         "hp-rest-classes-bios"))
 
                         bios_local_path = os.path.join(schemamainfolder, \
-                                                        u'hp-rest-classes-bios')
+                                                        'hp-rest-classes-bios')
                     else:
-                        raise SchemaValidationError(u'No valid BIOS schema ' \
+                        raise SchemaValidationError('No valid BIOS schema ' \
                                     'zip file found.\nPlease refer to our ' \
                                     'documentation for further instructions ' \
                                     'on downloading the appropriate schemas.')
@@ -135,15 +136,15 @@ class ValidationManager(object):
                     bios_local_path = defaultbiospath
             else:
                 if not os.path.isdir(bios_local_path):
-                    raise SchemaValidationError(u"Bios schema directory '%s' " \
-                                            u"doesn't exist" % bios_local_path)
+                    raise SchemaValidationError("Bios schema directory '%s' " \
+                                            "doesn't exist" % bios_local_path)
         else:
             if monolith.is_redfish:
-                local_path = u"/redfish/v1/Schemas/?$expand=."
-                bios_local_path = u"/redfish/v1/Registries/?$expand=."
+                local_path = "/redfish/v1/Schemas/?$expand=."
+                bios_local_path = "/redfish/v1/Registries/?$expand=."
             else:
-                local_path = u"/rest/v1/Schemas"
-                bios_local_path = u"/rest/v1/Registries"
+                local_path = "/rest/v1/Schemas"
+                bios_local_path = "/rest/v1/Registries"
 
         # iLO schema and registry lists
         self._schema_locations = list()
@@ -231,7 +232,7 @@ class ValidationManager(object):
 
         """
         if float(iloversion) < 4.210:
-            iloversion = u'2.00'
+            iloversion = '2.00'
 
         tempstr = "hp-rest-classes-ilo4-" + iloversion.replace(".", "")
 
@@ -273,7 +274,7 @@ class ValidationManager(object):
                 self._update_location_map(biossection=True, registries=True, \
                                                             monolith=monolith)
         else:
-            raise ValueError(u"'schema_path' and 'registry_path' " \
+            raise ValueError("'schema_path' and 'registry_path' " \
                                                                 "are undefined")
 
     def _update_location_map(self, biossection=False, registries=False, \
@@ -338,9 +339,10 @@ class ValidationManager(object):
 
         for itemtype in monolith.types:
             if itemtype.startswith(self.defines.defs.schemafilecollectiontype)\
+                or itemtype.startswith(self.defines.defs.regfilecollectiontype)\
                                     or itemtype.startswith("Collection.") and \
-                                    u'Instances' in monolith.types[itemtype]:
-                for instance in monolith.types[itemtype][u'Instances']:
+                                    'Instances' in monolith.types[itemtype]:
+                for instance in monolith.types[itemtype]['Instances']:
                     if self._schemaid[0] in instance.resp.request.path.\
                                             lower() or self._regid[0] in \
                                             instance.resp.request.path.lower():
@@ -414,7 +416,7 @@ class ValidationManager(object):
                 if datareturn:
                     return data
 
-                if u'Type' in data and data[u'Type'] == 'Collection.1.0.0':
+                if 'Type' in data and data['Type'] == 'Collection.1.0.0':
                     if biossection and registries:
                         itemsreturn = self.bios_helper_function(data, root)
                         data["Items"] = itemsreturn
@@ -628,7 +630,7 @@ class ValidationManager(object):
         :type path: str.
 
         """
-        if u'://' in path:
+        if '://' in path:
             return False
         return True
 
@@ -658,26 +660,26 @@ class Classes(RisObject):
         """
         result = None
 
-        if hasattr(self, 'Items') and isinstance(self.Items, list):
+        if checkattr(self, 'Items') and isinstance(self.Items, list):
             for entry in self.Items:
-                if entry and u'Schema' in entry and entry[u'Schema'].lower() \
+                if entry and 'Schema' in entry and entry['Schema'].lower() \
                                                             == schname.lower():
                     regentry = RepoRegistryEntry.parse(entry)
                     regentry.set_root(self._root)
                     result = regentry
                     break
-        elif hasattr(self, 'Members') and isinstance(self.Members, list):
+        elif checkattr(self, 'Members') and isinstance(self.Members, list):
             splitname = schname.split('.')[-1]
             for entry in self.Members:
                 if 'Schema' in entry:
-                    if entry and u'Schema' in entry and entry[u'Schema'].lower()\
+                    if entry and 'Schema' in entry and entry['Schema'].lower()\
                                             == schname.lower():
                         regentry = RepoRegistryEntry.parse(entry)
                         regentry.set_root(self._root)
                         result = regentry
                         break
                 else:
-                    schlink = entry[u'@odata.id'].split('/')
+                    schlink = entry['@odata.id'].split('/')
                     schlink = schlink[len(schlink)-2]
                     #schlink = schlink.replace('%23', '')
                     #schlink = schlink.split('.')[0]
@@ -697,26 +699,26 @@ class Classes(RisObject):
 
         """
         result = None
-        if hasattr(self, 'Items') and isinstance(self.Items, list):
+        if checkattr(self, 'Items') and isinstance(self.Items, list):
             for entry in self.Items:
-                if entry and (u'Schema' in entry and \
-                        entry[u'Schema'].lower().startswith(regname.lower())):
+                if entry and ('Schema' in entry and \
+                        entry['Schema'].lower().startswith(regname.lower())):
                     regentry = RepoRegistryEntry.parse(entry)
                     regentry.set_root(self._root)
                     result = regentry
                     break
-        elif hasattr(self, u'Members') and isinstance(self.Members, list):
+        elif checkattr(self, 'Members') and isinstance(self.Members, list):
             splitname = regname.split('.')[-1]
             for entry in self.Members:
-                if u'Schema' in entry:
-                    if entry and u'Schema' in entry and entry[u'Schema'].lower()\
+                if 'Schema' in entry:
+                    if entry and 'Schema' in entry and entry['Schema'].lower()\
                                             == regname.lower():
                         regentry = RepoRegistryEntry.parse(entry)
                         regentry.set_root(self._root)
                         result = regentry
                         break
                 else:
-                    reglink = entry[u'@odata.id'].split('/')
+                    reglink = entry['@odata.id'].split('/')
                     reglink = reglink[len(reglink)-2]
                     if splitname.lower() == reglink.lower():
                         result = entry
@@ -733,26 +735,26 @@ class Classes(RisObject):
 
         """
         result = None
-        if hasattr(self, 'Items') and isinstance(self.Items, list):
+        if checkattr(self, 'Items') and isinstance(self.Items, list):
             for entry in self.Items:
-                if u'Schema' in entry and entry[u'Schema'].lower() == \
+                if 'Schema' in entry and entry['Schema'].lower() == \
                                                                 schname.lower():
                     regentry = RepoRegistryEntry.parse(entry)
                     regentry.set_root(self._root)
                     result = regentry
                     break
-        elif hasattr(self, 'Members') and isinstance(self.Members, list):
+        elif checkattr(self, 'Members') and isinstance(self.Members, list):
             splitname = schname.split('.')[-1]
             for entry in self.Members:
-                if u'Schema' in entry:
-                    if entry and u'Schema' in entry and entry[u'Schema'].lower()\
+                if 'Schema' in entry:
+                    if entry and 'Schema' in entry and entry['Schema'].lower()\
                                             == schname.lower():
                         regentry = RepoRegistryEntry.parse(entry)
                         regentry.set_root(self._root)
                         result = regentry
                         break
                 else:
-                    reglink = entry[u'@odata.id'].split('/')
+                    reglink = entry['@odata.id'].split('/')
                     reglink = reglink[len(reglink)-2]
                     if splitname.lower() == reglink.lower():
                         result = entry
@@ -769,26 +771,33 @@ class Classes(RisObject):
 
         """
         result = None
-        if hasattr(self, 'Items') and isinstance(self.Items, list):
+        if checkattr(self, 'Items') and isinstance(self.Items, list):
             for entry in self.Items:
-                if entry and (u'Schema' in entry and regname.lower() in \
-                                                    entry[u'Schema'].lower()):
+                if entry and ('Schema' in entry and regname.lower() in \
+                                                    entry['Schema'].lower()):
                     regentry = RepoRegistryEntry.parse(entry)
                     regentry.set_root(self._root)
                     result = regentry
                     break
-        elif hasattr(self, 'Members') and isinstance(self.Members, list):
+        elif checkattr(self, 'Members') and isinstance(self.Members, list):
             splitname = regname.split('.')[-1]
             for entry in self.Members:
-                if u'Schema' in entry:
-                    if entry and u'Schema' in entry and entry[u'Schema'].lower()\
+                if 'Schema' in entry:
+                    if entry and 'Schema' in entry and entry['Schema'].lower()\
+                                            == regname.lower():
+                        regentry = RepoRegistryEntry.parse(entry)
+                        regentry.set_root(self._root)
+                        result = regentry
+                        break
+                elif 'Registry' in entry:
+                    if entry and 'Registry' in entry and entry['Registry'].lower()\
                                             == regname.lower():
                         regentry = RepoRegistryEntry.parse(entry)
                         regentry.set_root(self._root)
                         result = regentry
                         break
                 else:
-                    reglink = entry[u'@odata.id'].split('/')
+                    reglink = entry['@odata.id'].split('/')
                     reglink = reglink[len(reglink)-2]
                     if splitname.lower() == reglink.lower():
                         result = entry
@@ -822,14 +831,14 @@ class RepoBaseEntry(RisObject):
 
         """
         result = None
-        if u'Uri' in currloc:
+        if 'Uri' in currloc:
             root = os.path.normpath(self._root)
             xref = os.path.normpath(currloc.Uri.extref).lstrip(os.path.sep)
             fqpath = os.path.join(root, xref)
 
             if not os.path.isfile(fqpath):
                 errlist.append(SchemaValidationError(\
-                                u"Unable to location ArchiveUri '%s'" % fqpath))
+                                "Unable to location ArchiveUri '%s'" % fqpath))
             else:
                 result = None
                 if fqpath.endswith('.json'):
@@ -885,7 +894,7 @@ class RepoRegistryEntry(RepoBaseEntry):
             results = reg.validate_attribute_values(tdict)
             errlist.extend(results)
         else:
-            errlist.append(RegistryValidationError(u'Unable to locate ' \
+            errlist.append(RegistryValidationError('Unable to locate ' \
                                                             'registry model'))
 
         if errlist:
@@ -941,7 +950,7 @@ class RepoRegistryEntry(RepoBaseEntry):
             results = reg.validate_att_val_bios(tdict)
             errlist.extend(results)
         else:
-            errlist.append(RegistryValidationError(u'Unable to locate ' \
+            errlist.append(RegistryValidationError('Unable to locate ' \
                                                             'registry model'))
 
         if errlist:
@@ -960,8 +969,8 @@ class RepoRegistryEntry(RepoBaseEntry):
         if not errlist:
             errlist = list()
 
-        if not hasattr(self, u'Location'):
-            errlist.append(RegistryValidationError(u'Location property does' \
+        if not checkattr(self, 'Location'):
+            errlist.append(RegistryValidationError('Location property does' \
                                                                 ' not exist'))
             return errlist
 
@@ -970,11 +979,11 @@ class RepoRegistryEntry(RepoBaseEntry):
         langcode = 'TBD'
 
         for loc in self.Location:
-            for loclang in loc.keys():
+            for loclang in list(loc.keys()):
                 if loclang.lower() == langcode.lower():
                     currloc = loc[loclang]
                     break
-                elif loclang.lower() == u'default':
+                elif loclang.lower() == 'default':
                     defloc = loc[loclang]
 
         if not currloc:
@@ -982,19 +991,19 @@ class RepoRegistryEntry(RepoBaseEntry):
             currloc = defloc
 
         if not currloc:
-            errlist.append(RegistryValidationError(u'Unable to determine' \
+            errlist.append(RegistryValidationError('Unable to determine' \
                                                                 ' location'))
             return
 
         location_file = self._read_location_file(currloc, errlist=errlist)
         if not location_file:
-            errlist.append(RegistryValidationError(u'Location data is empty'))
+            errlist.append(RegistryValidationError('Location data is empty'))
         else:
             jsonreg = json.loads(location_file)
-            if u'Registry' in jsonreg:
-                if u'Type' in jsonreg and jsonreg[u'Type'] == \
-                                            u'HpPropertiesRegistrySchema.1.0.0':
-                    reg = HpPropertiesRegistry.parse(jsonreg[u'Registry'])
+            if 'Registry' in jsonreg:
+                if 'Type' in jsonreg and jsonreg['Type'] == \
+                                            'HpPropertiesRegistrySchema.1.0.0':
+                    reg = HpPropertiesRegistry.parse(jsonreg['Registry'])
                     results = reg.validate_attribute_values(tdict)
                     errlist.extend(results)
 
@@ -1022,9 +1031,9 @@ class RepoRegistryEntry(RepoBaseEntry):
         if not errlist:
             errlist = list()
 
-        if not hasattr(self, u'Location'):
+        if not checkattr(self, 'Location'):
             errlist.append(RegistryValidationError(
-                u'Location property does not exist'))
+                'Location property does not exist'))
             return None
 
         currloc = None
@@ -1047,7 +1056,7 @@ class RepoRegistryEntry(RepoBaseEntry):
             currloc = defloc
 
         if not currloc:
-            errlist.append(RegistryValidationError(u'Unable to determine ' \
+            errlist.append(RegistryValidationError('Unable to determine ' \
                                                                     'location'))
             return None
 
@@ -1058,8 +1067,8 @@ class RepoRegistryEntry(RepoBaseEntry):
         if currdict and monolith:
             for itemtype in monolith.types:
                 if itemtype.lower().startswith(searchtype.lower()) and \
-                                    u'Instances' in monolith.types[itemtype]:
-                    for instance in monolith.types[itemtype][u'Instances']:
+                                    'Instances' in monolith.types[itemtype]:
+                    for instance in monolith.types[itemtype]['Instances']:
                         try:
                             if monolith.is_redfish and 'title' in instance.\
                                         resp.dict and not instance.resp.dict\
@@ -1089,8 +1098,8 @@ class RepoRegistryEntry(RepoBaseEntry):
                                     break
                             elif searchtype == "ob" and instance.resp.dict[\
                                        "title"].startswith(currtype) or \
-                                       "oldtitle" in instance.resp.dict.\
-                                       keys() and currdict[instance._typestring\
+                                       "oldtitle" in list(instance.resp.dict.\
+                                       keys()) and currdict[instance._typestring\
                                            ] == instance.resp.dict["oldtitle"]:
                                 location_file = instance.resp.dict
                                 break
@@ -1113,7 +1122,7 @@ class RepoRegistryEntry(RepoBaseEntry):
             location_file = self._read_location_file(currloc, errlist=errlist)
 
         if not location_file:
-            errlist.append(RegistryValidationError(u'Location data is empty'))
+            errlist.append(RegistryValidationError('Location data is empty'))
         else:
             if currdict and monolith:
                 jsonreg = json.loads(json.dumps(location_file, indent=2, \
@@ -1124,26 +1133,26 @@ class RepoRegistryEntry(RepoBaseEntry):
             if skipcommit:
                 return {jsonreg['RegistryPrefix']:jsonreg["Messages"]}
 
-            if u'properties' in jsonreg:
-                regitem = jsonreg[u'properties']
-                if u'Properties' in regitem:
-                    regitem = regitem[u'Properties']
+            if 'properties' in jsonreg:
+                regitem = jsonreg['properties']
+                if 'Properties' in regitem:
+                    regitem = regitem['Properties']
                 reg = HpPropertiesRegistry.parse(regitem)
 
                 if newarg:
                     regcopy = reg
                     for arg in newarg[:-1]:
                         try:
-                            arg = next(key for key in regcopy.keys() if \
+                            arg = next(key for key in list(regcopy.keys()) if \
                                                     key.lower() == arg.lower())
-                            if 'properties' in regcopy[arg].iterkeys() \
+                            if 'properties' in six.iterkeys(regcopy[arg]) \
                                                 and ('patternProperties' in \
-                                                    regcopy[arg].iterkeys()):
+                                                    six.iterkeys(regcopy[arg])):
                                 regcopy[arg]['properties'].update(\
                                               regcopy[arg]['patternProperties'])
                                 regcopy = regcopy[arg]["properties"]
 
-                                for pattern in regcopy.iterkeys():
+                                for pattern in six.iterkeys(regcopy):
                                     test = re.compile(pattern)
                                     nextarg = newarg[newarg.index(arg)+1]
                                     match = test.match(nextarg)
@@ -1168,7 +1177,7 @@ class RepoRegistryEntry(RepoBaseEntry):
                         except Exception:
                             try:
                                 regcopy = regcopy[arg]['patternProperties']
-                                for pattern in regcopy.iterkeys():
+                                for pattern in six.iterkeys(regcopy):
                                     test = re.compile(pattern)
                                     nextarg = newarg[newarg.index(arg)+1]
                                     match = test.match(nextarg)
@@ -1202,9 +1211,9 @@ class RepoRegistryEntry(RepoBaseEntry):
         if not errlist:
             errlist = list()
 
-        if not hasattr(self, u'Location'):
+        if not checkattr(self, 'Location'):
             errlist.append(RegistryValidationError(
-                u'Location property does not exist'))
+                'Location property does not exist'))
             return None
 
         currloc = None
@@ -1227,15 +1236,15 @@ class RepoRegistryEntry(RepoBaseEntry):
 
         if not currloc:
             errlist.append(RegistryValidationError(
-                u'Unable to determine location'))
+                'Unable to determine location'))
             return None
 
         location_file = None
         if currdict and monolith:
             for itemtype in monolith.types:
                 if attregtype in itemtype and \
-                                    u'Instances' in monolith.types[itemtype]:
-                    for instance in monolith.types[itemtype][u'Instances']:
+                                    'Instances' in monolith.types[itemtype]:
+                    for instance in monolith.types[itemtype]['Instances']:
                         location_file = instance.resp.dict
                         break
 
@@ -1245,7 +1254,7 @@ class RepoRegistryEntry(RepoBaseEntry):
             location_file = self._read_location_file(currloc, errlist=errlist)
 
         if not location_file:
-            errlist.append(RegistryValidationError(u'Location data is empty'))
+            errlist.append(RegistryValidationError('Location data is empty'))
         else:
             if currdict and monolith:
                 jsonreg = json.loads(json.dumps(location_file, indent=2, \
@@ -1253,108 +1262,13 @@ class RepoRegistryEntry(RepoBaseEntry):
             else:
                 jsonreg = json.loads(location_file)
 
-            if u'RegistryEntries' in jsonreg:
-                regitem = jsonreg[u'RegistryEntries']
+            if 'RegistryEntries' in jsonreg:
+                regitem = jsonreg['RegistryEntries']
                 reg = HpPropertiesRegistry.parse(regitem)
                 return reg
 
         return None
 
-
-# class RepoSchemaEntry(RepoBaseEntry):
-#     """Represents an entry in the Classes registry"""
-#     def __init__(self, item):
-#         super(RepoSchemaEntry, self).__init__(item)
-#         self._root = None
-# 
-#     def set_root(self, newroot):
-#         """Set new root
-# 
-#         :param newroot: new root to be set.
-#         :type newroot: str.
-# 
-#         """
-#         self._root = newroot
-# 
-#     def _read_location_file(self, currloc, errlist):
-#         """Return results from locations
-# 
-#         :param currloc: current URI
-#         :type currloc: str
-#         :param errlist: list containing found errors.
-#         :type errlist: list.
-#         :returns: returns results from archive at currloc parameter
-# 
-#         """
-#         if u'ArchiveUri' in currloc and u'ArchiveFile' in currloc:
-#             fqpath = os.path.join(self._root, \
-#                                   currloc.ArchiveUri.xref.lstrip(os.path.sep))
-#             if not os.path.isfile(fqpath):
-#                 errlist.append(SchemaValidationError(u"Unable to location " \
-#                                                     "ArchiveUri '%s'" % fqpath))
-#             else:
-#                 archive_file = currloc.ArchiveFile
-#                 archive_fh = None
-#                 result = None
-# 
-#                 if fqpath.endswith('.zip'):
-#                     archive_fh = zipfile.ZipFile(fqpath)
-# 
-#                     infolist = archive_fh.infolist()
-#                     for i in infolist:
-#                         if i.filename.lower() == archive_file.lower():
-#                             jsonsch_fh = archive_fh.open(i)
-#                             result = jsonsch_fh.read()
-#                             jsonsch_fh.close()
-# 
-#                     archive_fh.close()
-# 
-#         return result
-# 
-#     def validate(self, tdict, errlist=None):
-#         """Load the schema file and validate tdict against it
-# 
-#         :param tdict: the dictionary to test against.
-#         :type tdict: list.
-#         :param errlist: list containing found errors.
-#         :type errlist: list.
-# 
-#         """
-#         if not errlist:
-#             errlist = list()
-# 
-#         result = list()
-#         if not hasattr(self, u'Location'):
-#             result.append(SchemaValidationError(u'Location property does ' \
-#                                                                 'not exist'))
-#             return result
-# 
-#         currloc = None
-#         defloc = None
-#         langcode = 'TBD'
-#         for loc in self.Location:
-#             for loclang in loc.keys():
-#                 if loclang.lower() == langcode.lower():
-#                     currloc = loc[loclang]
-#                     break
-#                 elif loclang.lower() == u'default':
-#                     defloc = loc[loclang]
-# 
-#         if not currloc:
-#             # use default location if lang doesn't match
-#             currloc = defloc
-# 
-#         if not currloc:
-#             result.append(SchemaValidationError(
-#                 u'Unable to determine location'))
-#             return
-# 
-#         location_file = self._read_location_file(currloc, errlist=result)
-#         if not location_file:
-#             result.append(SchemaValidationError(u'Location data is empty'))
-#         else:
-#             jsonsch = json.loads(location_file)
-#             validictory.validate(tdict, jsonsch)
 
 class HpPropertiesRegistry(RisObject):
     """Models the HpPropertiesRegistry file"""
@@ -1373,7 +1287,7 @@ class HpPropertiesRegistry(RisObject):
 
         for tkey in tdict:
             try:
-                if self[tkey] and hasattr(self[tkey], "type"):
+                if self[tkey] and checkattr(self[tkey], "type"):
                     keyval = list()
                     keyval.append(tdict[tkey])
                     temp = self.validate_attribute(self[tkey], keyval, tkey)
@@ -1400,12 +1314,12 @@ class HpPropertiesRegistry(RisObject):
         """
         result = list()
 
-        attdict = tdict[u'Attributes'] if u'Attributes' in tdict.keys() else tdict
+        attdict = tdict['Attributes'] if 'Attributes' in list(tdict.keys()) else tdict
         for tkey in attdict:
             for item in self.Attributes:
                 try:
                     if item[Typepathforval.typepath.defs.attributenametype] \
-                            == tkey and hasattr(item, "Type"):
+                            == tkey and checkattr(item, "Type"):
                         keyval = list()
                         keyval.append(attdict[tkey])
                         temp = self.validate_attribute(item, keyval, tkey)
@@ -1421,7 +1335,7 @@ class HpPropertiesRegistry(RisObject):
                 except Exception:
                     pass
 
-        tdict = attdict if u'Attributes' not in tdict.keys() else tdict[u'Attributes']
+        tdict = attdict if 'Attributes' not in list(tdict.keys()) else tdict['Attributes']
         return result
 
     def get_validator(self, attrname, newargs=None, oneof=None):
@@ -1446,12 +1360,12 @@ class HpPropertiesRegistry(RisObject):
                 except Exception:
                     pass
 
-                if not hasattr(self, arg):
+                if not checkattr(self, arg):
                     return None
                 elif not arg == newargs[-1]:
                     self = self[arg]
 
-        if not hasattr(self, attrname):
+        if not checkattr(self, attrname):
             return None
 
         validator = None
@@ -1467,7 +1381,7 @@ class HpPropertiesRegistry(RisObject):
             validator = BoolValidator.parse(self[attrname])
         elif PasswordValidator.is_type(self[attrname]):
             validator = PasswordValidator.parse(self[attrname])
-        elif u'oneOf' in self[attrname].keys():
+        elif 'oneOf' in list(self[attrname].keys()):
             for item in self[attrname]['oneOf']:
                 validator = self.get_validator(attrname, newargs, \
                                         HpPropertiesRegistry({attrname:item}))
@@ -1487,7 +1401,7 @@ class HpPropertiesRegistry(RisObject):
 
         for item in self.Attributes:
             name = Typepathforval.typepath.defs.attributenametype
-            if name not in item.keys():
+            if name not in list(item.keys()):
                 return None
             if item[name] == attrname:
                 validator = None
@@ -1552,7 +1466,7 @@ class BaseValidator(RisObject):
 
     def validate(self):
         """Overridable function for validation """
-        raise RuntimeError(u'You must override this method in your derived ' \
+        raise RuntimeError('You must override this method in your derived ' \
                                                                         'class')
 
 
@@ -1570,25 +1484,25 @@ class EnumValidator(BaseValidator):
         :returns: returns a boolean based on whether type is eneumeration
 
         """
-        if u'type' in attrentry:
-            if isinstance(attrentry[u'type'], list):
-                for item in attrentry[u'type']:
-                    if item.lower() == u'enumeration':
+        if 'type' in attrentry:
+            if isinstance(attrentry['type'], list):
+                for item in attrentry['type']:
+                    if item.lower() == 'enumeration':
                         return True
-                    elif u'enum' in attrentry and item.lower() == u'string':
+                    elif 'enum' in attrentry and item.lower() == 'string':
                         return True
-            elif u'enum' in attrentry and attrentry[u'type'] == "array":
-                for key, value in attrentry[u'items'].iteritems():
-                    if key.lower() == "type" and value.lower() == u'string':
+            elif 'enum' in attrentry and attrentry['type'] == "array":
+                for key, value in six.iteritems(attrentry['items']):
+                    if key.lower() == "type" and value.lower() == 'string':
                         return True
             else:
-                if attrentry[u'type'].lower() == u'enumeration':
+                if attrentry['type'].lower() == 'enumeration':
                     return True
-                elif u'enum' in attrentry and attrentry[u'type'].lower() == \
-                                                                    u'string':
+                elif 'enum' in attrentry and attrentry['type'].lower() == \
+                                                                    'string':
                     return True
-        elif u'Type' in attrentry:
-            if attrentry[u'Type'].lower() == u'enumeration':
+        elif 'Type' in attrentry:
+            if attrentry['Type'].lower() == 'enumeration':
                 return True
 
         return False
@@ -1617,7 +1531,7 @@ class EnumValidator(BaseValidator):
                     keyval[0] = possibleval.ValueName
                     return result
 
-        result.append(RegistryValidationError(u"'%s' is not a valid setting " \
+        result.append(RegistryValidationError("'%s' is not a valid setting " \
                                   "for '%s'" % (newval, name), regentry=self))
 
         return result
@@ -1635,56 +1549,56 @@ class EnumValidator(BaseValidator):
         wrapper.initial_indent = ' ' * 4
         wrapper.subsequent_indent = ' ' * 4
 
-        out.write(u'\nNAME\n')
+        out.write('\nNAME\n')
         out.write('%s' % wrapper.fill('%s' % name))
         out.write('\n')
 
-        if u'DisplayName' in self:
-            out.write(u'\nDISPLAY NAME\n')
+        if 'DisplayName' in self:
+            out.write('\nDISPLAY NAME\n')
             out.write('%s' % wrapper.fill('%(DisplayName)s' % self))
             out.write('\n')
 
-        if u'description' in self:
-            out.write(u'\nDESCRIPTION\n')
+        if 'description' in self:
+            out.write('\nDESCRIPTION\n')
             out.write('%s' % wrapper.fill('%(description)s' % self))
             out.write('\n')
 
-        if u'HelpText' in self:
-            out.write(u'\nHELP TEXT\n')
+        if 'HelpText' in self:
+            out.write('\nHELP TEXT\n')
             out.write('%s' % wrapper.fill('%(HelpText)s' % self))
             out.write('\n')
 
-        if u'WarningText' in self:
-            out.write(u'\n************************************************\n')
-            out.write(u'\nWARNING\n')
+        if 'WarningText' in self:
+            out.write('\n************************************************\n')
+            out.write('\nWARNING\n')
             out.write('%s' % wrapper.fill('%(WarningText)s' % self))
-            out.write(u'\n\n**********************************************\n')
+            out.write('\n\n**********************************************\n')
             out.write('\n')
 
-        if u'type' in self and isinstance(self[u'type'], list):
-            out.write(u'\nTYPE\n')
-            for item in self[u'type']:
+        if 'type' in self and isinstance(self['type'], list):
+            out.write('\nTYPE\n')
+            for item in self['type']:
                 out.write('%s\n' % wrapper.fill('%s' % item))
             out.write('\n')
-        elif u'type' in self:
-            out.write(u'\nTYPE\n')
+        elif 'type' in self:
+            out.write('\nTYPE\n')
             out.write('%s' % wrapper.fill('%(type)s' % self))
             out.write('\n')
-        elif u'Type' in self:
-            out.write(u'\nTYPE\n')
+        elif 'Type' in self:
+            out.write('\nTYPE\n')
             out.write('%s' % wrapper.fill('%(Type)s' % self))
             out.write('\n')
 
-        if u'ReadOnly' in self:
-            out.write(u'\nREAD-ONLY\n')
+        if 'ReadOnly' in self:
+            out.write('\nREAD-ONLY\n')
             out.write('%s' % wrapper.fill('%(ReadOnly)s' % self))
             out.write('\n')
-        elif u'readonly' in self:
-            out.write(u'\nREAD-ONLY\n')
+        elif 'readonly' in self:
+            out.write('\nREAD-ONLY\n')
             out.write('%s' % wrapper.fill('%(readonly)s' % self))
             out.write('\n')
 
-        out.write(u'\nPOSSIBLE VALUES\n')
+        out.write('\nPOSSIBLE VALUES\n')
         try:
             for possibleval in self.enum:
                 out.write('    %s\n' % possibleval)
@@ -1708,20 +1622,20 @@ class BoolValidator(BaseValidator):
         :returns: returns boolean on whether type is boolean
 
         """
-        if u'type' in attrentry:
-            if isinstance(attrentry[u'type'], list):
-                for item in attrentry[u'type']:
-                    if item.lower() == u'boolean':
+        if 'type' in attrentry:
+            if isinstance(attrentry['type'], list):
+                for item in attrentry['type']:
+                    if item.lower() == 'boolean':
                         return True
-            elif attrentry[u'type'] == "array":
-                for key, value in attrentry[u'items'].iteritems():
-                    if key.lower() == "type" and value.lower() == u'boolean':
+            elif attrentry['type'] == "array":
+                for key, value in six.iteritems(attrentry['items']):
+                    if key.lower() == "type" and value.lower() == 'boolean':
                         return True
             else:
-                if attrentry[u'type'].lower() == u'boolean':
+                if attrentry['type'].lower() == 'boolean':
                     return True
-        elif u'Type' in attrentry:
-            if attrentry[u'Type'].lower() == u'boolean':
+        elif 'Type' in attrentry:
+            if attrentry['Type'].lower() == 'boolean':
                 return True
 
         return False
@@ -1741,7 +1655,7 @@ class BoolValidator(BaseValidator):
             return result
 
         result.append(
-            RegistryValidationError(u"'%s' is not a valid setting for '%s'" % \
+            RegistryValidationError("'%s' is not a valid setting for '%s'" % \
                                                 (newval, name), regentry=self))
 
         return result
@@ -1759,56 +1673,56 @@ class BoolValidator(BaseValidator):
         wrapper.initial_indent = ' ' * 4
         wrapper.subsequent_indent = ' ' * 4
 
-        out.write(u'\nNAME\n')
+        out.write('\nNAME\n')
         out.write('%s' % wrapper.fill('%s' % name))
         out.write('\n')
 
-        if u'DisplayName' in self:
-            out.write(u'\nDISPLAY NAME\n')
+        if 'DisplayName' in self:
+            out.write('\nDISPLAY NAME\n')
             out.write('%s' % wrapper.fill('%(DisplayName)s' % self))
             out.write('\n')
 
-        if u'description' in self:
-            out.write(u'\nDESCRIPTION\n')
+        if 'description' in self:
+            out.write('\nDESCRIPTION\n')
             out.write('%s' % wrapper.fill('%(description)s' % self))
             out.write('\n')
 
-        if u'HelpText' in self:
-            out.write(u'\nHELP TEXT\n')
+        if 'HelpText' in self:
+            out.write('\nHELP TEXT\n')
             out.write('%s' % wrapper.fill('%(HelpText)s' % self))
             out.write('\n')
 
-        if u'WarningText' in self:
-            out.write(u'\n************************************************\n')
-            out.write(u'\nWARNING\n')
+        if 'WarningText' in self:
+            out.write('\n************************************************\n')
+            out.write('\nWARNING\n')
             out.write('%s' % wrapper.fill('%(WarningText)s' % self))
-            out.write(u'\n\n**********************************************\n')
+            out.write('\n\n**********************************************\n')
             out.write('\n')
 
-        if u'type' in self and isinstance(self[u'type'], list):
-            out.write(u'\nTYPE\n')
-            for item in self[u'type']:
+        if 'type' in self and isinstance(self['type'], list):
+            out.write('\nTYPE\n')
+            for item in self['type']:
                 out.write('%s\n' % wrapper.fill('%s' % item))
             out.write('\n')
-        elif u'type' in self:
-            out.write(u'\nTYPE\n')
+        elif 'type' in self:
+            out.write('\nTYPE\n')
             out.write('%s' % wrapper.fill('%(type)s' % self))
             out.write('\n')
-        elif u'Type' in self:
-            out.write(u'\nTYPE\n')
+        elif 'Type' in self:
+            out.write('\nTYPE\n')
             out.write('%s' % wrapper.fill('%(Type)s' % self))
             out.write('\n')
 
-        if u'ReadOnly' in self:
-            out.write(u'\nREAD-ONLY\n')
+        if 'ReadOnly' in self:
+            out.write('\nREAD-ONLY\n')
             out.write('%s' % wrapper.fill('%(ReadOnly)s' % self))
             out.write('\n')
-        elif u'readonly' in self:
-            out.write(u'\nREAD-ONLY\n')
+        elif 'readonly' in self:
+            out.write('\nREAD-ONLY\n')
             out.write('%s' % wrapper.fill('%(readonly)s' % self))
             out.write('\n')
 
-        out.write(u'\nPOSSIBLE VALUES\n')
+        out.write('\nPOSSIBLE VALUES\n')
         out.write('    True or False\n')
         out.write('\n')
 
@@ -1827,20 +1741,20 @@ class StringValidator(BaseValidator):
         :returns: returns boolean based on whether type to validate is string
 
         """
-        if u'type' in attrentry:
-            if isinstance(attrentry[u'type'], list):
-                for item in attrentry[u'type']:
-                    if item.lower() == u'string':
+        if 'type' in attrentry:
+            if isinstance(attrentry['type'], list):
+                for item in attrentry['type']:
+                    if item.lower() == 'string':
                         return True
-            elif attrentry[u'type'] == "array":
-                for key, value in attrentry[u'items'].iteritems():
-                    if key.lower() == "type" and u'string' in value:
+            elif attrentry['type'] == "array":
+                for key, value in six.iteritems(attrentry['items']):
+                    if key.lower() == "type" and 'string' in value:
                         return True
             else:
-                if attrentry[u'type'].lower() == u'string':
+                if attrentry['type'].lower() == 'string':
                     return True
-        elif u'Type' in attrentry:
-            if attrentry[u'Type'].lower() == u'string':
+        elif 'Type' in attrentry:
+            if attrentry['Type'].lower() == 'string':
                 return True
 
         return False
@@ -1855,24 +1769,24 @@ class StringValidator(BaseValidator):
         """
         result = list()
         namestr = Typepathforval.typepath.defs.attributenametype
-        if u'MinLength' in self:
-            if len(newval) < int(self[u'MinLength']):
+        if 'MinLength' in self:
+            if len(newval) < int(self['MinLength']):
                 result.append(RegistryValidationError(
-                    u"'%s' must be at least '%s' characters long" %
-                    (self[namestr], int(self[u'MinLength'])), regentry=self))
+                    "'%s' must be at least '%s' characters long" %
+                    (self[namestr], int(self['MinLength'])), regentry=self))
 
-        if u'MaxLength' in self:
-            if len(newval) > int(self[u'MaxLength']):
+        if 'MaxLength' in self:
+            if len(newval) > int(self['MaxLength']):
                 result.append(RegistryValidationError(
-                    u"'%s' must be less than '%s' characters long" %
-                    (self[namestr], int(self[u'MaxLength'])), regentry=self))
+                    "'%s' must be less than '%s' characters long" %
+                    (self[namestr], int(self['MaxLength'])), regentry=self))
 
-        if u'ValueExpression' in self:
-            if self[u'ValueExpression']:
-                pat = re.compile(self[u'ValueExpression'])
+        if 'ValueExpression' in self:
+            if self['ValueExpression']:
+                pat = re.compile(self['ValueExpression'])
                 if newval and not pat.match(newval):
                     result.append(RegistryValidationError(
-                        u"'%(Name)s' must match the regular expression "
+                        "'%(Name)s' must match the regular expression "
                         "'%(ValueExpression)s'" % (self), regentry=self))
 
         return result
@@ -1890,62 +1804,62 @@ class StringValidator(BaseValidator):
         wrapper.initial_indent = ' ' * 4
         wrapper.subsequent_indent = ' ' * 4
 
-        out.write(u'\nNAME\n')
+        out.write('\nNAME\n')
         out.write('%s' % wrapper.fill('%s' % name))
         out.write('\n')
 
-        if u'DisplayName' in self:
-            out.write(u'\nDISPLAY NAME\n')
+        if 'DisplayName' in self:
+            out.write('\nDISPLAY NAME\n')
             out.write('%s' % wrapper.fill('%(DisplayName)s' % self))
             out.write('\n')
 
-        if u'description' in self:
-            out.write(u'\nDESCRIPTION\n')
+        if 'description' in self:
+            out.write('\nDESCRIPTION\n')
             out.write('%s' % wrapper.fill('%(description)s' % self))
             out.write('\n')
 
-        if u'HelpText' in self:
-            out.write(u'\nHELP TEXT\n')
+        if 'HelpText' in self:
+            out.write('\nHELP TEXT\n')
             out.write('%s' % wrapper.fill('%(HelpText)s' % self))
             out.write('\n')
 
-        if u'WarningText' in self:
-            out.write(u'\n************************************************\n')
-            out.write(u'\nWARNING\n')
+        if 'WarningText' in self:
+            out.write('\n************************************************\n')
+            out.write('\nWARNING\n')
             out.write('%s' % wrapper.fill('%(WarningText)s' % self))
-            out.write(u'\n\n**********************************************\n')
+            out.write('\n\n**********************************************\n')
             out.write('\n')
 
-        if u'type' in self and isinstance(self[u'type'], list):
-            out.write(u'\nTYPE\n')
-            for item in self[u'type']:
+        if 'type' in self and isinstance(self['type'], list):
+            out.write('\nTYPE\n')
+            for item in self['type']:
                 out.write('%s\n' % wrapper.fill('%s' % item))
             out.write('\n')
-        elif u'type' in self:
-            out.write(u'\nTYPE\n')
+        elif 'type' in self:
+            out.write('\nTYPE\n')
             out.write('%s' % wrapper.fill('%(type)s' % self))
             out.write('\n')
-        elif u'Type' in self:
-            out.write(u'\nTYPE\n')
+        elif 'Type' in self:
+            out.write('\nTYPE\n')
             out.write('%s' % wrapper.fill('%(Type)s' % self))
             out.write('\n')
 
-        if u'MinLength' in self:
-            out.write(u'\nMIN LENGTH\n')
+        if 'MinLength' in self:
+            out.write('\nMIN LENGTH\n')
             out.write('%s' % wrapper.fill('%(MinLength)s' % self))
             out.write('\n')
 
-        if u'MaxLength' in self:
-            out.write(u'\nMAX LENGTH\n')
+        if 'MaxLength' in self:
+            out.write('\nMAX LENGTH\n')
             out.write('%s' % wrapper.fill('%(MaxLength)s' % self))
             out.write('\n')
 
-        if u'ReadOnly' in self:
-            out.write(u'\nREAD-ONLY\n')
+        if 'ReadOnly' in self:
+            out.write('\nREAD-ONLY\n')
             out.write('%s' % wrapper.fill('%(ReadOnly)s' % self))
             out.write('\n')
-        elif u'readonly' in self:
-            out.write(u'\nREAD-ONLY\n')
+        elif 'readonly' in self:
+            out.write('\nREAD-ONLY\n')
             out.write('%s' % wrapper.fill('%(readonly)s' % self))
             out.write('\n')
 
@@ -1964,23 +1878,23 @@ class IntegerValidator(BaseValidator):
         :returns: returns boolean based on type being an integer
 
         """
-        if u'type' in attrentry:
-            if isinstance(attrentry[u'type'], list):
-                for item in attrentry[u'type']:
-                    if item.lower() == u'integer' or item.lower() == u'number':
+        if 'type' in attrentry:
+            if isinstance(attrentry['type'], list):
+                for item in attrentry['type']:
+                    if item.lower() == 'integer' or item.lower() == 'number':
                         return True
-            elif attrentry[u'type'] == "array":
-                for key, value in attrentry[u'items'].iteritems():
+            elif attrentry['type'] == "array":
+                for key, value in six.iteritems(attrentry['items']):
                     if key.lower() == "type":
-                        if value.lower() == u'interger' or value.lower() == \
-                                                                    u'number':
+                        if value.lower() == 'interger' or value.lower() == \
+                                                                    'number':
                             return True
             else:
-                if attrentry[u'type'].lower() == u'integer' or \
-                            attrentry[u'type'].lower().lower() == u'number':
+                if attrentry['type'].lower() == 'integer' or \
+                            attrentry['type'].lower().lower() == 'number':
                     return True
-        elif u'Type' in attrentry:
-            if attrentry[u'Type'].lower() == u'integer':
+        elif 'Type' in attrentry:
+            if attrentry['Type'].lower() == 'integer':
                 return True
 
         return False
@@ -1999,23 +1913,23 @@ class IntegerValidator(BaseValidator):
         if newval and not pat.match(intval):
             result.append(
                 RegistryValidationError(
-                    u"'%(Name)s' must be an integer value'" % (self),
+                    "'%(Name)s' must be an integer value'" % (self),
                     regentry=self
                 )
             )
             return result
 
-        if u'LowerBound' in self:
-            if intval < int(self[u'LowerBound']):
-                result.append(RegistryValidationError(u"'%s' must be greater" \
+        if 'LowerBound' in self:
+            if intval < int(self['LowerBound']):
+                result.append(RegistryValidationError("'%s' must be greater" \
                                       " than or equal to '%s'" % (self.Name, \
-                                      int(self[u'LowerBound'])), regentry=self))
+                                      int(self['LowerBound'])), regentry=self))
 
-        if u'UpperBound' in self:
-            if intval > int(self[u'UpperBound']):
-                result.append(RegistryValidationError(u"'%s' must be less " \
+        if 'UpperBound' in self:
+            if intval > int(self['UpperBound']):
+                result.append(RegistryValidationError("'%s' must be less " \
                                       "than or equal to '%s'" % (self.Name, \
-                                     int(self[u'LowerBound'])), regentry=self))
+                                     int(self['LowerBound'])), regentry=self))
 
         return result
 
@@ -2032,52 +1946,52 @@ class IntegerValidator(BaseValidator):
         wrapper.initial_indent = ' ' * 4
         wrapper.subsequent_indent = ' ' * 4
 
-        out.write(u'\nNAME\n')
+        out.write('\nNAME\n')
         out.write('%s' % wrapper.fill('%s' % name))
         out.write('\n')
 
-        if u'DisplayName' in self:
-            out.write(u'\nDISPLAY NAME\n')
+        if 'DisplayName' in self:
+            out.write('\nDISPLAY NAME\n')
             out.write('%s' % wrapper.fill('%(DisplayName)s' % self))
             out.write('\n')
 
-        if u'description' in self:
-            out.write(u'\nDESCRIPTION\n')
+        if 'description' in self:
+            out.write('\nDESCRIPTION\n')
             out.write('%s' % wrapper.fill('%(description)s' % self))
             out.write('\n')
 
-        if u'HelpText' in self:
-            out.write(u'\nHELP TEXT\n')
+        if 'HelpText' in self:
+            out.write('\nHELP TEXT\n')
             out.write('%s' % wrapper.fill('%(HelpText)s' % self))
             out.write('\n')
 
-        if u'WarningText' in self:
-            out.write(u'\n************************************************\n')
-            out.write(u'\nWARNING\n')
+        if 'WarningText' in self:
+            out.write('\n************************************************\n')
+            out.write('\nWARNING\n')
             out.write('%s' % wrapper.fill('%(WarningText)s' % self))
-            out.write(u'\n\n**********************************************\n')
+            out.write('\n\n**********************************************\n')
             out.write('\n')
 
-        if u'type' in self and isinstance(self[u'type'], list):
-            out.write(u'\nTYPE\n')
-            for item in self[u'type']:
+        if 'type' in self and isinstance(self['type'], list):
+            out.write('\nTYPE\n')
+            for item in self['type']:
                 out.write('%s\n' % wrapper.fill('%s' % item))
             out.write('\n')
-        elif u'type' in self:
-            out.write(u'\nTYPE\n')
+        elif 'type' in self:
+            out.write('\nTYPE\n')
             out.write('%s' % wrapper.fill('%(type)s' % self))
             out.write('\n')
-        elif u'Type' in self:
-            out.write(u'\nTYPE\n')
+        elif 'Type' in self:
+            out.write('\nTYPE\n')
             out.write('%s' % wrapper.fill('%(Type)s' % self))
             out.write('\n')
 
-        if u'ReadOnly' in self:
-            out.write(u'\nREAD-ONLY\n')
+        if 'ReadOnly' in self:
+            out.write('\nREAD-ONLY\n')
             out.write('%s' % wrapper.fill('%(ReadOnly)s' % self))
             out.write('\n')
-        elif u'readonly' in self:
-            out.write(u'\nREAD-ONLY\n')
+        elif 'readonly' in self:
+            out.write('\nREAD-ONLY\n')
             out.write('%s' % wrapper.fill('%(readonly)s' % self))
             out.write('\n')
 
@@ -2096,26 +2010,26 @@ class ObjectValidator(BaseValidator):
         :returns: returns boolean based on whether type is an object
 
         """
-        if u'type' in attrentry:
-            if isinstance(attrentry[u'type'], list):
-                for item in attrentry[u'type']:
-                    if item.lower() == u'object':
+        if 'type' in attrentry:
+            if isinstance(attrentry['type'], list):
+                for item in attrentry['type']:
+                    if item.lower() == 'object':
                         return True
-            elif attrentry[u'type'] == "array":
-                for key, value in attrentry[u'items'].iteritems():
-                    if key.lower() == "type" and value.lower() == u'object':
+            elif attrentry['type'] == "array":
+                for key, value in six.iteritems(attrentry['items']):
+                    if key.lower() == "type" and value.lower() == 'object':
                         return True
                     elif key.lower() == "anyof":
                         try:
-                            if value[0][u'type'] == u'object':
+                            if value[0]['type'] == 'object':
                                 return True
                         except Exception:
                             continue
             else:
-                if attrentry[u'type'].lower() == u'object':
+                if attrentry['type'].lower() == 'object':
                     return True
-        elif u'Type' in attrentry:
-            if attrentry[u'Type'].lower() == u'object':
+        elif 'Type' in attrentry:
+            if attrentry['Type'].lower() == 'object':
                 return True
 
         return False
@@ -2144,52 +2058,52 @@ class ObjectValidator(BaseValidator):
         wrapper.initial_indent = ' ' * 4
         wrapper.subsequent_indent = ' ' * 4
 
-        out.write(u'\nNAME\n')
+        out.write('\nNAME\n')
         out.write('%s' % wrapper.fill('%s' % name))
         out.write('\n')
 
-        if u'DisplayName' in self:
-            out.write(u'\nDISPLAY NAME\n')
+        if 'DisplayName' in self:
+            out.write('\nDISPLAY NAME\n')
             out.write('%s' % wrapper.fill('%(DisplayName)s' % self))
             out.write('\n')
 
-        if u'description' in self:
-            out.write(u'\nDESCRIPTION\n')
+        if 'description' in self:
+            out.write('\nDESCRIPTION\n')
             out.write('%s' % wrapper.fill('%(description)s' % self))
             out.write('\n')
 
-        if u'HelpText' in self:
-            out.write(u'\nHELP TEXT\n')
+        if 'HelpText' in self:
+            out.write('\nHELP TEXT\n')
             out.write('%s' % wrapper.fill('%(HelpText)s' % self))
             out.write('\n')
 
-        if u'WarningText' in self:
-            out.write(u'\n************************************************\n')
-            out.write(u'\nWARNING\n')
+        if 'WarningText' in self:
+            out.write('\n************************************************\n')
+            out.write('\nWARNING\n')
             out.write('%s' % wrapper.fill('%(WarningText)s' % self))
-            out.write(u'\n\n**********************************************\n')
+            out.write('\n\n**********************************************\n')
             out.write('\n')
 
-        if u'type' in self and isinstance(self[u'type'], list):
-            out.write(u'\nTYPE\n')
-            for item in self[u'type']:
+        if 'type' in self and isinstance(self['type'], list):
+            out.write('\nTYPE\n')
+            for item in self['type']:
                 out.write('%s\n' % wrapper.fill('%s' % item))
             out.write('\n')
-        elif u'type' in self:
-            out.write(u'\nTYPE\n')
+        elif 'type' in self:
+            out.write('\nTYPE\n')
             out.write('%s' % wrapper.fill('%(type)s' % self))
             out.write('\n')
-        elif u'Type' in self:
-            out.write(u'\nTYPE\n')
+        elif 'Type' in self:
+            out.write('\nTYPE\n')
             out.write('%s' % wrapper.fill('%(Type)s' % self))
             out.write('\n')
 
-        if u'ReadOnly' in self:
-            out.write(u'\nREAD-ONLY\n')
+        if 'ReadOnly' in self:
+            out.write('\nREAD-ONLY\n')
             out.write('%s' % wrapper.fill('%(ReadOnly)s' % self))
             out.write('\n')
-        elif u'readonly' in self:
-            out.write(u'\nREAD-ONLY\n')
+        elif 'readonly' in self:
+            out.write('\nREAD-ONLY\n')
             out.write('%s' % wrapper.fill('%(readonly)s' % self))
             out.write('\n')
 
@@ -2208,20 +2122,20 @@ class PasswordValidator(BaseValidator):
         :returns: returns boolean whether type is password
 
         """
-        if u'type' in attrentry:
-            if isinstance(attrentry[u'type'], list):
-                for item in attrentry[u'type']:
-                    if item.lower() == u'password':
+        if 'type' in attrentry:
+            if isinstance(attrentry['type'], list):
+                for item in attrentry['type']:
+                    if item.lower() == 'password':
                         return True
-            elif attrentry[u'type'] == "array":
-                for key, value in attrentry[u'items'].iteritems():
-                    if key.lower() == "type" and value.lower() == u'password':
+            elif attrentry['type'] == "array":
+                for key, value in six.iteritems(attrentry['items']):
+                    if key.lower() == "type" and value.lower() == 'password':
                         return True
             else:
-                if attrentry[u'type'].lower() == u'password':
+                if attrentry['type'].lower() == 'password':
                     return True
-        elif u'Type' in attrentry:
-            if attrentry[u'Type'].lower() == u'password':
+        elif 'Type' in attrentry:
+            if attrentry['Type'].lower() == 'password':
                 return True
 
         return False
@@ -2239,23 +2153,23 @@ class PasswordValidator(BaseValidator):
         if newval is None:
             return result
 
-        if u'MinLength' in self:
-            if len(newval) < int(self[u'MinLength']):
-                result.append(RegistryValidationError(u"'%s' must be at least" \
+        if 'MinLength' in self:
+            if len(newval) < int(self['MinLength']):
+                result.append(RegistryValidationError("'%s' must be at least" \
                                       " '%s' characters long" % (self.Name, \
-                                     int(self[u'MinLength'])), regentry=self))
+                                     int(self['MinLength'])), regentry=self))
 
-        if u'MaxLength' in self:
-            if len(newval) > int(self[u'MaxLength']):
-                result.append(RegistryValidationError(u"'%s' must be less " \
+        if 'MaxLength' in self:
+            if len(newval) > int(self['MaxLength']):
+                result.append(RegistryValidationError("'%s' must be less " \
                                   "than '%s' characters long" % (self.Name, \
-                                     int(self[u'MaxLength'])), regentry=self))
+                                     int(self['MaxLength'])), regentry=self))
 
-        if u'ValueExpression' in self:
-            if self[u'ValueExpression']:
-                pat = re.compile(self[u'ValueExpression'])
+        if 'ValueExpression' in self:
+            if self['ValueExpression']:
+                pat = re.compile(self['ValueExpression'])
                 if newval and not pat.match(newval):
-                    result.append(RegistryValidationError(u"'%(Name)s' must " \
+                    result.append(RegistryValidationError("'%(Name)s' must " \
                                       "match the regular expression '%(Value" \
                                       "Expression)s'" % (self), regentry=self))
 
@@ -2274,62 +2188,62 @@ class PasswordValidator(BaseValidator):
         wrapper.initial_indent = ' ' * 4
         wrapper.subsequent_indent = ' ' * 4
 
-        out.write(u'\nNAME\n')
+        out.write('\nNAME\n')
         out.write('%s' % wrapper.fill('%s' % name))
         out.write('\n')
 
-        if u'DisplayName' in self:
-            out.write(u'\nDISPLAY NAME\n')
+        if 'DisplayName' in self:
+            out.write('\nDISPLAY NAME\n')
             out.write('%s' % wrapper.fill('%(DisplayName)s' % self))
             out.write('\n')
 
-        if u'description' in self:
-            out.write(u'\nDESCRIPTION\n')
+        if 'description' in self:
+            out.write('\nDESCRIPTION\n')
             out.write('%s' % wrapper.fill('%(description)s' % self))
             out.write('\n')
 
-        if u'HelpText' in self:
-            out.write(u'\nHELP TEXT\n')
+        if 'HelpText' in self:
+            out.write('\nHELP TEXT\n')
             out.write('%s' % wrapper.fill('%(HelpText)s' % self))
             out.write('\n')
 
-        if u'WarningText' in self:
-            out.write(u'\n************************************************\n')
-            out.write(u'\nWARNING\n')
+        if 'WarningText' in self:
+            out.write('\n************************************************\n')
+            out.write('\nWARNING\n')
             out.write('%s' % wrapper.fill('%(WarningText)s' % self))
-            out.write(u'\n\n**********************************************\n')
+            out.write('\n\n**********************************************\n')
             out.write('\n')
 
-        if u'type' in self and isinstance(self[u'type'], list):
-            out.write(u'\nTYPE\n')
-            for item in self[u'type']:
+        if 'type' in self and isinstance(self['type'], list):
+            out.write('\nTYPE\n')
+            for item in self['type']:
                 out.write('%s\n' % wrapper.fill('%s' % item))
             out.write('\n')
-        elif u'type' in self:
-            out.write(u'\nTYPE\n')
+        elif 'type' in self:
+            out.write('\nTYPE\n')
             out.write('%s' % wrapper.fill('%(type)s' % self))
             out.write('\n')
-        elif u'Type' in self:
-            out.write(u'\nTYPE\n')
+        elif 'Type' in self:
+            out.write('\nTYPE\n')
             out.write('%s' % wrapper.fill('%(Type)s' % self))
             out.write('\n')
 
-        if u'MinLength' in self:
-            out.write(u'\nMIN LENGTH\n')
+        if 'MinLength' in self:
+            out.write('\nMIN LENGTH\n')
             out.write('%s' % wrapper.fill('%(MinLength)s' % self))
             out.write('\n')
 
-        if u'MaxLength' in self:
-            out.write(u'\nMAX LENGTH\n')
+        if 'MaxLength' in self:
+            out.write('\nMAX LENGTH\n')
             out.write('%s' % wrapper.fill('%(MaxLength)s' % self))
             out.write('\n')
 
-        if u'ReadOnly' in self:
-            out.write(u'\nREAD-ONLY\n')
+        if 'ReadOnly' in self:
+            out.write('\nREAD-ONLY\n')
             out.write('%s' % wrapper.fill('%(ReadOnly)s' % self))
             out.write('\n')
-        elif u'readonly' in self:
-            out.write(u'\nREAD-ONLY\n')
+        elif 'readonly' in self:
+            out.write('\nREAD-ONLY\n')
             out.write('%s' % wrapper.fill('%(readonly)s' % self))
             out.write('\n')
 
@@ -2339,3 +2253,14 @@ class Typepathforval(object):
     def __new__(cls, typepathobj):
         if typepathobj:
             Typepathforval.typepath = typepathobj
+
+def checkattr(aobj, prop):
+    """Check attribute function"""
+    try:
+        if hasattr(aobj, prop):
+            return True
+        else:
+            return False
+    except:
+        pass
+    return False

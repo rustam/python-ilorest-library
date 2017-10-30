@@ -20,7 +20,7 @@ def ex36_set_bios_url_boot_file(restobj, path='', bios_password=None):
     instances = restobj.search_for_type("Bios.")
 
     for instance in instances:
-        print instance
+        print(instance)
         body = {"UrlBootFile": path}
         response = restobj.rest_patch(instance["href"], body, bios_password)
         restobj.error_handler(response)

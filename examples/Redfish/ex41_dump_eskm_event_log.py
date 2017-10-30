@@ -23,11 +23,13 @@ def ex41_dump_eskm_event_log(redfishobj):
     for instance in instances:
         tmp = redfishobj.redfish_get(instance["@odata.id"])
         response = redfishobj.redfish_get(tmp.dict["Links"]["ESKM"]["@odata.id"])
-
-        for entry in response.dict["ESKMEvents"]:
-            #response = redfishobj.redfish_get(entry["@odata.id"])
-            sys.stdout.write(entry["Timestamp"] + "\n" + \
-                              entry["Event"] + "\n")
+        try:
+			for entry in response.dict["ESKMEvents"]:
+				#response = redfishobj.redfish_get(entry["@odata.id"])
+				sys.stdout.write(entry["Timestamp"] + "\n" + \
+								  entry["Event"] + "\n")
+        except:
+			sys.stdout.write("No ESKM events on the system\n")
         redfishobj.error_handler(response)
 
 if __name__ == "__main__":
@@ -48,12 +50,13 @@ if __name__ == "__main__":
     # Create a REDFISH object
     try:
         REDFISH_OBJ = RedfishObject(iLO_https_url, iLO_account, iLO_password)
-    except ServerDownOrUnreachableError, excp:
+    except ServerDownOrUnreachableError as excp:
         sys.stderr.write("ERROR: server not reachable or doesn't support " \
                                                                 "RedFish.\n")
         sys.exit()
-    except Exception, excp:
+    except Exception as excp:
         raise excp
 
     ex41_dump_eskm_event_log(REDFISH_OBJ)
+    REDFISH_OBJ.redfish_client.logout()
     

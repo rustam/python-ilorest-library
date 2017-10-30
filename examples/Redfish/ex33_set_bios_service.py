@@ -25,7 +25,7 @@ def ex33_set_bios_service(redfishobj, bios_properties, bios_password=None):
                  " with the 2.50 firmware or earlier. \n")
 
     for instance in instances:
-        response = redfishobj.rest_patch(instance["href"], bios_properties, \
+        response = redfishobj.redfish_patch(instance["@odata.id"], bios_properties, \
                                          bios_password)
         redfishobj.error_handler(response)
 
@@ -47,13 +47,14 @@ if __name__ == "__main__":
     # Create a REDFISH object
     try:
         REDFISH_OBJ = RedfishObject(iLO_https_url, iLO_account, iLO_password)
-    except ServerDownOrUnreachableError, excp:
+    except ServerDownOrUnreachableError as excp:
         sys.stderr.write("ERROR: server not reachable or doesn't support " \
                                                                 "RedFish.\n")
         sys.exit()
-    except Exception, excp:
+    except Exception as excp:
         raise excp
 
     ex33_set_bios_service(REDFISH_OBJ, {'ServiceName':'HP', \
                                         'ServiceEmail':'me@hp.com'})
+    REDFISH_OBJ.redfish_client.logout()
  

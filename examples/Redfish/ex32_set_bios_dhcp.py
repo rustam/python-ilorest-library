@@ -25,7 +25,7 @@ def ex32_set_bios_dhcp(redfishobj, bios_properties, bios_password=None):
                  " with the 2.50 firmware or earlier. \n")
 
     for instance in instances:
-        response = redfishobj.rest_patch(instance["@odata.id"], \
+        response = redfishobj.redfish_patch(instance["@odata.id"], \
                                          bios_properties, \
                                          optionalpassword=bios_password)
         redfishobj.error_handler(response)
@@ -48,11 +48,11 @@ if __name__ == "__main__":
     # Create a REDFISH object
     try:
         REDFISH_OBJ = RedfishObject(iLO_https_url, iLO_account, iLO_password)
-    except ServerDownOrUnreachableError, excp:
+    except ServerDownOrUnreachableError as excp:
         sys.stderr.write("ERROR: server not reachable or doesn't support " \
                                                                 "RedFish.\n")
         sys.exit()
-    except Exception, excp:
+    except Exception as excp:
         raise excp
 
     ex32_set_bios_dhcp(REDFISH_OBJ, {'Ipv4Address':'192.168.0.1', \
@@ -60,3 +60,4 @@ if __name__ == "__main__":
                                   'Ipv4PrimaryDNS':'192.168.0.3', \
                                   'Ipv4SecondaryDNS':'192.168.0.4', \
                                   'Ipv4SubnetMask':'192.168.0.5'})
+    REDFISH_OBJ.redfish_client.logout()

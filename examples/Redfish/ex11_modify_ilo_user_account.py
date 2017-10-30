@@ -89,13 +89,14 @@ if __name__ == "__main__":
     # Create a REDFISH object
     try:
         REDFISH_OBJ = RedfishObject(iLO_https_url, iLO_account, iLO_password)
-    except ServerDownOrUnreachableError, excp:
+    except ServerDownOrUnreachableError as excp:
         sys.stderr.write("ERROR: server not reachable or doesn't support " \
                                                                 "RedFish.\n")
         sys.exit()
-    except Exception, excp:
+    except Exception as excp:
         raise excp
 
     ex11_modify_ilo_user_account(REDFISH_OBJ, "name", "newname", \
                                                 "newusername", "newpassword")
+    REDFISH_OBJ.redfish_client.logout()
   

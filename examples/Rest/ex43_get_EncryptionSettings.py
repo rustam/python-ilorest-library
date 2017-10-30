@@ -20,11 +20,11 @@ def ex43_get_EncryptionSettings(restobj):
     sys.stdout.write("\nEXAMPLE 43: Dump EncryptionSettings\n")
     instances = restobj.search_for_type("HpSmartStorageArrayController.")
 
-    types = ["Name","Model","SerialNumber","EncryptionBootPasswordSet",\
+    types = ["Name", "Model", "SerialNumber", "EncryptionBootPasswordSet",\
              "EncryptionCryptoOfficerPasswordSet",\
-             "EncryptionLocalKeyCacheEnabled","EncryptionMixedVolumesEnabled",\
-             "EncryptionPhysicalDriveCount","EncryptionRecoveryParamsSet",\
-             "EncryptionStandaloneModeEnabled","EncryptionUserPasswordSet"]
+             "EncryptionLocalKeyCacheEnabled", "EncryptionMixedVolumesEnabled",\
+             "EncryptionPhysicalDriveCount", "EncryptionRecoveryParamsSet",\
+             "EncryptionStandaloneModeEnabled", "EncryptionUserPasswordSet"]
 
     for instance in instances:
         response = restobj.rest_get(instance["href"])
