@@ -11,7 +11,7 @@ script: nosetests
 deploy:
     # test pypi
   - provider: pypi
-    https://upload.pypi.org/legacy/
+    server: https://upload.pypi.org/legacy/
     user: "lumbajack"
     password:
       secure: NIcUvw0YQG3OFoMJhc6a7MEVpwRnwuJ+zKJoFiVI+NRLbIpNAduBemGIOXlVYB71zIa2dYGljS7FUxhWA2J1qILBAKtN15AHOJsFuplUzsjsRM/h8K7Tp7SKgbyz7X7dOGg3bzifnOGEZxgOA7pbut5DU0V00R7xegNcwaOB6/8=
