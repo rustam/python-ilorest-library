@@ -16,5 +16,4 @@ deploy:
       secure: NIcUvw0YQG3OFoMJhc6a7MEVpwRnwuJ+zKJoFiVI+NRLbIpNAduBemGIOXlVYB71zIa2dYGljS7FUxhWA2J1qILBAKtN15AHOJsFuplUzsjsRM/h8K7Tp7SKgbyz7X7dOGg3bzifnOGEZxgOA7pbut5DU0V00R7xegNcwaOB6/8=
     on:
       branch: master
-      tags: true
       condition: $TRAVIS_PYTHON_VERSION = "2.7"
