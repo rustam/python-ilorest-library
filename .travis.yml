@@ -11,10 +11,9 @@ script: nosetests
 deploy:
     # test pypi
   - provider: pypi
-    server: https://pypi.python.org/pypi
-    user: "lumbajack"
+    user: "yergidy"
     password:
-      secure: NIcUvw0YQG3OFoMJhc6a7MEVpwRnwuJ+zKJoFiVI+NRLbIpNAduBemGIOXlVYB71zIa2dYGljS7FUxhWA2J1qILBAKtN15AHOJsFuplUzsjsRM/h8K7Tp7SKgbyz7X7dOGg3bzifnOGEZxgOA7pbut5DU0V00R7xegNcwaOB6/8=
+      secure: i94IneuP11Zpvv2PW5GwosK0WtsLa7iIg+c1sozDvESBXVi+929FCR/8e2wA9UNRMR+x6pzLO0x+15FXGFzoQ9pByP5tzhM08txL5XzUOpaG1WvPwbIyi8O4pKomjplhh2U0POybJUJooJbSiNNTtvFa0u+r24k1wsXDBX0TTAmXAoEd4h55XFMgzkkTXt1yS/Qt4tVRhcNSoy4puqpRwcy4sAK+HAfSoOSCMB2aO/jaJYehQ/K3FITjoF427eudCUcLuwpVo+91HD8ig4vjJkjNFbHJkovFzhDuEAYlZyI6PLppKvdKStJ29pnsv1d7K5h/+i0oAELb42OrUZa+sFicEZABDs5q47L28cdfce93J9r354a1/yjOnoLBtLdxRwSePWLCT5RbHfyQx5dolZsOefhp8H7PWCq8OWV+jUbYHFtjrnSARWWLszFOuhLWAI/gmaNCAHnNP6ZxgpnuuOiA9B0CJtoCLIzVruE02mUTWvFsAqWdCxmra8pDFJhFfal8RkDhDwMyu/hRR3oQvwv9GndAd4BOATSC+lIfH/CmmayjjvVrkEd7pTgMOmlm6m+yEk9PulNNGPCjSARkGbAbDWd1jXXEe62CC9xCf2DvDfV3qHZ3ZCAWpyuqvCMtmB5vbkIev8BJU6teqfcBsjfwgHvuGuhYflKYp4iQw3U=
     on:
       branch: master
       tags: true
