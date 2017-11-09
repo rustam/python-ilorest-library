@@ -2,7 +2,7 @@ python-ilorest-library
 ==============
 .. image:: https://travis-ci.org/HewlettPackard/python-ilorest-library.svg?branch=master
     :target: https://travis-ci.org/HewlettPackard/python-ilorest-library
-.. image:: https://img.shields.io/pypi/v/python-ilorest-library.svg?maxAge=2592000
+.. image:: https://img.shields.io/pypi/v/python-ilorest-library.svg
 	:target: https://pypi.python.org/pypi/python-ilorest-library
 .. image:: https://img.shields.io/github/release/HewlettPackard/python-ilorest-library.svg?maxAge=2592000
 	:target: 
