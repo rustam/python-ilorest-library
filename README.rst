@@ -82,7 +82,7 @@ Create a REST or Redfish Object
 
 	REST_OBJ = RestObject(iLO_https_url, iLO_account, iLO_password)
 
- To crete a Redfish Object, call the RedfishObject method:
+ To create a Redfish Object, call the RedfishObject method:
 .. code-block:: python
 
 	REDFISH_OBJ = RedfishObject(iLO_https_url, iLO_account, iLO_password)
