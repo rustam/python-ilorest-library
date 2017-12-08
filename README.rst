@@ -79,11 +79,13 @@ Create a REST or Redfish Object
 Both legacy REST and Redfish Objects contain 3 parameters: the target secured URL (i.e. "https://ilo-IP" or "https://X.Y.Z.T"), an iLO user name and its password.
 
 To create a REST object, call the RestObject method:
+
 .. code-block:: python
 
 	REST_OBJ = RestObject(iLO_https_url, iLO_account, iLO_password)
 
 To create a Redfish Object, call the RedfishObject method:
+
 .. code-block:: python
 
 	REDFISH_OBJ = RedfishObject(iLO_https_url, iLO_account, iLO_password)
