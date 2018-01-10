@@ -899,6 +899,7 @@ class RestClientBase(object):
         restreq = RestRequest(reqpath, method=method, body=body)
 
         attempts = 0
+        restresp = None
         while attempts < self.MAX_RETRY:
             if LOGGER.isEnabledFor(logging.DEBUG):
                 try:
@@ -974,19 +975,21 @@ class RestClientBase(object):
         if attempts < self.MAX_RETRY:
             if LOGGER.isEnabledFor(logging.DEBUG):
                 headerstr = ''
-
-                for header in restresp._http_response.msg.headers:
-                    headerstr += '\t' + header.rstrip() + '\n'
-
-                try:
-                    LOGGER.debug('HTTP RESPONSE for %s:\nCode: %s\nHeaders:\n' \
-                             '%s\nBody Response of %s: %s'%\
-                             (restresp.request.path,\
-                            str(restresp._http_response.status)+ ' ' + \
-                            restresp._http_response.reason, \
-                            headerstr, restresp.request.path, restresp.read))
-                except:
-                    LOGGER.debug('HTTP RESPONSE:\nCode:%s', (restresp))
+                if restresp is not None:
+                    for header in restresp.getheaders():
+                        headerstr += '\t' + header[0] + ': ' + header[1] + '\n'
+    
+                    try:
+                        LOGGER.debug('HTTP RESPONSE for %s:\nCode: %s\nHeaders:\n' \
+                                 '%s\nBody Response of %s: %s'%\
+                                 (restresp.request.path,\
+                                str(restresp._http_response.status)+ ' ' + \
+                                restresp._http_response.reason, \
+                                headerstr, restresp.request.path, restresp.read))
+                    except:
+                        LOGGER.debug('HTTP RESPONSE:\nCode:%s', (restresp))
+                else:
+                    LOGGER.debug('HTTP RESPONSE: No HTTP Response obtained')
 
             return restresp
         else:
@@ -1345,8 +1348,8 @@ class Blobstore2RestClient(RestClientBase):
             pass
         if LOGGER.isEnabledFor(logging.DEBUG):
             headerstr = ''
-            for header in rest_response._http_response.msg.headers:
-                headerstr += '\t' + header.rstrip() + '\n'
+            for header in rest_response.getheaders():
+                headerstr += '\t' + header[0] + ': ' + header[1] + '\n'
             try:
                 LOGGER.debug('Blobstore RESPONSE for %s:\nCode: %s\nHeaders:\n%s'\
                          '\nBody of %s: %s'%\
