@@ -19,7 +19,7 @@ python-ilorest-library
 Description
 ----------
 
- HPE RESTful API for iLO is a RESTful application programming interface for the management of iLO and iLO Chassis Manager based HPE servers. REST (Representational State Transfer) is a web based software architectural style consisting of a set of constraints that focuses on a system's resources. iLO REST library performs the basic HTTP operations GET, POST, PUT, PATCH and DELETE on resources using the HATEOAS (Hypermedia as the Engine of Application State) REST architecture. The API allows the clients to manage and interact with iLO through a fixed URL and several URIs. Go to the `wiki <../../wiki>`_ for more details.
+HPE RESTful API for iLO is a RESTful application programming interface for the management of iLO and iLO Chassis Manager based HPE servers. REST (Representational State Transfer) is a web based software architectural style consisting of a set of constraints that focuses on a system's resources. iLO REST library performs the basic HTTP operations GET, POST, PUT, PATCH and DELETE on resources using the HATEOAS (Hypermedia as the Engine of Application State) REST architecture. The API allows the clients to manage and interact with iLO through a fixed URL and several URIs. Go to the `wiki <../../wiki>`_ for more details.
 
 Installing
 ----------
@@ -43,12 +43,12 @@ Requirements
 Remote communication
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
- No special requirements.
+No special requirements.
  
 Inband communication
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
- To enable support for inband communications, you must download the DLL/SO for your system from: windows_ / linux_. It must be placed in your working environment path.
+To enable support for inband communications, you must download the DLL/SO for your system from: windows_ / linux_. It must be placed in your working environment path.
  
  
  .. _windows: https://downloads.hpe.com/pub/softlib2/software1/pubsw-windows/p1463761240/v128248/ilorest_chif.dll
@@ -56,19 +56,19 @@ Inband communication
 
 Usage
 ----------
- A large set of examples is provided under the examples directory of this project. In addition to the directives present in this paragraph, you will find valuable implementation tips and tricks in those examples.
+A large set of examples is provided under the examples directory of this project. In addition to the directives present in this paragraph, you will find valuable implementation tips and tricks in those examples.
 
 Import the relevant python module
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- Depending on your desire to develop an HPE legacy REST or Redfish compliant application import the relevant python module.
+Depending on your desire to develop an HPE legacy REST or Redfish compliant application import the relevant python module.
  
- For a legacy REST application:
+For a legacy REST application:
  
 .. code-block:: python
 
 	from _restobject import RestObject
 
- For Redfish compliant application:
+For Redfish compliant application:
 
 .. code-block:: python
 
@@ -76,20 +76,23 @@ Import the relevant python module
 
 Create a REST or Redfish Object
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- Both legacy REST and Redfish Objects contain 3 parameters: the target secured URL (i.e. "https://ilo-IP" or "https://X.Y.Z.T"), an iLO user name and its password.
- To create a REST object, call the RestObject method:
+Both legacy REST and Redfish Objects contain 3 parameters: the target secured URL (i.e. "https://ilo-IP" or "https://X.Y.Z.T"), an iLO user name and its password.
+
+To create a REST object, call the RestObject method:
+
 .. code-block:: python
 
 	REST_OBJ = RestObject(iLO_https_url, iLO_account, iLO_password)
 
- To create a Redfish Object, call the RedfishObject method:
+To create a Redfish Object, call the RedfishObject method:
+
 .. code-block:: python
 
 	REDFISH_OBJ = RedfishObject(iLO_https_url, iLO_account, iLO_password)
 
 Login to the server
 ~~~~~~~~~~~~~~~~~~~~~~~~~
- The login operation is performed when creating the REST_OBJ or REDFISH_OBJ. You can continue with a basic authentication, but it would less secure.
+The login operation is performed when creating the REST_OBJ or REDFISH_OBJ. You can continue with a basic authentication, but it would less secure.
 
 .. code-block:: python
 
@@ -97,24 +100,24 @@ Login to the server
 
 Perform a GET operation
 ~~~~~~~~~~~~~~~~~~~~~~~~~
- A simple GET operation can be performed to obtain the data present in any valid path.
- An example of rawget operation on the path "/rest/v1/system/1" is shown below:
+A simple GET operation can be performed to obtain the data present in any valid path.
+An example of rawget operation on the path "/rest/v1/system/1" is shown below:
 
 .. code-block:: python
 
 	response = REST_OBJ.get("/rest/v1/systems/1", None)
 
- A safer implementation of GET operation is performed in the library. This method finds the path of requested data based on the selected type. This will allow for the script to work seamlessly with any changes of location of data. The response obtained is also validated against schema for correct return values.
+A safer implementation of GET operation is performed in the library. This method finds the path of requested data based on the selected type. This will allow for the script to work seamlessly with any changes of location of data. The response obtained is also validated against schema for correct return values.
 
 Logout the created session
 ~~~~~~~~~~~~~~~~~~~~~~~~~
- Make sure you logout every session you create as it will remain alive until it times out.
+Make sure you logout every session you create as it will remain alive until it times out.
 
 .. code-block:: python
 
 	REST_OBJ.logout()
 
- A logout deletes the current sesssion from the system. The redfish_client and the rest_client object destructor includes a logout statement. 
+A logout deletes the current sesssion from the system. The redfish_client and the rest_client object destructor includes a logout statement. 
 
 Contributing
 ----------
