@@ -19,9 +19,9 @@
 #---------Imports---------
 import logging
 
-from redfish.rest.v1 import SecurityStateError
 from redfish import redfish_client, rest_client
 from redfish.ris.rmc_helper import UnableToObtainIloVersionError
+from redfish.rest.v1 import SecurityStateError, InvalidCredentialsError
 #---------End of imports---------
 
 LOGGER = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ class Typesandpathdefines(object):
         self.flagiften = False
         self.adminpriv = True
 
-    def getgen(self, url=None, logger=None):
+    def getgen(self, gen=None, url=None, username=None, password=None, logger=None):
         """Function designed to verify the servers platform
 
         :param url: The URL to perform the request on.
@@ -44,38 +44,45 @@ class Typesandpathdefines(object):
         :type logger: str.
 
         """
+
         self.url = url
-
-        try:
-            redfishclient = redfish_client(base_url=self.url, \
-                               username=None, password=None, \
-                               default_prefix="/redfish/v1/", is_redfish=True)
-            response = redfishclient.get(path="/redfish/v1/")
-        except SecurityStateError as excp:
-            raise excp
-        except Exception as excp:
+        if not gen:
             try:
-                restclient = rest_client(base_url=self.url, username=None, \
-                                 password=None, default_prefix="/rest/v1")
-                response = restclient.get(path="/rest/v1")
-            except Exception as excep:
-                logger = logger if not logger else LOGGER
-                if type(excep) != type(excp):
-                    logger.error("Gen get rest error:"+str(excep)+"\n")
+                redfishclient = redfish_client(base_url=self.url, \
+                                   username=username, password=password, \
+                                   default_prefix="/redfish/v1/", is_redfish=True,\
+                                   cache=False)
+                rootresp = redfishclient.root
+                redfishclient.logout()
+            except SecurityStateError as excp:
                 raise excp
+            except InvalidCredentialsError:
+                raise
+            except Exception:
+                excep = None
+                try:
+                    restclient = rest_client(base_url=self.url, username=username, \
+                                     password=password, default_prefix="/rest/v1")
+                    rootresp = restclient.root
+                    restclient.logout()
+                except Exception as excep:
+                    logger = logger if not logger else LOGGER
+                    logger.error("Gen get rest error:"+str(excep)+"\n")
+                if excep:
+                    raise
 
-        self.ilogen = None
+            self.ilogen = None
 
+            try:
+                self.ilogen = rootresp["Oem"]["Hp"]["Manager"][0]["ManagerType"]
+            except:
+                self.ilogen = rootresp["Oem"]["Hpe"]["Manager"][0]["ManagerType"]
+        else:
+            self.ilogen = int(gen)
         try:
-            self.ilogen = response.dict["Oem"]["Hp"]["Manager"][0]\
-                                                                ["ManagerType"]
-        except:
-            self.ilogen = response.dict["Oem"]["Hpe"]["Manager"][0]\
-                                                                ["ManagerType"]
-
-        try:
-            self.ilogen = self.ilogen.split(' ')[-1]
-            self.flagiften = False
+            if not isinstance(self.ilogen, int):
+                self.ilogen = self.ilogen.split(' ')[-1]
+                self.flagiften = False
             if int(self.ilogen) >= 5:
                 self.flagiften = True
         except:
@@ -130,7 +137,7 @@ class Definevalstenplus(Definevals):
         self.hpilolicensecollectiontype = "HpeiLOLicenseCollection."
         self.hpiloactivehealthsystemtype = "#HpeiLOActiveHealthSystem."
         self.hpiscsisoftwareinitiatortype = "HpeiSCSISoftwareInitiator."
-        self.hpilofederationgrouptypecoll = "HpeiLOFederationGroupCollection."      
+        self.hpilofederationgrouptypecoll = "HpeiLOFederationGroupCollection."
         self.bootoverridetargettype = "BootSourceOverrideTarget@Redfish.AllowableValues"
         self.messageregistrytype = "#MessageRegistry."
 

@@ -50,7 +50,8 @@ except ImportError:
     pass
 
 from redfish.hpilo.rishpilo import HpIloChifPacketExchangeError
-from redfish.hpilo.risblobstore2 import BlobStore2, Blob2OverrideError, ChifDllMissingError
+from redfish.hpilo.risblobstore2 import BlobStore2, Blob2OverrideError, \
+                            ChifDllMissingError, Blob2SecurityError
 
 #---------End of imports---------
 
@@ -86,7 +87,7 @@ class JsonDecodingError(Exception):
     pass
 
 class SecurityStateError(Exception):
-    """Raised when there is a strict security state."""
+    """Raised when there is a strict security state without authentication."""
     pass
 
 class RisObject(dict):
@@ -487,7 +488,7 @@ class RestClientBase(object):
 
     def __init__(self, base_url, username=None, password=None, \
                  default_prefix='/redfish/v1/', sessionkey=None, \
-                 biospassword=None):
+                 biospassword=None, cache=False):
         """Initialization of the base class RestClientBase
 
         :param base_url: The URL of the remote system
@@ -519,7 +520,8 @@ class RestClientBase(object):
         self.default_prefix = default_prefix
 
         self.__init_connection()
-        self.get_root_object()
+        if not cache:
+            self.get_root_object()
         self.__destroy_connection()
 
     def __init_connection(self, url=None):
@@ -803,14 +805,16 @@ class RestClientBase(object):
             headers['X-CHRP-RIS-Provider-ID'] = providerheader
 
         if self.__biospassword:
-            hash_object = hashlib.sha256(self.__biospassword)
+            hash_object = hashlib.new('SHA256')
+            hash_object.update(self.__biospassword)
             headers['X-HPRESTFULAPI-AuthToken'] = \
                                                 hash_object.hexdigest().upper()
         elif optionalpassword:
         #TODO: check if optional password is unicde
             optionalpassword = optionalpassword.encode('utf-8') if type(\
                 optionalpassword).__name__ in 'basestr' else optionalpassword
-            hash_object = hashlib.sha256(optionalpassword)
+            hash_object = hashlib.new('SHA256')
+            hash_object.update(optionalpassword)
             headers['X-HPRESTFULAPI-AuthToken'] = \
                                                 hash_object.hexdigest().upper()
 
@@ -927,9 +931,9 @@ class RestClientBase(object):
                                                                 headers=headers)
                     self._conn_count += 1
 
-                    inittime = time.clock()
+                    inittime = time.time()
                     resp = self._conn.getresponse()
-                    endtime = time.clock()
+                    endtime = time.time()
                     LOGGER.info('Response Time to %s: %s seconds.'% \
                                         (restreq.path, str(endtime-inittime)))
 
@@ -1079,7 +1083,7 @@ class HttpClient(RestClientBase):
     """A client for Rest"""
     def __init__(self, base_url, username=None, password=None, \
                             default_prefix='/redfish/v1/', sessionkey=None, \
-                            biospassword=None, is_redfish=False):
+                            biospassword=None, is_redfish=False, cache=False):
         """Initialize HttpClient
 
         :param base_url: The url of the remote system
@@ -1101,12 +1105,13 @@ class HttpClient(RestClientBase):
         self.is_redfish = is_redfish
         super(HttpClient, self).__init__(base_url, username=username, \
                             password=password, default_prefix=default_prefix, \
-                            sessionkey=sessionkey, biospassword=biospassword)
-
-        if self.is_redfish:
-            self.login_url = self.root.Links.Sessions['@odata.id']
-        else:
-            self.login_url = self.root.links.Sessions.href
+                            sessionkey=sessionkey, biospassword=biospassword, \
+                            cache=cache)
+        if not cache:
+            if self.is_redfish:
+                self.login_url = self.root.Links.Sessions['@odata.id']
+            else:
+                self.login_url = self.root.links.Sessions.href
 
     def _rest_request(self, path='', method="GET", args=None, body=None,\
             headers=None, optionalpassword=None, providerheader=None):
@@ -1155,12 +1160,21 @@ class HttpClient(RestClientBase):
 
         return headers
 
+    def set_root(self, root):
+        self.root = root
+
+        if self.is_redfish:
+            self.login_url = self.root.obj.Links.Sessions['@odata.id']
+        else:
+            self.login_url = self.root.obj.links.Sessions.href
+
 class Blobstore2RestClient(RestClientBase):
     """A client for Rest that uses the blobstore2 as the transport"""
     _http_vsn_str = 'HTTP/1.1'
 
     def __init__(self, base_url, default_prefix='/rest/v1', username=None, \
-                            password=None, sessionkey=None, is_redfish=False):
+                            password=None, sessionkey=None, is_redfish=False, \
+                            cache=False):
 
         """Initialize Blobstore2RestClient
 
@@ -1181,11 +1195,17 @@ class Blobstore2RestClient(RestClientBase):
 
         """
         self.is_redfish = is_redfish
+        self.creds = not cache
 
         try:
-            security_state = int(BlobStore2().get_security_state())
-            if security_state > 3:
-                raise SecurityStateError(security_state)
+            if not cache:
+                correctcreds = BlobStore2.initializecreds(username=username, password=password)
+                bs2 = BlobStore2()
+                if not correctcreds:
+                    security_state = int(bs2.get_security_state())
+                    raise SecurityStateError(security_state)
+        except Blob2SecurityError:
+            raise InvalidCredentialsError(0)
         except HpIloChifPacketExchangeError as excp:
             LOGGER.info("Exception: {0}".format(str(excp)))
             raise ChifDriverMissingOrNotFound()
@@ -1193,16 +1213,44 @@ class Blobstore2RestClient(RestClientBase):
             if excp.message == 'chif':
                 raise ChifDriverMissingOrNotFound()
             else:
-                raise excp
+                raise
 
         super(Blobstore2RestClient, self).__init__(base_url, \
                         username=username, password=password, \
-                        default_prefix=default_prefix, sessionkey=sessionkey)
+                        default_prefix=default_prefix, sessionkey=sessionkey,\
+                        cache=cache)
+
+        if not cache:
+            if self.is_redfish:
+                self.login_url = self.root.Links.Sessions['@odata.id']
+            else:
+                self.login_url = self.root.links.Sessions.href
+
+    def updatecredentials(self):
+        """update credentials for high security if needed
+        """
+        if not self.creds:
+            user = self._RestClientBase__username
+            password = self._RestClientBase__password
+            try:
+                correctcreds = BlobStore2.initializecreds(username=user, password=password)
+                if not correctcreds:
+                    security_state = int(BlobStore2().get_security_state())
+                    raise SecurityStateError(security_state)
+            except Blob2SecurityError:
+                raise InvalidCredentialsError(0)
+            except Exception:
+                raise
+
+            self.creds = True
+
+    def set_root(self, root):
+        self.root = root
 
         if self.is_redfish:
-            self.login_url = self.root.Links.Sessions['@odata.id']
+            self.login_url = self.root.obj.Links.Sessions['@odata.id']
         else:
-            self.login_url = self.root.links.Sessions.href
+            self.login_url = self.root.obj.links.Sessions.href
 
     def _rest_request(self, path='', method="GET", args=None, body=None,
                       headers=None, optionalpassword=None, providerheader=None):
@@ -1225,6 +1273,7 @@ class Blobstore2RestClient(RestClientBase):
         :return: returns a RestResponse object
 
         """
+        self.updatecredentials()
         headers = self._get_req_headers(headers, providerheader, \
                                                             optionalpassword)
 
@@ -1299,7 +1348,7 @@ class Blobstore2RestClient(RestClientBase):
                 LOGGER.debug('Blobstore REQUEST: %s\n\tPATH: %s\n\tBODY: %s'% \
                          (method, path, 'binary body'))
 
-        inittime = time.clock()
+        inittime = time.time()
 
         for idx in range(5):
             try:
@@ -1311,7 +1360,7 @@ class Blobstore2RestClient(RestClientBase):
                 else:
                     continue
 
-        endtime = time.clock()
+        endtime = time.time()
 
         bs2.channel.close()
 
@@ -1385,7 +1434,7 @@ class Blobstore2RestClient(RestClientBase):
 
 def redfish_client(base_url=None, username=None, password=None, \
                             default_prefix='/redfish/v1/', sessionkey=None, \
-                            biospassword=None, is_redfish=True):
+                            biospassword=None, is_redfish=True, cache=False):
     """Create and return appropriate REDFISH client instance.
     Instantiates appropriate Redfish object based on existing
     configuration. Use this to retrieve a pre-configured Redfish object
@@ -1409,11 +1458,11 @@ def redfish_client(base_url=None, username=None, password=None, \
     """
     return get_client_instance(base_url=base_url, username=username, password=password, \
                             default_prefix=default_prefix, biospassword=biospassword, \
-                            sessionkey=sessionkey, is_redfish=is_redfish)
+                            sessionkey=sessionkey, is_redfish=is_redfish, cache=cache)
 
 def rest_client(base_url=None, username=None, password=None, \
                                 default_prefix='/rest/v1', sessionkey=None, \
-                                biospassword=None, is_redfish=False):
+                                biospassword=None, is_redfish=False, cache=False):
     """Create and return appropriate REDFISH client instance.
     Instantiates appropriate Redfish object based on existing
     configuration. Use this to retrieve a pre-configured Redfish object
@@ -1437,11 +1486,11 @@ def rest_client(base_url=None, username=None, password=None, \
     """
     return get_client_instance(base_url=base_url, username=username, password=password, \
                             default_prefix=default_prefix, biospassword=biospassword, \
-                            sessionkey=sessionkey, is_redfish=is_redfish)
+                            sessionkey=sessionkey, is_redfish=is_redfish, cache=cache)
 
 def get_client_instance(base_url=None, username=None, password=None, \
                                 default_prefix='/rest/v1', biospassword=None, \
-                                sessionkey=None, is_redfish=False):
+                                sessionkey=None, is_redfish=False, cache=False):
     """Create and return appropriate RESTful/REDFISH client instance.
     Instantiates appropriate Rest/Redfish object based on existing
     configuration. Use this to retrieve a pre-configured Rest object
@@ -1465,9 +1514,8 @@ def get_client_instance(base_url=None, username=None, password=None, \
     """
     if not base_url or base_url.startswith('blobstore://'):
         if platform.system() == 'Windows':
-            if not ctypes.cdll.LoadLibrary('ilorest_chif'):
-                if not ctypes.cdll.LoadLibrary('hprest_chif'):
-                    raise ChifDllMissingError()
+            lib = BlobStore2.gethprestchifhandle()
+            BlobStore2.unloadchifhandle(lib)
         else:
             if not os.path.isdir('/dev/hpilo'):
                 raise ChifDriverMissingOrNotFound()
@@ -1475,9 +1523,9 @@ def get_client_instance(base_url=None, username=None, password=None, \
         return Blobstore2RestClient(base_url=base_url, \
                             default_prefix=default_prefix, username=username, \
                             password=password, sessionkey=sessionkey, \
-                            is_redfish=is_redfish)
+                            is_redfish=is_redfish, cache=cache)
     else:
         return HttpClient(base_url=base_url, username=username, \
                           password=password, default_prefix=default_prefix, \
                           biospassword=biospassword, sessionkey=sessionkey, \
-                          is_redfish=is_redfish)
+                          is_redfish=is_redfish, cache=cache)

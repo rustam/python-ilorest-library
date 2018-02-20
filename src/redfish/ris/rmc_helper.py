@@ -127,7 +127,8 @@ class IloResponseError(Exception):
 class RmcClient(object):
     """RMC client base class"""
     def __init__(self, url=None, username=None, password=None, sessionkey=None,\
-                            typepath=None, biospassword=None, is_redfish=False):
+                            typepath=None, biospassword=None, is_redfish=False,\
+                            cache=False):
         """Initialized RmcClient
         :param url: redfish host name or IP address.
         :type url: str.
@@ -150,12 +151,12 @@ class RmcClient(object):
             self._rest_client = redfish.rest.v1.redfish_client(base_url=url, \
                            username=username, password=password, \
                            sessionkey=sessionkey, biospassword=biospassword, \
-                           is_redfish=is_redfish)
+                           is_redfish=is_redfish, cache=cache)
         else:
             self._rest_client = redfish.rest.v1.rest_client(base_url=url, \
                             username=username, password=password, \
                             sessionkey=sessionkey, biospassword=biospassword, \
-                            is_redfish=is_redfish)
+                            is_redfish=is_redfish, cache=cache)
 
         self.typepath = typepath
         self._get_cache = dict()
@@ -231,6 +232,18 @@ class RmcClient(object):
         """The rest client's current monolith"""
         return self._monolith
     monolith = property(get_monolith, None)
+
+    def updatecredentials(self, user, password):
+        """Updates the credentials for the blobstore
+        rest client only
+
+        :param user: the username to update to.
+        :type user: str
+        :param password: the password to update to.
+        :type password: str
+        """
+        if hasattr(self._rest_client, 'updatecredentials'):
+            self._rest_client.updatecredentials(user, password)
 
     def _get_selector(self):
         """The rest client's current selector"""
@@ -395,7 +408,7 @@ class RmcClient(object):
                         providerheader=providerheader)
 
     def tooldelete(self, path, args=None, headers=None, providerheader=None):
-        """Perform a PUT request on path argument.
+        """Perform a DELETE request on path argument.
 
         :param path: The URL to perform a DELETE request on.
         :type path: str.
@@ -735,7 +748,7 @@ class RmcFileCacheManager(RmcCacheManager):
                     if 'url' not in login_data:
                         continue
 
-                    self._rmc.getgen(url=login_data.get('url', None))
+                    self._rmc.getgen(login_data.get('ilo'), url=login_data.get('url'))
                     rmc_client = RmcClient(\
                         username=login_data.get('username', 'Administrator'), \
                         password=login_data.get('password', None), \
@@ -743,7 +756,8 @@ class RmcFileCacheManager(RmcCacheManager):
                         sessionkey=login_data.get('session_key', None), \
                         biospassword=login_data.get('bios_password', None), \
                         typepath=self._rmc.typepath, \
-                        is_redfish=login_data.get('redfish', None))
+                        is_redfish=login_data.get('redfish', None),
+                        cache=True)
 
                     rmc_client._rest_client.set_authorization_key(\
                                             login_data.get('authorization_key'))
@@ -772,10 +786,14 @@ class RmcFileCacheManager(RmcCacheManager):
                         rmc_client._get_cache[key] = (\
                                   redfish.rest.v1.StaticRestResponse(\
                                                                 **getdata[key]))
+                        if restreq.path == rmc_client._rest_client.default_prefix:
+                            rmc_client._rest_client.set_root(rmc_client._get_cache[key])
 
                     rmc_client._monolith = RisMonolith(rmc_client)
                     rmc_client._monolith.load_from_dict(client['monolith'])
                     self._rmc._rmc_clients.append(rmc_client)
+                    #make sure root is there
+                    rmc_client._rest_client.root
             except BaseException as excp:
                 self._rmc.warn('Unable to read cache data %s' % excp)
 
@@ -798,9 +816,9 @@ class RmcFileCacheManager(RmcCacheManager):
         index_cache = list()
 
         for client in self._rmc._rmc_clients:
-            md5 = hashlib.md5()
-            md5.update(client.get_base_url().encode('utf-8'))
-            md5str = md5.hexdigest()
+            shaobj = hashlib.new("SHA256")
+            shaobj.update(client.get_base_url().encode('utf-8'))
+            md5str = shaobj.hexdigest()
 
             index_map[client.get_base_url()] = md5str
             index_data = dict(url=client.get_base_url(), href='%s' % md5str,)
@@ -815,13 +833,14 @@ class RmcFileCacheManager(RmcCacheManager):
         if self._rmc._rmc_clients:
             for client in self._rmc._rmc_clients:
                 login_data = dict(\
-                    username=client.get_username(), \
-                    password=client.get_password(), url=client.get_base_url(), \
+                    username=None, \
+                    password=None, url=client.get_base_url(), \
                     session_key=client.get_session_key(), \
                     session_location=client.get_session_location(), \
                     authorization_key=client.get_authorization_key(), \
                     bios_password=client.bios_password, \
-                    redfish=client.monolith.is_redfish)
+                    redfish=client.monolith.is_redfish, \
+                    ilo=client.typepath.ilogen)
 
                 clients_cache.append(\
                     dict(selector=client.selector, login=login_data, \

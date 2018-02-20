@@ -71,6 +71,10 @@ class Blob2OverrideError(Exception):
     """Raised when delete operation fails because of it been overwritten"""
     pass
 
+class BlobRetriesExhaustedError(Exception):
+    """Raised when max retries have been attempted for same operation"""
+    pass
+
 class Blob2FinalizeError(Exception):
     """Raised when finalize operation fails"""
     pass
@@ -80,7 +84,7 @@ class Blob2ListError(Exception):
     pass
 
 class Blob2SecurityError(Exception):
-    """Raised when list operation fails"""
+    """Raised when there is an issue with security"""
     pass
 
 class BlobNotFoundError(Exception):
@@ -116,7 +120,8 @@ class BlobReturnCodes(object):
 class BlobStore2(object):
     """Blob store 2 class"""
     def __init__(self):
-        self.channel = HpIlo()
+        lib = self.gethprestchifhandle()
+        self.channel = HpIlo(dll=lib)
         self.MAX_RETRIES = 3
 
     def __del__(self):
@@ -144,50 +149,7 @@ class BlobStore2(object):
         data = ptr[:lib.size_of_createRequest()]
         data = bytearray(data)
 
-        resp = self._send_receive_raw(data, lib.size_of_createResponse())
-
-        if len(resp) > lib.size_of_createResponse():
-            raise Blob2CreateError("create response larger than expected")
-
-        if len(resp) < lib.size_of_createResponse():
-            raise Blob2CreateError("create response smaller than expected")
-
-        errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
-        if not (errorcode == BlobReturnCodes.SUCCESS or \
-                                    errorcode == BlobReturnCodes.NOTMODIFIED):
-            raise HpIloError(errorcode)
-
-        self.unloadchifhandle(lib)
-
-        return resp
-
-    def createbc(self, key, namespace):
-        """Create the blob
-
-        :param key: The blob key to create.
-        :type key: str.
-        :param namespace: The blob namespace to create the key in.
-        :type namespace: str.
-
-        """
-        lib = self.gethprestchifhandle()
-        lib.create_not_blobentrybc.argtypes = [c_char_p, c_char_p]
-        lib.create_not_blobentrybc.restype = POINTER(c_ubyte)
-
-        name = create_string_buffer(key)
-        namespace = create_string_buffer(namespace)
-
-        ptr = lib.create_not_blobentrybc(name, namespace)
-        data = ptr[:lib.size_of_srbuf()]
-        data = bytearray(data)
-
-        resp = self._send_receive_raw(data, lib.size_of_srbuf())
-
-        if len(resp) > lib.size_of_srbuf():
-            raise Blob2CreateError("create response larger than expected")
-
-        if len(resp) < lib.size_of_srbuf():
-            raise Blob2CreateError("create response smaller than expected")
+        resp = self._send_receive_raw(data)
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
         if not (errorcode == BlobReturnCodes.SUCCESS or \
@@ -212,19 +174,13 @@ class BlobStore2(object):
         lib.get_info.restype = POINTER(c_ubyte)
 
         name = create_string_buffer(key.encode('utf-8'))
-        namespace = create_string_buffer(namespace.encode('utf-8'))
+        namspace = create_string_buffer(namespace.encode('utf-8'))
 
-        ptr = lib.get_info(name, namespace)
+        ptr = lib.get_info(name, namspace)
         data = ptr[:lib.size_of_infoRequest()]
         data = bytearray(data)
 
-        resp = self._send_receive_raw(data, lib.size_of_infoResponse())
-
-        if len(resp) > lib.size_of_infoResponse():
-            raise Blob2InfoError("info response larger than expected")
-
-        if len(resp) < lib.size_of_infoResponse():
-            raise Blob2InfoError("info response smaller than expected")
+        resp = self._send_receive_raw(data)
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
         if errorcode == BlobReturnCodes.BADPARAMETER:
@@ -283,10 +239,11 @@ class BlobStore2(object):
 
             if bytesread == 0:
                 if retries < self.MAX_RETRIES:
-                    self.read(key=key, namespace=namespace, retries=\
+                    data = self.read(key=key, namespace=namespace, retries=\
                                                         retries+1)
+                    return data
                 else:
-                    raise Blob2OverrideError()
+                    raise BlobRetriesExhaustedError()
 
             data.extend(recvpkt[newreadsize:newreadsize + bytesread])
             bytes_read += bytesread
@@ -317,10 +274,7 @@ class BlobStore2(object):
         data = ptr[:lib.size_of_readRequest()]
         data = bytearray(data)
 
-        resp = self._send_receive_raw(data, lib.size_of_readResponse())
-
-        if len(resp) < lib.size_of_responseHeaderBlob():
-            raise Blob2ReadError("read fragment response smaller than expected")
+        resp = self._send_receive_raw(data)
 
         resp = resp + b"\0" * (lib.size_of_readResponse() - len(resp))
 
@@ -391,11 +345,7 @@ class BlobStore2(object):
         dataarr = bytearray(sendpacket)
         dataarr.extend(memoryview(data))
 
-        resp = self._send_receive_raw(dataarr, lib.size_of_writeResponse())
-
-        if len(resp) < lib.size_of_writeResponse():
-            raise Blob2WriteError("write fragment response larger than " \
-                                                                    "expected")
+        resp = self._send_receive_raw(dataarr)
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
         if not (errorcode == BlobReturnCodes.SUCCESS or\
@@ -420,19 +370,13 @@ class BlobStore2(object):
         lib.delete_blob.restype = POINTER(c_ubyte)
 
         name = create_string_buffer(key.encode('utf-8'))
-        namespace = create_string_buffer(namespace.encode('utf-8'))
+        namspace = create_string_buffer(namespace.encode('utf-8'))
 
-        ptr = lib.delete_blob(name, namespace)
+        ptr = lib.delete_blob(name, namspace)
         data = ptr[:lib.size_of_deleteRequest()]
         data = bytearray(data)
 
-        resp = self._send_receive_raw(data, lib.size_of_deleteResponse())
-
-        if len(resp) > lib.size_of_deleteResponse():
-            raise Blob2DeleteError("delete response larger than expected")
-
-        if len(resp) < lib.size_of_deleteResponse():
-            raise Blob2DeleteError("delete response smaller than expected")
+        resp = self._send_receive_raw(data)
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
         if errorcode == BlobReturnCodes.BADPARAMETER:
@@ -462,14 +406,11 @@ class BlobStore2(object):
 
         namespace = create_string_buffer(namespace.encode('utf-8'))
 
-        ptr = lib.list_blob(namespace.encode('utf-8'))
+        ptr = lib.list_blob(namespace)
         data = ptr[:lib.size_of_listRequest()]
         data = bytearray(data)
 
-        resp = self._send_receive_raw(data, lib.size_of_listResponse())
-
-        if len(resp) < lib.size_of_listResponseFixed():
-            raise Blob2ListError("list response smaller than expected")
+        resp = self._send_receive_raw(data)
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
         if not (errorcode == BlobReturnCodes.SUCCESS or\
@@ -502,13 +443,7 @@ class BlobStore2(object):
         data = ptr[:lib.size_of_finalizeRequest()]
         data = bytearray(data)
 
-        resp = self._send_receive_raw(data, lib.size_of_finalizeResponse())
-
-        if len(resp) > lib.size_of_finalizeResponse():
-            raise Blob2FinalizeError("finalize response smaller than expected")
-
-        if len(resp) < lib.size_of_finalizeResponse():
-            raise Blob2FinalizeError("finalize response smaller than expected")
+        resp = self._send_receive_raw(data)
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
         if not (errorcode == BlobReturnCodes.SUCCESS or\
@@ -572,7 +507,7 @@ class BlobStore2(object):
         if not mode:
             data.extend(req_data)
 
-        resp = self._send_receive_raw(data, lib.size_of_restResponse())
+        resp = self._send_receive_raw(data)
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
         if errorcode == BlobReturnCodes.NOTFOUND:
@@ -626,10 +561,7 @@ class BlobStore2(object):
         data = ptr[:lib.size_of_securityStateRequest()]
         data = bytearray(data)
 
-        resp = self._send_receive_raw(data, lib.size_of_securityStateResponse())
-
-        if len(resp) < lib.size_of_securityStateResponse():
-            raise Blob2SecurityError("get security response smaller than expected")
+        resp = self._send_receive_raw(data)
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
         if not (errorcode == BlobReturnCodes.SUCCESS or \
@@ -655,7 +587,7 @@ class BlobStore2(object):
         data = ptr[:lib.size_of_embeddedMediaRequest()]
         data = bytearray(data)
 
-        resp = self._send_receive_raw(data, lib.size_of_embeddedMediaResponse())
+        resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
         if not (errorcode == BlobReturnCodes.SUCCESS or\
@@ -676,7 +608,7 @@ class BlobStore2(object):
         data = ptr[:lib.size_of_embeddedMediaRequest()]
         data = bytearray(data)
 
-        resp = self._send_receive_raw(data, lib.size_of_embeddedMediaResponse())
+        resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
         if not (errorcode == BlobReturnCodes.SUCCESS or\
@@ -697,7 +629,7 @@ class BlobStore2(object):
         data = ptr[:lib.size_of_embeddedMediaRequest()]
         data = bytearray(data)
 
-        resp = self._send_receive_raw(data, lib.size_of_embeddedMediaResponse())
+        resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
         if not (errorcode == BlobReturnCodes.SUCCESS or\
@@ -718,7 +650,7 @@ class BlobStore2(object):
         data = ptr[:lib.size_of_embeddedMediaRequest()]
         data = bytearray(data)
 
-        resp = self._send_receive_raw(data, lib.size_of_embeddedMediaResponse())
+        resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
         if not (errorcode == BlobReturnCodes.SUCCESS or\
@@ -739,7 +671,7 @@ class BlobStore2(object):
         data = ptr[:lib.size_of_embeddedMediaRequest()]
         data = bytearray(data)
 
-        resp = self._send_receive_raw(data, lib.size_of_embeddedMediaResponse())
+        resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
         if not (errorcode == BlobReturnCodes.SUCCESS or\
@@ -760,7 +692,7 @@ class BlobStore2(object):
         data = ptr[:lib.size_of_embeddedMediaRequest()]
         data = bytearray(data)
 
-        resp = self._send_receive_raw(data, lib.size_of_embeddedMediaResponse())
+        resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
         if not (errorcode == BlobReturnCodes.SUCCESS or\
@@ -781,7 +713,7 @@ class BlobStore2(object):
         data = ptr[:lib.size_of_embeddedMediaRequest()]
         data = bytearray(data)
 
-        resp = self._send_receive_raw(data, lib.size_of_embeddedMediaResponse())
+        resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
         if not (errorcode == BlobReturnCodes.SUCCESS or\
@@ -802,7 +734,7 @@ class BlobStore2(object):
         data = ptr[:lib.size_of_embeddedMediaRequest()]
         data = bytearray(data)
 
-        resp = self._send_receive_raw(data, lib.size_of_embeddedMediaResponse())
+        resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
         if not (errorcode == BlobReturnCodes.SUCCESS or\
@@ -823,7 +755,7 @@ class BlobStore2(object):
         data = ptr[:lib.size_of_embeddedMediaRequest()]
         data = bytearray(data)
 
-        resp = self._send_receive_raw(data, lib.size_of_embeddedMediaResponse())
+        resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
         if not (errorcode == BlobReturnCodes.SUCCESS or\
@@ -844,7 +776,7 @@ class BlobStore2(object):
         data = ptr[:lib.size_of_embeddedMediaRequest()]
         data = bytearray(data)
 
-        resp = self._send_receive_raw(data, lib.size_of_embeddedMediaResponse())
+        resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
         if not (errorcode == BlobReturnCodes.SUCCESS or\
@@ -855,23 +787,22 @@ class BlobStore2(object):
 
         return resp
 
-    def _send_receive_raw(self, indata, datarecv=0):
+    def _send_receive_raw(self, indata):
         """Send and receive raw function for blob operations
 
         :param indata: The data to be sent to blob operation.
         :type indata: str.
-        :param datarecv: The expected size of the blob operation response.
-        :type datarecv: int.
 
         """
         excp = None
         for _ in range(0, 3): # channel loop for iLO
             try:
-                resp = self.channel.send_receive_raw(indata, 10, datarecv)
+                resp = self.channel.send_receive_raw(indata, 10)
                 return resp
             except Exception as excp:
                 self.channel.close()
-                self.channel = HpIlo()
+                lib = self.gethprestchifhandle()
+                self.channel = HpIlo(dll=lib)
         if excp:
             raise excp
 
@@ -907,6 +838,37 @@ class BlobStore2(object):
         libbhndl.updaterandval(rndval)
 
     @staticmethod
+    def initializecreds(username=None, password=None):
+        """Get chif ready to use high security
+        :param username: The username to login.
+        :type username: str.
+        :param password: The password to login.
+        :type password: str.
+        """
+
+        dll = BlobStore2.gethprestchifhandle()
+        dll.ChifInitialize(None)
+        if dll.ChifIsSecurityRequired() > 0:
+            if not username or not password:
+                return False
+            dll.initiate_credentials.argtypes = [c_char_p, c_char_p]
+            dll.initiate_credentials.restype = POINTER(c_ubyte)
+
+            usernew = create_string_buffer(username.encode('utf-8'))
+            passnew = create_string_buffer(password.encode('utf-8'))
+
+            dll.initiate_credentials(usernew, passnew)
+
+            if not dll.ChifVerifyCredentials() == BlobReturnCodes.SUCCESS:
+                raise Blob2SecurityError()
+        else:
+            #so we don't have extra overhead  if we don't have to
+            dll.ChifDisableSecurity()
+        BlobStore2.unloadchifhandle(dll)
+
+        return True
+
+    @staticmethod
     def checkincurrdirectory(libname):
         """Check if the library is present in current directory.
         :param libname: The name of the library to search for.
@@ -928,7 +890,6 @@ class BlobStore2(object):
         """
         try:
             libhandle = lib._handle
-
             if os.name == 'nt':
                 windll.kernel32.FreeLibrary(None, handle=libhandle)
             else:

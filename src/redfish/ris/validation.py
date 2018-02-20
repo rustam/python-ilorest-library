@@ -717,6 +717,13 @@ class Classes(RisObject):
                         regentry.set_root(self._root)
                         result = regentry
                         break
+                elif 'Registry' in entry:
+                    if entry and 'Registry' in entry and entry['Registry'].lower()\
+                                            == regname.lower():
+                        regentry = RepoRegistryEntry.parse(entry)
+                        regentry.set_root(self._root)
+                        result = regentry
+                        break
                 else:
                     reglink = entry['@odata.id'].split('/')
                     reglink = reglink[len(reglink)-2]
@@ -1437,6 +1444,8 @@ class HpPropertiesRegistry(RisObject):
         result = list()
         validator = None
         attrval = attrvallist[0]
+        if self.nulltypevalidationcheck(attrval=attrval, attrentry=attrentry):
+            return result
 
         if EnumValidator.is_type(attrentry):
             validator = EnumValidator.parse(attrentry)
@@ -1458,6 +1467,12 @@ class HpPropertiesRegistry(RisObject):
             result.extend(validator.validate(attrval, name))
         return result
 
+    def nulltypevalidationcheck(self, attrval=None, attrentry=None):
+        if 'type' in attrentry and attrval == None:
+            if isinstance(attrentry['type'], list):
+                for item in attrentry['type']:
+                    if item.lower() == 'null':
+                        return True
 
 class BaseValidator(RisObject):
     """Base validator class"""

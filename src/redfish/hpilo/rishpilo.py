@@ -23,10 +23,9 @@ import os
 import sys
 import time
 import struct
-import select
 import logging
 
-from ctypes import cdll, c_void_p, c_uint32, byref, create_string_buffer
+from ctypes import c_void_p, c_uint32, byref, create_string_buffer
 
 #---------End of imports---------
 #---------Debug logger---------
@@ -73,162 +72,48 @@ class HpIloChifPacketExchangeError(Exception):
 
 class HpIlo(object):
     """Base class of interaction with iLO"""
-    if os.name != 'nt':
-        # Newer versions of hpilo kernel module support a configurable max_ccb
-        MAX_CCB = '/sys/module/hpilo/parameters/max_ccb'
-        CHANNEL = '/dev/hpilo/d0ccb'
 
-    def __init__(self):
-        if os.name == 'nt':
-            fhandle = c_void_p()
-            try:
-                self.dll = cdll.LoadLibrary("ilorest_chif.dll")
-            except:
-                self.dll = cdll.LoadLibrary("hprest_chif.dll")
-            self.dll.ChifInitialize(None)
+    def __init__(self, dll=None):
+        fhandle = c_void_p()
+        self.dll = dll
+        if '-d' in sys.argv:
+            self.dll.enabledebugoutput()
+        self.dll.ChifInitialize(None)
 
-            self.dll.ChifCreate.argtypes = [c_void_p]
-            self.dll.ChifCreate.restype = c_uint32
+        self.dll.ChifCreate.argtypes = [c_void_p]
+        self.dll.ChifCreate.restype = c_uint32
 
-            try:
-                status = self.dll.ChifCreate(byref(fhandle))
-                if status != BlobReturnCodes.SUCCESS:
-                    raise HpIloInitialError("Error %s occurred while trying " \
-                                            "to open a channel to iLO" % status)
-
-                self.fhandle = fhandle
-
-                status = self.dll.ChifPing(self.fhandle)
-                if status != BlobReturnCodes.SUCCESS:
-                    errmsg = "Error {0} occurred while trying to open a "\
-                                            "channel to iLO".format(status)
-                    if status == BlobReturnCodes.CHIFERR_NoDriver:
-                        errmsg = "chif"
-                    elif status == BlobReturnCodes.CHIFERR_AccessDenied:
-                        errmsg = "You must be root/Administrator to use this program."
-                    raise HpIloInitialError(errmsg)
-
-                self.dll.ChifSetRecvTimeout(self.fhandle, 30000)
-            except Exception as excp:
-                self.unload()
-                raise excp
-        else:
-            if os.path.exists(HpIlo.MAX_CCB):
-                fhandle = open(HpIlo.MAX_CCB, 'r')
-
-                for line in fhandle:
-                    start = int(line) - 1
-
-                fhandle.close()
-            else:
-                #otherwise the default number of channels is 8
-                start = 7
-
-            self.file = HpIlo.CHANNEL + str(start)
-            self.cmd = None
-            self.svc = None
-            self.response = None
-
-            while True:
-                try:
-                    self.fhandle = os.open(self.file, os.O_NONBLOCK | \
-                                                os.O_EXCL | os.O_RDWR, 0o666)
-                    self.len = 0
-                    self.seq = 0
-                    return
-                except Exception:
-                    start = start - 1
-                    self.file = HpIlo.CHANNEL + str(start)
-
-                    if start < 0:
-                        raise HpIloInitialError("iLO channel could not be " \
-                                                                "allocated.")
-
-    def write_raw(self, data):
-        """Send data to iLO.  Use this if you have already pre-packed and
-        formatted data
-
-        :param data: bytearray of data to send
-        :type data: bytearray
-
-        """
-        return os.write(self.fhandle, data)
-
-    def write_raw_loop(self, data=None, retries=10):
-        """Loop of iLO write with retries
-
-        :param data: bytearray of data to send
-        :type data:bytearray
-        :param retries: number of retries for writing data
-        :type retries: int
-        """
-        tries = 0
-        excp = None
-        while tries < retries:
-            try:
-                resp = self.write_raw(data=data)
-                return resp
-            except Exception as excp:
-                tries = tries+1
-
-        raise HpIloWriteError("%s : %s" % (excp, sys.exc_info()[0]))
-
-    def read_raw(self, timeout=5):
-        """Read data from iLO. Use this if you need the response as is
-        (without any parse)
-
-        :param timeout: time to wait for iLO response
-        :type timeout: int (seconds)
-
-        """
         try:
-            pkt = bytearray()
-            if LOGGER.isEnabledFor(logging.DEBUG):
-                LOGGER.debug('Reading iLO handle(Max wait time: %s '\
-                                        'seconds)...\n'% (timeout))
-            status = select.select([self.fhandle], [], [], timeout)
+            status = self.dll.ChifCreate(byref(fhandle))
+            if status != BlobReturnCodes.SUCCESS:
+                raise HpIloInitialError("Error %s occurred while trying " \
+                                        "to open a channel to iLO" % status)
 
-            if status != ([self.fhandle], [], []) and timeout > 0:
-                raise HpIloReadError("iLO is not responding")
+            self.fhandle = fhandle
 
-            if status != ([self.fhandle], [], []) and timeout == 0:
-                return pkt
+            status = self.dll.ChifPing(self.fhandle)
+            if status != BlobReturnCodes.SUCCESS:
+                errmsg = "Error {0} occurred while trying to open a "\
+                                        "channel to iLO".format(status)
+                if status == BlobReturnCodes.CHIFERR_NoDriver:
+                    errmsg = "chif"
+                elif status == BlobReturnCodes.CHIFERR_AccessDenied:
+                    errmsg = "You must be root/Administrator to use this program."
+                raise HpIloInitialError(errmsg)
 
-            pkt.extend(os.read(self.fhandle, 8096))
-            self.response = pkt[4] + 256*pkt[5]
-
-            return pkt
+            self.dll.ChifSetRecvTimeout(self.fhandle, 30000)
         except Exception as excp:
-            raise HpIloReadError("%s : %s" % (excp, sys.exc_info()[0]))
+            self.unload()
+            raise excp
 
-    def read_raw_loop(self, timeout=5, retries=10):
-        """Loop of iLO reads with retries
-
-        :param timeout: time to wait for iLO response
-        :type timeout: int (seconds)
-        :param retries: number of retries for reading data from iLO
-        :type retries: int
-        """
-        tries = 0
-        excp = None
-        while tries < retries:
-            try:
-                resp = self.read_raw(timeout=timeout)
-                return resp
-            except Exception as excp:
-                tries = tries+1
-
-        raise HpIloReadError("%s : %s" % (excp, sys.exc_info()[0]))
-
-    def chif_packet_exchange(self, data, datarecv):
-        """ Windows only function for handling chif packet exchange
+    def chif_packet_exchange(self, data):
+        """ Function for handling chif packet exchange
 
         :param data: data to be sent for packet exchange
         :type data: str
-        :param datarecv: expected size of the response
-        :type datarecv: int
 
         """
+        datarecv = self.dll.get_max_buffer_size()
         buff = create_string_buffer(bytes(data))
 
         recbuff = create_string_buffer(datarecv)
@@ -248,15 +133,13 @@ class HpIlo(object):
 
         return pkt
 
-    def send_receive_raw(self, data, retries=10, datarecv=None):
+    def send_receive_raw(self, data, retries=10):
         """ Function implementing proper send receive retry protocol
 
         :param data: data to be sent for packet exchange
         :type data: str
         :param retries: number of retries for reading data from iLO
         :type retries: int
-        :param datarecv: expected size of the response
-        :type datarecv: int
 
         """
         tries = 0
@@ -264,17 +147,7 @@ class HpIlo(object):
 
         while tries < retries:
             try:
-                if os.name == 'nt':
-                    resp = self.chif_packet_exchange(data, datarecv)
-                else:
-                    retlen = self.write_raw(data)
-                    if retlen != len(data):
-                        raise ValueError()
-
-                    if LOGGER.isEnabledFor(logging.DEBUG):
-                        LOGGER.debug('Attempt %s for iLO read.\n'% \
-                                                                (tries+1))
-                    resp = self.read_raw(30)
+                resp = self.chif_packet_exchange(data)
 
                 if sequence != struct.unpack("<H", bytes(resp[2:4]))[0]:
                     if LOGGER.isEnabledFor(logging.DEBUG):
@@ -286,9 +159,8 @@ class HpIlo(object):
                 time.sleep(1)
 
                 if tries == (retries - 1):
-                    if os.name == 'nt':
-                        self.close()
-                        self.unload()
+                    self.close()
+                    self.unload()
 
                     if LOGGER.isEnabledFor(logging.DEBUG) and excp:
                         LOGGER.debug('Error while reading iLO: %s' % str(excp))
@@ -301,10 +173,7 @@ class HpIlo(object):
     def close(self):
         """Chif close function"""
         try:
-            if os.name == 'nt':
-                self.dll.ChifClose(self.fhandle)
-            else:
-                os.close(self.fhandle)
+            self.dll.ChifClose(self.fhandle)
         except Exception:
             pass
 
@@ -319,6 +188,4 @@ class HpIlo(object):
     def __del__(self):
         """Chif delete function"""
         self.close()
-
-        if os.name == 'nt':
-            self.unload()
+        self.unload()

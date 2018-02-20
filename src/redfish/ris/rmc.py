@@ -37,7 +37,8 @@ import redfish.ris.validation
 
 from redfish.ris.ris import SessionExpiredRis
 from redfish.ris.validation import ValidationManager, RepoRegistryEntry,\
-                                                        Typepathforval
+                                                        Typepathforval,\
+                                                        SchemaValidationError
 from redfish.ris.rmc_helper import (UndefinedClientError, InstanceNotFoundError, \
                           CurrentlyLoggedInError, NothingSelectedError, \
                           InvalidSelectionError, IdTokenError, \
@@ -347,9 +348,9 @@ class RmcApp(object):
 
         """
         monolith = self.current_client.monolith
-        inittime = time.clock()
+        inittime = time.time()
         monolith.load(path=path, includelogs=includelogs)
-        endtime = time.clock()
+        endtime = time.time()
 
         if verbose:
             sys.stdout.write("Monolith build process time: %s\n" % \
@@ -1865,7 +1866,10 @@ class RmcApp(object):
             return None
         for reg in validation_manager._classes_registry[0][colstr]:
             try:
-                if reg and 'Id' in reg and not 'biosattributeregistry' in \
+                if reg and 'Registry' in reg and not 'biosattributeregistry' in \
+                                                        reg['Registry'].lower():
+                    reglist.append(reg['Registry'])
+                elif reg and 'Id' in reg and not 'biosattributeregistry' in \
                                                             reg['Id'].lower():
                     reglist.append(reg['Id'])
                 elif reg and 'Schema' in reg and not 'biosattributeregistry' in \
@@ -1909,7 +1913,8 @@ class RmcApp(object):
 
     def patch_handler(self, put_path, body, verbose=False, url=None, \
                   sessionid=None, headers=None, response=False, silent=False, \
-                  optionalpassword=None, providerheader=None, service=False):
+                  optionalpassword=None, providerheader=None, service=False,\
+                  username=None, password=None):
         """Main worker function for raw patch command
 
         :param put_path: the URL path.
@@ -1941,16 +1946,16 @@ class RmcApp(object):
             if url == None:
                 url = 'blobstore://'
             if not self.typepath.defs:
-                self.getgen(url=url)
+                self.getgen(url=url, username=username, password=password)
 
         (put_path, body) = self.checkpostpatch(body=body, path=put_path, \
                     verbose=verbose, service=False, url=None, sessionid=None, \
                     headers=None, iloresponse=False, silent=True, patch=True)
 
         if sessionid:
-
             results = RmcClient(url=url, sessionkey=sessionid, is_redfish=\
-                                    self.updatedefinesflag()).\
+                                    self.updatedefinesflag(), username=username, \
+                                    password=password).\
                                     set(put_path, body=body, headers=headers, \
                                            optionalpassword=optionalpassword, \
                                            providerheader=providerheader)
@@ -1964,7 +1969,7 @@ class RmcApp(object):
             errmessages = self.get_error_messages()
 
         if results and hasattr(results, "status") and results.status == 412:
-            self.reloadmonolith(path = put_path)
+            self.reloadmonolith(path=put_path)
         if not silent:
             self.invalid_return_handler(results, verbose=verbose, errmessages=errmessages)
         elif results.status == 401:
@@ -1975,7 +1980,8 @@ class RmcApp(object):
 
     def get_handler(self, put_path, silent=False, verbose=False, url=None, \
                                 sessionid=None, uncache=False, headers=None, \
-                                response=False, service=False):
+                                response=False, service=False, username=None, \
+                                password=None):
         """main worker function for raw get command
 
         :param put_path: the URL path.
@@ -2005,10 +2011,11 @@ class RmcApp(object):
             if url == None:
                 url = 'blobstore://'
             if not self.typepath.defs:
-                self.getgen(url=url)
+                self.getgen(url=url, username=username, password=password)
 
             results = RmcClient(url=url, sessionkey=sessionid, is_redfish=\
-                                                    self.updatedefinesflag()).\
+                                                    self.updatedefinesflag(),\
+                                        username=username, password=password).\
                                                 get(put_path, headers=headers)
             service = True
         else:
@@ -2031,7 +2038,8 @@ class RmcApp(object):
 
     def post_handler(self, put_path, body, verbose=False, url=None, \
                              sessionid=None, headers=None, response=False, \
-                             silent=False, providerheader=None, service=False):
+                             silent=False, providerheader=None, service=False,
+                             username=None, password=None):
         """Main worker function for raw post command
 
         :param put_path: the URL path.
@@ -2061,7 +2069,7 @@ class RmcApp(object):
             if url == None:
                 url = 'blobstore://'
             if not self.typepath.defs:
-                self.getgen(url=url)
+                self.getgen(url=url, username=username, password=password)
 
         (put_path, body) = self.checkpostpatch(body=body, path=put_path, \
                     verbose=verbose, service=False, url=None, sessionid=None,\
@@ -2069,9 +2077,10 @@ class RmcApp(object):
 
         if sessionid:
             results = RmcClient(url=url, sessionkey=sessionid, is_redfish=\
-                                self.updatedefinesflag()).\
-                                toolpost(put_path, body=body, headers=headers, \
-                                        providerheader=providerheader)
+                                    self.updatedefinesflag(), username=username, \
+                                     password=password).toolpost(put_path, \
+                                     body=body, headers=headers, \
+                                     providerheader=providerheader)
             service = True
         else:
             results = self.current_client.toolpost(put_path, body=body, \
@@ -2090,7 +2099,8 @@ class RmcApp(object):
 
     def put_handler(self, put_path, body, verbose=False, url=None, \
                 sessionid=None, headers=None, response=False, silent=False, \
-                optionalpassword=None, providerheader=None, service=False):
+                optionalpassword=None, providerheader=None, service=False, \
+                username=None, password=None):
         """Main worker function for raw put command
 
         :param put_path: the URL path.
@@ -2122,10 +2132,11 @@ class RmcApp(object):
             if url == None:
                 url = 'blobstore://'
             if not self.typepath.defs:
-                self.getgen(url=url)
+                self.getgen(url=url, username=username, password=password)
 
             results = RmcClient(url=url, sessionkey=sessionid, is_redfish=\
-                                self.updatedefinesflag()).toolput(put_path, \
+                            self.updatedefinesflag(), username=username, \
+                            password=password).toolput(put_path, \
                                        body=body, headers=headers, \
                                        optionalpassword=optionalpassword, \
                                        providerheader=providerheader)
@@ -2147,8 +2158,9 @@ class RmcApp(object):
             return results
 
     def delete_handler(self, put_path, verbose=False, url=None, \
-                                    sessionid=None, headers=None, silent=True, \
-                                    providerheader=None, service=False):
+                                    sessionid=None, headers=None, silent=False, \
+                                    providerheader=None, service=False, \
+                                    username=None, password=None):
         """Main worker function for raw delete command
 
         :param put_path: the URL path.
@@ -2177,11 +2189,12 @@ class RmcApp(object):
                 url = 'blobstore://'
             if not self.typepath.defs:
                 rflag = None
-                self.getgen(url=url)
+                self.getgen(url=url, username=username, password=password)
                 rflag = self.updatedefinesflag(redfishflag=rflag)
 
             results = RmcClient(url=url, sessionkey=sessionid, is_redfish=\
-                                                    self.updatedefinesflag()).\
+                                                    self.updatedefinesflag(),\
+                                        username=username, password=password).\
                 tooldelete(put_path, headers=headers, providerheader=providerheader)
             service = True
         else:
@@ -2199,7 +2212,8 @@ class RmcApp(object):
         return results
 
     def head_handler(self, put_path, verbose=False, url=None, sessionid=None, \
-                                                silent=False, service=False):
+                                                silent=False, service=False, \
+                                                username=None, password=None):
         """Main worker function for raw head command
 
         :param put_path: the URL path.
@@ -2221,10 +2235,11 @@ class RmcApp(object):
             if url == None:
                 url = 'blobstore://'
             if not self.typepath.defs:
-                self.getgen(url=url)
+                self.getgen(url=url, username=username, password=password)
 
             results = RmcClient(url=url, sessionkey=sessionid, is_redfish=\
-                                                    self.updatedefinesflag()).\
+                                                    self.updatedefinesflag(),\
+                                        username=username, password=password).\
                                                                 head(put_path)
             service = True
         else:
@@ -2632,6 +2647,8 @@ class RmcApp(object):
                       skipcrawl=skipcrawl, includelogs=True, loadtype=loadtype)
             except SessionExpiredRis:
                 raise SessionExpired()
+            except jsonpointer.JsonPointerException:
+                raise SchemaValidationError()
             except Exception as excp:
                 try:
                     if excp.errno == 10053:
@@ -2751,6 +2768,9 @@ class RmcApp(object):
 
                             try:
                                 if not "/" in sel:
+                                    for item in six.iterkeys(currdict):
+                                        if sel.lower() == item.lower():
+                                            sel = item
                                     if val[-1] == "*":
                                         if not val[:-1] in str(currdict[sel]):
                                             continue
@@ -3268,11 +3288,12 @@ class RmcApp(object):
             except Exception:
                 raise InvalidPathError("Error accessing extref path!/n")
 
-    def getgen(self, url=None):
+    def getgen(self, gen=None, url=None, username=None, password=None):
         """Updates the defines object based on the iLO manager version"""
         if self.typepath.adminpriv == False and url.startswith("blob"):
             raise UserNotAdminError("")
-        self.typepath.getgen(url=url, logger=self.logger)
+        self.typepath.getgen(gen=gen, url=url, username=username, \
+                                        password=password, logger=self.logger)
 
     def updatedefinesflag(self, redfishflag=None):
         """Updates the redfish and rest flag depending on system and
