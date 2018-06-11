@@ -1,4 +1,4 @@
-# Copyright 2016 Hewlett Packard Enterprise Development, LP.
+ # Copyright 2016 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -16,31 +16,18 @@ import sys
 from _redfishobject import RedfishObject
 from redfish.rest.v1 import ServerDownOrUnreachableError
 
-def ex45_get_license_key(redfishobj):
-    sys.stdout.write("\nEXAMPLE 45: Get iLO License Key\n")
+def ex54_expand_data(redfishobj, expand_url=None):
+    sys.stdout.write("\nEXAMPLE 54: Expand Data Syntax\n")
     if redfishobj.typepath.defs.isgen9:
-        instances = redfishobj.search_for_type("HpiLOLicense.")
+        sys.stderr.write("\nNOTE: Expand Syntax is not available on iLO 4 "\
+                                                                "systems. \n")
     else:
-        instances = redfishobj.search_for_type("HpeiLOLicense.")
-    license_result = dict()
-    licenseproperties = ["License", "LicenseType"]
-    
-    for instance in instances:
-        response = redfishobj.redfish_get(instance["@odata.id"])
-        license_result["License"] = response.dict["License"]
-        
-        for licenseproperty in licenseproperties:
-            sys.stdout.write("\t" + licenseproperty + ": " + \
-                            str(response.dict[licenseproperty]) + "\n")
-        try:
-            lickey = response.dict["ConfirmationRequest"]["EON"]["LicenseKey"]
-        except KeyError:
-            lickey = response.dict["LicenseKey"]
-        sys.stdout.write("\t" + "LicenseKey" + ": " + lickey + "\n")
-
-        redfishobj.error_handler(response)
-
-    return (license_result)
+        response = REDFISH_OBJ.redfish_get(expand_url)
+        exp_response = REDFISH_OBJ.redfish_get(expand_url+'?$expand=.')
+        sys.stdout.write('Standard response:\n')
+        sys.stdout.write('\t'+str(response.dict)+'\n')
+        sys.stdout.write('Expanded response:\n')
+        sys.stdout.write('\t'+str(exp_response.dict)+'\n')
 
 if __name__ == "__main__":
     # When running on the server locally use the following commented values
@@ -67,8 +54,5 @@ if __name__ == "__main__":
     except Exception as excp:
         raise excp
 
-    ex45_get_license_key(REDFISH_OBJ)
+    ex54_expand_data(REDFISH_OBJ, "/redfish/v1/systems/")
     REDFISH_OBJ.redfish_client.logout()
-
-
-

@@ -110,6 +110,11 @@ class UnableToObtainIloVersionError(Exception):
     """Raised when iloversion is missing from default path"""
     pass
 
+class IncompatibleiLOVersionError(Exception):
+    """Raised when the iLO version is above or below the required \
+    version"""
+    pass
+
 class ValidationError(Exception):
     """Raised when there is a problem with user input"""
     def __init__(self, errlist):
@@ -122,6 +127,10 @@ class ValidationError(Exception):
 
 class IloResponseError(Exception):
     """Raised when iLO returns with a non 200 response"""
+    pass
+
+class EmptyRaiseForEAFP(Exception):
+    """Raised when you need to check for issues and take different action."""
     pass
 
 class RmcClient(object):
@@ -311,7 +320,9 @@ class RmcClient(object):
         resp = self._rest_client.get(path=path, args=args, headers=headers)
 
         if uncache is False:
-            self._get_cache[path] = resp
+            if resp.getheader('content-type') and \
+                    'application/json' in resp.getheader('content-type'):
+                self._get_cache[path] = resp
 
         return resp
 
@@ -375,7 +386,8 @@ class RmcClient(object):
 
         """
         resp = self._rest_client.get(path=path, args=args)
-        self._get_cache[path] = resp
+        if 'application/json' in resp._http_response.msg.dict['content-type']:
+            self._get_cache[path] = resp
 
         return self._rest_client.post(path=path, args=args, body=body, \
                                 headers=headers, providerheader=providerheader)
@@ -484,10 +496,11 @@ class RmcConfig(AutoConfigParser):
 
     def get_cache(self):
         """Get the config file cache status"""
+
         if isinstance(self._get('cache'), bool):
             return self._get('cache')
-        else:
-            return self._get('cache').lower() in ("yes", "true", "t", "1")
+
+        return self._get('cache').lower() in ("yes", "true", "t", "1")
 
     def set_cache(self, value):
         """Get the config file cache status
@@ -655,6 +668,9 @@ class RmcCacheManager(object):
         """
         self._rmc = rmc
 
+        self.encodefunct = lambda data: data
+        self.decodefunct = lambda data: data
+
 class RmcFileCacheManager(RmcCacheManager):
     """RMC file cache manager"""
     def __init__(self, rmc):
@@ -762,7 +778,7 @@ class RmcFileCacheManager(RmcCacheManager):
                     rmc_client._rest_client.set_authorization_key(\
                                             login_data.get('authorization_key'))
                     rmc_client._rest_client.set_session_key(\
-                                                login_data.get('session_key'))
+                            self._rmc._cm.decodefunct(login_data.get('session_key')))
                     rmc_client._rest_client.set_session_location(\
                                             login_data.get('session_location'))
 
@@ -791,7 +807,7 @@ class RmcFileCacheManager(RmcCacheManager):
 
                     rmc_client._monolith = RisMonolith(rmc_client)
                     rmc_client._monolith.load_from_dict(client['monolith'])
-                    self._rmc._rmc_clients.append(rmc_client)
+                    self._rmc._rmc_clients = rmc_client
                     #make sure root is there
                     rmc_client._rest_client.root
             except BaseException as excp:
@@ -815,41 +831,41 @@ class RmcFileCacheManager(RmcCacheManager):
         index_map = dict()
         index_cache = list()
 
-        for client in self._rmc._rmc_clients:
+        if self._rmc._rmc_clients:
             shaobj = hashlib.new("SHA256")
-            shaobj.update(client.get_base_url().encode('utf-8'))
+            shaobj.update(self._rmc._rmc_clients.get_base_url().encode('utf-8'))
             md5str = shaobj.hexdigest()
 
-            index_map[client.get_base_url()] = md5str
-            index_data = dict(url=client.get_base_url(), href='%s' % md5str,)
+            index_map[self._rmc._rmc_clients.get_base_url()] = md5str
+            index_data = dict(url=self._rmc._rmc_clients.get_base_url(), href='%s' % md5str,)
             index_cache.append(index_data)
 
-        indexfh = open('%s/index' % cachedir, 'w')
-        json.dump(index_cache, indexfh, indent=2, cls=JSONEncoder)
-        indexfh.close()
+            indexfh = open('%s/index' % cachedir, 'w')
+            json.dump(index_cache, indexfh, indent=2, cls=JSONEncoder)
+            indexfh.close()
 
         clients_cache = list()
 
         if self._rmc._rmc_clients:
-            for client in self._rmc._rmc_clients:
-                login_data = dict(\
-                    username=None, \
-                    password=None, url=client.get_base_url(), \
-                    session_key=client.get_session_key(), \
-                    session_location=client.get_session_location(), \
-                    authorization_key=client.get_authorization_key(), \
-                    bios_password=client.bios_password, \
-                    redfish=client.monolith.is_redfish, \
-                    ilo=client.typepath.ilogen)
+            login_data = dict(\
+                username=None, \
+                password=None, url=self._rmc._rmc_clients.get_base_url(), \
+                session_key=self._rmc._cm.encodefunct(self._rmc._rmc_clients.get_session_key()), \
+                session_location=self._rmc._rmc_clients.get_session_location(), \
+                authorization_key=self._rmc._rmc_clients.get_authorization_key(), \
+                bios_password=self._rmc._rmc_clients.bios_password, \
+                redfish=self._rmc._rmc_clients.monolith.is_redfish, \
+                ilo=self._rmc._rmc_clients.typepath.ilogen)
 
-                clients_cache.append(\
-                    dict(selector=client.selector, login=login_data, \
-                         filter_attr=client._filter_attr, \
-                         filter_value=client._filter_value, \
-                         monolith=client.monolith, get=client._get_cache))
+            clients_cache.append(\
+                dict(selector=self._rmc._rmc_clients.selector, login=login_data, \
+                     filter_attr=self._rmc._rmc_clients._filter_attr, \
+                     filter_value=self._rmc._rmc_clients._filter_value, \
+                     monolith=self._rmc._rmc_clients.monolith, \
+                     get=self._rmc._rmc_clients._get_cache))
 
-                clientsfh = open('%s/%s' % (cachedir, \
-                                         index_map[client.get_base_url()]), 'w')
+            clientsfh = open('%s/%s' % (cachedir, \
+                                     index_map[self._rmc._rmc_clients.get_base_url()]), 'w')
 
-                json.dump(clients_cache, clientsfh, indent=2, cls=JSONEncoder)
-                clientsfh.close()
+            json.dump(clients_cache, clientsfh, indent=2, cls=JSONEncoder)
+            clientsfh.close()

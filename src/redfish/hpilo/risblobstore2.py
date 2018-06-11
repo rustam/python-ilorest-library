@@ -28,7 +28,8 @@ import string
 from ctypes import c_char_p, c_ubyte, c_uint, cdll, POINTER, \
                     create_string_buffer, c_ushort
 
-from redfish.hpilo.rishpilo import HpIlo
+from redfish.hpilo.rishpilo import HpIlo, HpIloInitialError
+from redfish.hpilo.rishpilo import BlobReturnCodes as hpiloreturncodes
 
 if os.name == 'nt':
     from ctypes import windll
@@ -799,10 +800,11 @@ class BlobStore2(object):
             try:
                 resp = self.channel.send_receive_raw(indata, 10)
                 return resp
-            except Exception as excp:
+            except Exception as exp:
                 self.channel.close()
                 lib = self.gethprestchifhandle()
                 self.channel = HpIlo(dll=lib)
+                excp = exp
         if excp:
             raise excp
 
@@ -858,11 +860,15 @@ class BlobStore2(object):
             passnew = create_string_buffer(password.encode('utf-8'))
 
             dll.initiate_credentials(usernew, passnew)
-
-            if not dll.ChifVerifyCredentials() == BlobReturnCodes.SUCCESS:
-                raise Blob2SecurityError()
+            credreturn = dll.ChifVerifyCredentials()
+            if not credreturn == BlobReturnCodes.SUCCESS:
+                if credreturn == hpiloreturncodes.CHIFERR_AccessDenied:
+                    raise Blob2SecurityError()
+                else:
+                    raise HpIloInitialError("Error %s occurred while trying " \
+                                        "to open a channel to iLO" % credreturn)
         else:
-            #so we don't have extra overhead  if we don't have to
+            #so we don't have extra overhead if we don't have to
             dll.ChifDisableSecurity()
         BlobStore2.unloadchifhandle(dll)
 

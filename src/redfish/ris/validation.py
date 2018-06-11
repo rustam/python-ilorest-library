@@ -19,12 +19,9 @@
 
 # ---------Imports---------
 
-import os
 import re
-import sys
 import json
 import locale
-import zipfile
 import logging
 import textwrap
 
@@ -43,133 +40,28 @@ LOGGER = logging.getLogger(__name__)
 # ---------End of debug logger---------
 
 
-class ValidationError(Exception):
-    """Validation Class Error"""
-    pass
-
-
-class SchemaValidationError(ValidationError):
+class SchemaValidationError(Exception):
     """Schema Validation Class Error"""
     pass
 
-
-class RegistryValidationError(ValidationError):
+class RegistryValidationError(Exception):
     """Registration Validation Class Error"""
     def __init__(self, msg, regentry=None, selector=None):
         super(RegistryValidationError, self).__init__(msg)
         self.reg = regentry
         self.sel = selector
 
-
 class UnknownValidatorError(Exception):
     """Raised when we find an attribute type that we don't know how to
     validate. """
+    pass
 
 class ValidationManager(object):
     """Keep track of all the schemas and registries and provides helpers
     to simplify validation """
-    def __init__(self, local_path, bios_local_path, romfamily=None, \
-                biosversion=None, iloversion=None, monolith=None, defines=None):
+    def __init__(self, monolith, defines=None):
         super(ValidationManager, self).__init__()
 
-        defaultilopath = None
-        defaultbiospath = None
-        schemamainfolder = None
-
-        if float(iloversion) < 4.210:
-            if os.name == 'nt':
-                defaultilopath = r".\hp-rest-classes-ilo4"
-                defaultbiospath = r".\hp-rest-classes-bios"
-                schemamainfolder = os.path.dirname(sys.executable)
-            else:
-                defaultilopath = "/usr/share/ilorest/hp-rest-classes-ilo4"
-                defaultbiospath = "/usr/share/ilorest/hp-rest-classes-bios"
-                schemamainfolder = "/usr/share/ilorest/"
-
-            # iLO schema location defaults
-            if not local_path:
-                if not os.path.isdir(defaultilopath):
-                    ilozip = self.getiloziplocation(schemamainfolder, \
-                                                                    iloversion)
-
-                    if ilozip and os.path.exists(ilozip):
-                        with zipfile.ZipFile(os.path.join(schemamainfolder, \
-                                                        ilozip), "r") as zfile:
-                            zfile.extractall(os.path.join(schemamainfolder, \
-                                                        "hp-rest-classes-ilo4"))
-
-                        local_path = os.path.join(schemamainfolder, \
-                                                        'hp-rest-classes-ilo4')
-                    else:
-                        raise SchemaValidationError(\
-                                    'No valid iLO schema zip file found.\n' \
-                                    'Please refer to our documentation for ' \
-                                    'further instructions on downloading the' \
-                                    ' appropriate schemas.')
-                else:
-                    local_path = defaultilopath
-            else:
-                if not os.path.isdir(local_path):
-                    raise SchemaValidationError("iLO schema directory '%s' "
-                                                "doesn't exist" % local_path)
-
-            # bios schema location defaults
-            if not bios_local_path:
-                if not os.path.isdir(defaultbiospath):
-                    bioszip = self.getbiosziplocation(romfamily, \
-                                                  schemamainfolder, biosversion)
-                    if bioszip and os.path.exists(bioszip):
-                        with zipfile.ZipFile(
-                            os.path.join(schemamainfolder, bioszip), "r") as \
-                                                                        zfile:
-                            zfile.extractall(os.path.join(schemamainfolder, \
-                                                        "hp-rest-classes-bios"))
-
-                        bios_local_path = os.path.join(schemamainfolder, \
-                                                        'hp-rest-classes-bios')
-                    else:
-                        raise SchemaValidationError('No valid BIOS schema ' \
-                                    'zip file found.\nPlease refer to our ' \
-                                    'documentation for further instructions ' \
-                                    'on downloading the appropriate schemas.')
-                else:
-                    bios_local_path = defaultbiospath
-            else:
-                if not os.path.isdir(bios_local_path):
-                    raise SchemaValidationError("Bios schema directory '%s' " \
-                                            "doesn't exist" % bios_local_path)
-        else:
-            if monolith.is_redfish:
-                local_path = "/redfish/v1/Schemas/?$expand=."
-                bios_local_path = "/redfish/v1/Registries/?$expand=."
-            else:
-                local_path = "/rest/v1/Schemas"
-                bios_local_path = "/rest/v1/Registries"
-
-        # iLO schema and registry lists
-        self._schema_locations = list()
-        self._classes = list()
-        self._registry_locations = list()
-        self._classes_registry = list()
-
-        # iLO schema and registry lists
-        self._bios_schema_locations = list()
-        self._bios_classes = list()
-        self._bios_registry_locations = list()
-        self._bios_classes_registry = list()
-
-        # iLO and base error messages
-        self._ilo_messages = list()
-        self._base_messages = list()
-        self._hpcommon_messages = list()
-        self._iloevents_messages = list()
-
-        #type and path defines object
-        self.defines = defines
-        # error
-        self._errors = list()
-
-        #strings for v1/redfish
         if monolith.is_redfish:
             self._schemaid = ["/redfish/v1/schemas/?$expand=.", "Members"]
             self._regid = ["/redfish/v1/registries/?$expand=.", "Members"]
@@ -177,321 +69,60 @@ class ValidationManager(object):
             self._schemaid = ["/rest/v1/schemas", "Items"]
             self._regid = ["/rest/v1/registries", "Items"]
 
-        if local_path:
-            self.add_location(schema_path=local_path, monolith=monolith)
-            self.add_location(registry_path=local_path, monolith=monolith)
+        self._classes = list()
+        #type and path defines object
+        self.defines = defines
+        self.monolith = monolith
+        # error
+        self._errors = list()
+        self._warnings = list()
+        self.new_load_file(monolith)
 
-        if bios_local_path:
-            self.add_location(schema_path=bios_local_path, biossection=True, \
-                                                            monolith=monolith)
-            self.add_location(registry_path=bios_local_path, biossection=True, \
-                                                            monolith=monolith)
-
-    def getbiosziplocation(self, romfamily, schemadir, biosversion):
-        """Helper function for BIOS zip location from schema directory
-
-        :param romfamily: the current systems rom family.
-        :type romfamily: str.
-        :param schemadir: the current configuration schema directory.
-        :type schemadir: str.
-        :param biosversion: the current system BIOS version.
-        :type biosversion: str.
-
-        """
-        foundfile = None
-        currentver = None
-
-        tempstr = "hp-rest-classes-bios-" + romfamily + "-" + biosversion
-
-        for _, _, filenames in os.walk(schemadir):
-            for filename in filenames:
-                if tempstr in filename:
-                    regentry = re.compile('%s(.*?).zip' % tempstr)
-                    mentry = regentry.search(filename)
-
-                    if mentry and currentver:
-                        if currentver < mentry.group(1):
-                            foundfile = filename
-                            currentver = mentry.group(1)
-                    elif mentry and not currentver:
-                        foundfile = filename
-                        currentver = mentry.group(1)
-
-        if foundfile:
-            return os.path.join(schemadir, foundfile)
-        else:
-            return None
-
-    def getiloziplocation(self, schemadir, iloversion):
-        """Helper function for iLO zip location from schema directory
-
-        :param schemadir: the current configuration schema directory.
-        :type schemadir: str.
-        :param iloversion: the current system iLO version.
-        :type iloversion: str.
-
-        """
-        if float(iloversion) < 4.210:
-            iloversion = '2.00'
-
-        tempstr = "hp-rest-classes-ilo4-" + iloversion.replace(".", "")
-
-        for _, _, filenames in os.walk(schemadir):
-            for filename in filenames:
-                if tempstr in filename:
-                    return os.path.join(schemadir, filename)
-
-        return None
-
-    def add_location(self, schema_path=None, registry_path=None, \
-                                            biossection=False, monolith=None):
-        """Add schema_path and registry_path to the list of locations to
-        search for schemas and registries
-
-        :param schema_path: directory or URL where schemas are located.
-        :type  schema_path: str.
-        :param registry_path: directory or URL where registries are located.
-        :type registry_path: str.
-        :param biossection: flag to determine if within BIOS section.
-        :type biossection: str.
-        :param monolith: full data model retrieved from server.
-        :type monolith: dict.
-
-        """
-        if schema_path:
-            if not biossection:
-                self._schema_locations.append(schema_path)
-                self._update_location_map(monolith=monolith)
-            else:
-                self._bios_schema_locations.append(schema_path)
-                self._update_location_map(biossection=True, monolith=monolith)
-        elif registry_path:
-            if not biossection:
-                self._registry_locations.append(registry_path)
-                self._update_location_map(registries=True, monolith=monolith)
-            else:
-                self._bios_registry_locations.append(registry_path)
-                self._update_location_map(biossection=True, registries=True, \
-                                                            monolith=monolith)
-        else:
-            raise ValueError("'schema_path' and 'registry_path' " \
-                                                                "are undefined")
-
-    def _update_location_map(self, biossection=False, registries=False, \
-                                                                monolith=None):
-        """Searches locations to build a map of type to filename
-
-        :param biossection: flag to determine if within BIOS section.
-        :type biossection: str.
-        :param registries: flag to determine if within registries section.
-        :type registries: boolean.
-        :param monolith: full data model retrieved from server.
-        :type monolith: dict.
-
-        """
-        locationslist = list()
-        pathjoinstr = None
-
-        if not registries:
-            pathjoinstr = "Schemas"
-            if not biossection:
-                locationslist = self._schema_locations
-            else:
-                locationslist = self._bios_schema_locations
-        else:
-            pathjoinstr = "Registries"
-            if not biossection:
-                locationslist = self._registry_locations
-            else:
-                locationslist = self._bios_registry_locations
-
-        for location in locationslist:
-            if monolith:
-                self.new_load_file(monolith, root=location, \
-                               biossection=biossection, registries=registries)
-            elif self._is_local(location):
-                # need to set the executable bit on all SCEXEs
-                for root, _, filenames in os.walk(os.path.join(location,
-                                                               pathjoinstr)):
-                    for filename in filenames:
-                        fqpath = os.path.abspath(os.path.join(\
-                                              os.path.normpath(root), filename))
-
-                        if self.load_file(fqpath, root=location, \
-                              biossection=biossection, registries=registries):
-                            LOGGER.info("Loaded schema mapping '%s'", fqpath)
-
-    def new_load_file(self, monolith, root=None, biossection=False, \
-                                                            registries=False):
+    def new_load_file(self, monolith):
         """Loads the types from monolith.
 
         :param monolith: full data model retrieved from server.
         :type monolith: dict.
-        :param root: pointer to the root of the load.
-        :type root: class obj.
-        :param biossection: flag to determine if within BIOS section.
-        :type biossection: str.
-        :param registries: flag to determine if within registries section.
-        :type registries: boolean.
 
         """
-        classesdataholder = []
+        classesdataholders = []
 
-        for itemtype in monolith.types:
-            if itemtype.startswith(self.defines.defs.schemafilecollectiontype)\
-                or itemtype.startswith(self.defines.defs.regfilecollectiontype)\
-                                    or itemtype.startswith("Collection.") and \
-                                    'Instances' in monolith.types[itemtype]:
-                for instance in monolith.types[itemtype]['Instances']:
-                    if self._schemaid[0] in instance.resp.request.path.\
-                                            lower() or self._regid[0] in \
-                                            instance.resp.request.path.lower():
-                        if not registries and self._schemaid[0] in \
-                                            instance.resp.request.path.lower():
-                            if classesdataholder:
-                                if self._schemaid[1] in instance.resp.dict:
-                                    classesdataholder[0][self._schemaid[1]].\
-                                                    extend(instance.resp.dict\
-                                                           [self._schemaid[1]])
-                            else:
-                                classesdataholder.append(instance.resp.dict)
-                        elif registries and self._regid[0] in \
-                                            instance.resp.request.path.lower():
-                            if classesdataholder:
-                                if monolith.is_redfish:
-                                    classesdataholder[0][self._regid[1]].\
-                                                    extend(instance.resp.dict\
-                                                           [self._regid[1]])
-                            else:
-                                classesdataholder.append(instance.resp.dict)
-
-        if classesdataholder:
-            classesdataholder = classesdataholder[0]
+        for instance in monolith.iter():
+            if instance.type.startswith(self.defines.defs.schemafilecollectiontype)\
+                or instance.type.startswith(self.defines.defs.regfilecollectiontype)\
+                                or instance.type.startswith("Collection."):
+                if self._schemaid[0] in instance.path.lower() \
+                                    or self._regid[0] in instance.path.lower():
+                    classesdataholders.append(instance.resp.dict)
 
         try:
-            if monolith._typestring in classesdataholder and ('Collection.' in \
-                                    classesdataholder[monolith._typestring] or \
-                                    (self.defines.defs.schemafilecollectiontype\
-                                    in classesdataholder[monolith._typestring] \
-                                    and monolith.is_redfish)):
-                newclass = Classes.parse(classesdataholder)
-                newclass.set_root(root)
+            for classesdataholder in classesdataholders:
+                if monolith._typestring in classesdataholder and ('Collection.' in \
+                                        classesdataholder[monolith._typestring] or \
+                                        (self.defines.defs.schemafilecollectiontype\
+                                        in classesdataholder[monolith._typestring] \
+                                        and monolith.is_redfish)):
+                    newclass = RepoRegistryEntry.parse(classesdataholder)
 
-                if not registries:
-                    if not biossection:
-                        self._classes.append(newclass)
-                    else:
-                        self._bios_classes.append(newclass)
-                else:
-                    if not biossection:
-                        self._classes_registry.append(newclass)
-                    else:
-                        self._bios_classes_registry.append(newclass)
+                    self._classes.append(newclass)
         except BaseException:
             pass
-        else:
-            pass
 
-    def load_file(self, filepath, root=None, biossection=False, \
-                                            registries=False, datareturn=False):
-        """Loads the types from filepath.
-
-        :param filepath: path to a file to load, local or URL.
-        :type filepath: str.
-        :param root: root path used to reconstruct full file paths.
-        :type root: str.
-        :param biossection: flag to determine if within BIOS section.
-        :type biossection: str.
-        :param registries: flag to determine if within registries section.
-        :type registries: boolean.
-        :param datareturn: flag to determine if the raw data should be returned.
-        :type datareturn: boolean.
-
-        """
-        result = False
-        if os.path.isfile(filepath):
-            try:
-                filehand = open(filepath, 'r')
-                data = json.load(filehand)
-                if datareturn:
-                    return data
-
-                if 'Type' in data and data['Type'] == 'Collection.1.0.0':
-                    if biossection and registries:
-                        itemsreturn = self.bios_helper_function(data, root)
-                        data["Items"] = itemsreturn
-
-                    newclass = Classes.parse(data)
-                    newclass.set_root(root)
-
-                    if not registries:
-                        if not biossection:
-                            self._classes.append(newclass)
-                        else:
-                            self._bios_classes.append(newclass)
-                    else:
-                        if not biossection:
-                            self._classes_registry.append(newclass)
-                        else:
-                            self._bios_classes_registry.append(newclass)
-
-                    result = True
-            except BaseException:
-                pass
-            else:
-                pass
-            finally:
-                filehand.close()
-
-        return result
-
-    def bios_helper_function(self, data, root):
-        """Helper function for BIOS schemas
-
-        :param data: current retrieved data for BIOS.
-        :type data: str.
-        :param root: root path used to reconstruct full file paths.
-        :type root: str.
-
-        """
-        folderentries = data["links"]
-        datareturn = list()
-
-        for entry in folderentries["Member"]:
-            joinstr = entry["href"]
-
-            if os.name == 'nt' and joinstr[0] == "/":
-                joinstr = joinstr.replace("/", "\\")[1:]
-            elif joinstr[0] == "/":
-                joinstr = joinstr[1:]
-
-            for root, _, filenames in os.walk(os.path.join(root, joinstr)):
-                for filename in filenames:
-                    fqpath = os.path.abspath(os.path.join(\
-                                              os.path.normpath(root), filename))
-                    datareturn.append(self.load_file(fqpath, root=root, \
-                         biossection=True, registries=True, datareturn=True))
-                    LOGGER.info("Loaded schema mapping '%s'", fqpath)
-
-        return datareturn
-
-    def validate(self, item, selector=None, currdict=None, monolith=None, \
-                        newarg=None, checkall=False, regloc=None, attrreg=None):
+    def validate(self, item, currdict=None, monolith=None, \
+                                regloc=None, attrreg=None, unique=None):
         """Search for matching schemas and attribute registries and
         ensure that item is valid.
 
         :param item: the item to be validated.
         :type item: str.
-        :param selector: the type selection for the get operation.
-        :type selector: str.
         :param currdict: current selection dictionary.
         :type currdict: dict.
         :param monolith: full data model retrieved from server.
         :type monolith: dict.
-        :param newargs: list of multi level properties to be modified.
-        :type newargs: list.
-        :param checkall: flag to determine if check all should be enabled.
-        :type checkall: boolean.
+        :param unique: flag to determine override for unique properties.
+        :type unique: str.
+        :param attrreg: Registry entry of the given attribute.
+        :type attrreg: RepoRegistryEntry.
         :param regloc: path to registry location.
         :type regloc: str.
 
@@ -499,26 +130,18 @@ class ValidationManager(object):
         if regloc and not attrreg:
             attrreg = RepoRegistryEntry(regloc)
         elif not attrreg:
-            attrreg = self.find_schema(schname=item[monolith._typestring])
+            attrreg = self.find_prop(item[monolith._typestring])
 
         if attrreg:
             try:
-                tempvalue = attrreg.validate(item, self._errors, \
-                                        selector=selector, currdict=currdict, \
-                                        monolith=monolith, newarg=newarg, \
-                                        checkall=checkall)
+                (self._errors, self._warnings) = attrreg.validate(item, self._errors,\
+                                        currdict=currdict, monolith=monolith, \
+                                        unique=unique, warnings=self._warnings)
             except:
                 return attrreg
 
-            if tempvalue is True:
-                return False
-            elif tempvalue:
-                self._errors = tempvalue
-
-        return True
-
-    def bios_validate(self, item, regname, selector=None, currdict=None, \
-                                                checkall=False, monolith=None):
+    def bios_validate(self, item, regname, currdict=None, \
+                                                monolith=None, unique=None):
         """BIOS Search for matching schemas and attribute registries and
         ensure that item is valid
 
@@ -526,95 +149,35 @@ class ValidationManager(object):
         :type item: str.
         :param regname: string containing the registry name.
         :type regname: str.
-        :param selector: the type selection for the get operation.
-        :type selector: str.
+        :param unique: flag to determine override for unique properties.
+        :type unique: str.
         :param currdict: current selection dictionary.
         :type currdict: dict.
-        :param checkall: flag to determine if check all should be enabled.
-        :type checkall: boolean.
         :param monolith: full data model retrieved from server.
         :type monolith: dict.
 
         """
-        attrreg = self.find_bios_registry(regname=regname)
+        attrreg = self.find_prop(regname)
         try:
             attrreg = RepoRegistryEntry(attrreg)
         except:
             pass
         if attrreg:
-            tempvalue = attrreg.validate_bios_version(item, self._errors, \
-                                      selector=selector, currdict=currdict, \
-                                      checkall=checkall, monolith=monolith)
+            (self._errors, self._warnings) = attrreg.validate_bios_version(item, \
+                                self._errors, currdict=currdict, unique=unique,\
+                                monolith=monolith, warnings=self._warnings)
 
-            if tempvalue == 'readonly':
-                return tempvalue
-            elif tempvalue == 'unique':
-                return tempvalue
-            elif tempvalue:
-                self._errors = tempvalue
 
-        return True
-
-    def bios_info(self, item, regname, selector):
-        """BIOS Search for matching schemas and attribute registries and
-        ensure that item is valid
-
-        :param item: the item to be validated.
-        :type item: str.
-        :param regname: string containing the registry name.
-        :type regname: str.
-        :param selector: the type selection for the get operation.
-        :type selector: str.
-
-        """
-        attrreg = self.find_bios_registry(regname=regname)
-
-        if attrreg:
-            if attrreg.validate_bios_version(item, self._errors, \
-                                                            selector=selector):
-                return False
-
-        return True
-
-    def find_schema(self, schname):
+    def find_prop(self, propname):
         """Searches through all locations and returns the first schema
         found for the provided type
 
-        :param schname: string containing the schema name.
-        :type schname: str.
+        :param propname: string containing the schema name.
+        :type propname: str.
 
         """
         for cls in self._classes:
-            found = cls.find_schema(schname=schname)
-            if found:
-                return found
-        return None
-
-    def find_registry(self, regname):
-        """Searches through all locations and returns the first registry
-        found for the provided type
-
-        :param regname: string containing the registry name.
-        :type regname: str.
-
-        """
-        for cls in self._classes_registry:
-            found = cls.find_registry(regname=regname)
-            if found:
-                return found
-
-        return None
-
-    def find_bios_registry(self, regname):
-        """Searches through all locations and returns the first schema found
-        for the provided type
-
-        :param regname: string containing the registry name.
-        :type regname: str.
-
-        """
-        for cls in self._bios_classes_registry:
-            found = cls.find_bios_registry(regname=regname)
+            found = cls.find_property(propname)
             if found:
                 return found
         return None
@@ -623,396 +186,235 @@ class ValidationManager(object):
         """Return a list of errors encountered"""
         return self._errors
 
-    def _is_local(self, path):
-        """Determine if path is a local file or remote
+    def get_warnings(self):
+        """Return a list of warnings encountered"""
+        return self._warnings
 
-        :param path: The path to examine.
-        :type path: str.
+    def itermems(self, membername=None):
+        """Searches through all locations and yields each entry
 
-        """
-        if '://' in path:
-            return False
-        return True
-
-
-class Classes(RisObject):
-    """Represents an entry in the Classes registry"""
-    def __init__(self, item):
-        super(Classes, self).__init__(item)
-        self._root = None
-
-    def set_root(self, newroot):
-        """Set new root
-
-        :param newroot: new root to be set.
-        :type newroot: str.
+        :param membername: string containing the schema/registry name.
+        :type membername: str.
 
         """
-        self._root = newroot
+        if not membername:
+            membername = self.defines.defs.collectionstring
+        for items in self._classes:
+            for item in items[membername]:
+                yield item
 
-    def find_schema(self, schname):
-        """Returns iLO schemas
+    def iterregmems(self, membername=None):
+        """Searches through all locations and yields each entry
 
-        :param schname: string containing the schema name.
-        :type schname: str.
-        :returns: returns iLO schema
-
-        """
-        result = None
-
-        if checkattr(self, 'Items') and isinstance(self.Items, list):
-            for entry in self.Items:
-                if entry and 'Schema' in entry and entry['Schema'].lower() \
-                                                            == schname.lower():
-                    regentry = RepoRegistryEntry.parse(entry)
-                    regentry.set_root(self._root)
-                    result = regentry
-                    break
-        elif checkattr(self, 'Members') and isinstance(self.Members, list):
-            splitname = schname.split('.')[-1]
-            for entry in self.Members:
-                if 'Schema' in entry:
-                    if entry and 'Schema' in entry and entry['Schema'].lower()\
-                                            == schname.lower():
-                        regentry = RepoRegistryEntry.parse(entry)
-                        regentry.set_root(self._root)
-                        result = regentry
-                        break
-                else:
-                    schlink = entry['@odata.id'].split('/')
-                    schlink = schlink[len(schlink)-2]
-                    #schlink = schlink.replace('%23', '')
-                    #schlink = schlink.split('.')[0]
-
-                    if splitname.lower() == schlink.lower():
-                        result = entry
-                        break
-
-        return result
-
-    def find_registry(self, regname):
-        """Returns iLO registries
-
-        :param regname: string containing the registry name.
-        :type regname: str.
-        :returns: returns iLO registries
+        :param membername: string containing the registry name.
+        :type membername: str.
 
         """
-        result = None
-        if checkattr(self, 'Items') and isinstance(self.Items, list):
-            for entry in self.Items:
-                if entry and ('Schema' in entry and \
-                        entry['Schema'].lower().startswith(regname.lower())):
-                    regentry = RepoRegistryEntry.parse(entry)
-                    regentry.set_root(self._root)
-                    result = regentry
-                    break
-        elif checkattr(self, 'Members') and isinstance(self.Members, list):
-            splitname = regname.split('.')[-1]
-            for entry in self.Members:
-                if 'Schema' in entry:
-                    if entry and 'Schema' in entry and entry['Schema'].lower()\
-                                            == regname.lower():
-                        regentry = RepoRegistryEntry.parse(entry)
-                        regentry.set_root(self._root)
-                        result = regentry
-                        break
-                elif 'Registry' in entry:
-                    if entry and 'Registry' in entry and entry['Registry'].lower()\
-                                            == regname.lower():
-                        regentry = RepoRegistryEntry.parse(entry)
-                        regentry.set_root(self._root)
-                        result = regentry
-                        break
-                else:
-                    reglink = entry['@odata.id'].split('/')
-                    reglink = reglink[len(reglink)-2]
-                    if splitname.lower() == reglink.lower():
-                        result = entry
-                        break
+        if not membername:
+            membername = self.defines.defs.collectionstring
+        for items in self._classes:
+            if items[self.monolith._typestring].startswith((\
+                self.defines.defs.regfilecollectiontype, 'Collection.1.0.0')):
+                for item in items[membername]:
+                    yield item
 
-        return result
+    def iterschemamems(self, membername=None):
+        """Searches through all locations and yields each entry
 
-    def find_bios_schema(self, schname):
-        """Returns BIOS schemas
-
-        :param schname: string containing the schema name.
-        :type schname: str.
-        :returns: returns the BIOS schemas
+        :param membername: string containing the schema name.
+        :type membername: str.
 
         """
-        result = None
-        if checkattr(self, 'Items') and isinstance(self.Items, list):
-            for entry in self.Items:
-                if 'Schema' in entry and entry['Schema'].lower() == \
-                                                                schname.lower():
-                    regentry = RepoRegistryEntry.parse(entry)
-                    regentry.set_root(self._root)
-                    result = regentry
-                    break
-        elif checkattr(self, 'Members') and isinstance(self.Members, list):
-            splitname = schname.split('.')[-1]
-            for entry in self.Members:
-                if 'Schema' in entry:
-                    if entry and 'Schema' in entry and entry['Schema'].lower()\
-                                            == schname.lower():
-                        regentry = RepoRegistryEntry.parse(entry)
-                        regentry.set_root(self._root)
-                        result = regentry
-                        break
-                else:
-                    reglink = entry['@odata.id'].split('/')
-                    reglink = reglink[len(reglink)-2]
-                    if splitname.lower() == reglink.lower():
-                        result = entry
-                        break
+        if not membername:
+            membername = self.defines.defs.collectionstring
+        for items in self._classes:
+            if items[self.monolith._typestring].startswith((\
+                self.defines.defs.schemafilecollectiontype, 'Collection.1.0.0')):
+                for item in items[membername]:
+                    yield item
 
-        return result
-
-    def find_bios_registry(self, regname):
-        """Returns BIOS registries
-
-        :param regname: string containing the registry name.
-        :type regname: str.
-        :returns: returns the BIOS registries
-
-        """
-        result = None
-        if checkattr(self, 'Items') and isinstance(self.Items, list):
-            for entry in self.Items:
-                if entry and ('Schema' in entry and regname.lower() in \
-                                                    entry['Schema'].lower()):
-                    regentry = RepoRegistryEntry.parse(entry)
-                    regentry.set_root(self._root)
-                    result = regentry
-                    break
-        elif checkattr(self, 'Members') and isinstance(self.Members, list):
-            splitname = regname.split('.')[-1]
-            for entry in self.Members:
-                if 'Schema' in entry:
-                    if entry and 'Schema' in entry and entry['Schema'].lower()\
-                                            == regname.lower():
-                        regentry = RepoRegistryEntry.parse(entry)
-                        regentry.set_root(self._root)
-                        result = regentry
-                        break
-                elif 'Registry' in entry:
-                    if entry and 'Registry' in entry and entry['Registry'].lower()\
-                                            == regname.lower():
-                        regentry = RepoRegistryEntry.parse(entry)
-                        regentry.set_root(self._root)
-                        result = regentry
-                        break
-                else:
-                    reglink = entry['@odata.id'].split('/')
-                    reglink = reglink[len(reglink)-2]
-                    if splitname.lower() == reglink.lower():
-                        result = entry
-                        break
-
-        return result
-
-
-class RepoBaseEntry(RisObject):
-    """Represents an entry in the Classes registry"""
-    def __init__(self, d):
-        super(RepoBaseEntry, self).__init__(d)
-        self._root = None
-
-    def set_root(self, newroot):
-        """Set new root
-
-        :param newroot: new root to be set.
-        :type newroot: str.
-
-        """
-        self._root = newroot
-
-    def _read_location_file(self, currloc, errlist):
-        """Return results from locations
-
-        :param currdict: current selection dictionary.
-        :type currdict: dict.
-        :param errlist: list containing found errors.
-        :type errlist: list.
-
-        """
-        result = None
-        if 'Uri' in currloc:
-            root = os.path.normpath(self._root)
-            xref = os.path.normpath(currloc.Uri.extref).lstrip(os.path.sep)
-            fqpath = os.path.join(root, xref)
-
-            if not os.path.isfile(fqpath):
-                errlist.append(SchemaValidationError(\
-                                "Unable to location ArchiveUri '%s'" % fqpath))
-            else:
-                result = None
-                if fqpath.endswith('.json'):
-                    result = open(fqpath).read()
-
-        return result
-
-
-class RepoRegistryEntry(RepoBaseEntry):
-    """Represents an entry in the Classes registry"""
+class RepoRegistryEntry(RisObject):
+    """Represents an entry in the registry"""
     def __init__(self, d):
         super(RepoRegistryEntry, self).__init__(d)
 
-    def validate(self, tdict, errlist=None, selector=None, currdict=None, \
-                                    checkall=False, monolith=None, newarg=None):
+    def find_property(self, propname):
+        """Returns iLO/BIOS registries/schemas
+
+        :param propname: string containing the registry name.
+        :type propname: str.
+        :returns: returns iLO/BIOS registries/schemas
+
+        """
+        result = None
+        if checkattr(self, 'Items') and isinstance(self.Items, list):
+            for entry in self.Items:
+                #equal/in was changed to startswith for propname comparision.
+                if entry and 'Schema' in entry and \
+                        entry['Schema'].lower().startswith(propname.lower()):
+                    regentry = RepoRegistryEntry.parse(entry)
+                    result = regentry
+                    break
+        elif checkattr(self, 'Members') and isinstance(self.Members, list):
+            splitname = propname.split('.')[-1]
+            for entry in self.Members:
+                if 'Schema' in entry:
+                    if entry and 'Schema' in entry and \
+                            propname.lower() in entry['Schema'].lower():
+                        regentry = RepoRegistryEntry.parse(entry)
+                        result = regentry
+                        break
+                #This is only for registry.
+                elif 'Registry' in entry:
+                    if entry and 'Registry' in entry and entry['Registry'].lower()\
+                                            == propname.lower():
+                        regentry = RepoRegistryEntry.parse(entry)
+                        result = regentry
+                        break
+                else:
+                    if entry and '@odata.id' in entry:
+                        reglink = entry['@odata.id'].split('/')
+                        reglink = reglink[len(reglink)-2]
+                        if splitname.lower() == reglink.lower():
+                            result = entry
+                            break
+
+        return result
+
+    def validate(self, tdict, errlist=None, currdict=None, \
+                        warnings=None, monolith=None, reg=None, unique=None):
         """Load the schema file and validate tdict against it
 
         :param tdict: the dictionary to test against.
         :type tdict: dict.
         :param errlist: list containing found errors.
         :type errlist: list.
-        :param selector: the type selection for the get operation.
-        :type selector: str.
+        :param warnings: list containing found warnings.
+        :type warnings: list.
         :param currdict: current selection dictionary.
         :type currdict: dict.
-        :param checkall: flag to determine if check all should be enabled.
-        :type checkall: boolean.
         :param monolith: full data model retrieved from server.
         :type monolith: dict.
-        :param newargs: list of multi level properties to be modified.
-        :type newargs: list.
+        :param unique: flag to determine override for unique properties.
+        :type unique: str.
+        :param reg: Registry entry of the given attribute.
+        :type reg: dict.
         :returns: returns an error list.
 
         """
-        if not errlist:
-            errlist = list()
+        if not reg:
+            reg = self.get_registry_model(errlist=errlist, currdict=currdict, \
+                                                            monolith=monolith)
 
-        reg = self.get_registry_model(errlist=errlist, currdict=currdict, \
-                                            monolith=monolith, newarg=newarg)
-
-        if reg and not checkall:
-            try:
-                if reg[selector].readonly:
-                    return True
-            except BaseException:
-                pass
-            else:
-                pass
-
-            results = reg.validate_attribute_values(tdict)
+        if reg:
+            list(map(lambda x: self.checkreadunique(tdict, x, reg=reg, \
+                                warnings=warnings, unique=unique), list(tdict.keys())))
+            orireg = reg.copy()
+            ttdict = {ki:val for ki, val in list(tdict.items()) if not isinstance(val, (dict, list))}
+            results = reg.validate_attribute_values(ttdict)
             errlist.extend(results)
-        elif checkall and selector is None:
-            results = reg.validate_attribute_values(tdict)
-            errlist.extend(results)
+
+            for ki, val in list(tdict.items()):
+                if ki in ttdict:
+                    tdict[ki] = ttdict[ki]
+                    continue
+                reg = orireg.copy()
+                valexists = False
+                if val and isinstance(val, list):
+                    valexists = True
+                    #TODO: only validates if its a single dict within list
+                    if len(val) == 1 and isinstance(val[0], dict):
+                        treg = self.nestedreg(reg=reg, args=[ki])
+                        self.validate(val, errlist=errlist, unique=unique,\
+                              warnings=warnings, monolith=monolith, reg=treg)
+                    else:
+                        continue
+                elif val and isinstance(val, dict):
+                    valexists = True
+                    treg = self.nestedreg(reg=reg, args=[ki])
+                    self.validate(val, errlist=errlist, warnings=warnings,\
+                                  monolith=monolith, reg=treg, unique=unique)
+                if not val and valexists:
+                    del tdict[ki]
         else:
             errlist.append(RegistryValidationError('Unable to locate ' \
                                                             'registry model'))
 
-        if errlist:
-            return errlist
+        return (errlist, warnings)
 
-    def validate_bios_version(self, tdict, errlist=None, selector=None, \
-                              checkall=False, currdict=None, monolith=None):
+    def checkreadunique(self, tdict, tkey, reg=None, warnings=None, unique=None):
+        """Check for and remove the readonly and unique attributes if required.
+
+        :param tdict: the dictionary to test against.
+        :type tdict: dict.
+        :param tkey: The attribute key value to be tested.
+        :type tkey: str.
+        :param warnings: list containing found warnings.
+        :type warnings: list.
+        :param unique: flag to determine override for unique properties.
+        :type unique: str.
+        :param reg: Registry entry of the given attribute.
+        :type reg: dict.
+        :returns: returns boolean.
+
+        """
+        try:
+            if reg[tkey].readonly:
+                warnings.append("Property is read-only "   \
+                                    "skipping '%s'\n" % str(tkey))
+                del tdict[tkey]
+                return True
+        except:
+            pass
+        try:
+            if reg["ReadOnly"] is True:
+                warnings.append("Property is read-only "   \
+                                "skipping '%s'\n" % str(tkey))
+                del tdict[tkey]
+                return True
+        except:
+            pass
+        try:
+            if reg["IsSystemUniqueProperty"] is True and not unique:
+                warnings.append("Property is unique to " \
+                     "the system skipping '%s'\n" % str(tkey))
+                del tdict[tkey]
+                return True
+        except BaseException:
+            pass
+
+    def validate_bios_version(self, tdict, errlist=None,\
+                  currdict=None, monolith=None, unique=None, warnings=None):
         """BIOS VERSION. Load the schema file and validate tdict against it
 
         :param tdict: the dictionary to test against.
         :type tdict: dict.
         :param errlist: list containing found errors.
         :type errlist: list.
-        :param selector: the type selection for the get operation.
-        :type selector: str.
         :param currdict: current selection dictionary.
         :type currdict: dict.
-        :param checkall: flag to determine if check all should be enabled.
-        :type checkall: boolean.
         :param monolith: full data model retrieved from server.
         :type monolith: dict.
-        :param newargs: list of multi level properties to be modified.
-        :type newargs: list.
+        :param warnings: list containing found warnings.
+        :type warnings: list.
+        :param unique: flag to determine override for unique properties.
+        :type unique: str.
         :returns: returns an error list
 
         """
-        if not errlist:
-            errlist = list()
-
         reg = self.get_registry_model_bios_version(errlist=errlist, \
                                            currdict=currdict, monolith=monolith)
 
-        if reg and not checkall:
-            for item in reg.Attributes:
-                if not item[Typepathforval.typepath.defs.attname] == selector:
-                    continue
-
-                # validate that selector isn't read-only or a unique property
-                if item["ReadOnly"] is True:
-                    return 'readonly'
-
-                try:
-                    if item["IsSystemUniqueProperty"] is True:
-                        return 'unique'
-                except BaseException:
-                    continue
-                else:
-                    continue
-
-            results = reg.validate_att_val_bios(tdict)
-            errlist.extend(results)
-        elif checkall and selector is None:
+        if reg:
+            list(map(lambda x: self.checkreadunique(tdict, x, reg=reg, \
+                                warnings=warnings, unique=unique), list(tdict.keys())))
             results = reg.validate_att_val_bios(tdict)
             errlist.extend(results)
         else:
             errlist.append(RegistryValidationError('Unable to locate ' \
                                                             'registry model'))
 
-        if errlist:
-            return errlist
-
-    def validate_deprecated(self, tdict, errlist=None):
-        """Load the schema file and validate tdict against it
-
-        :param tdict: the dictionary to test against.
-        :type tdict: list.
-        :param errlist: list containing found errors.
-        :type errlist: list.
-        :returns: returns an error list
-
-        """
-        if not errlist:
-            errlist = list()
-
-        if not checkattr(self, 'Location'):
-            errlist.append(RegistryValidationError('Location property does' \
-                                                                ' not exist'))
-            return errlist
-
-        currloc = None
-        defloc = None
-        langcode = 'TBD'
-
-        for loc in self.Location:
-            for loclang in list(loc.keys()):
-                if loclang.lower() == langcode.lower():
-                    currloc = loc[loclang]
-                    break
-                elif loclang.lower() == 'default':
-                    defloc = loc[loclang]
-
-        if not currloc:
-            # use default location if lang doesn't match
-            currloc = defloc
-
-        if not currloc:
-            errlist.append(RegistryValidationError('Unable to determine' \
-                                                                ' location'))
-            return
-
-        location_file = self._read_location_file(currloc, errlist=errlist)
-        if not location_file:
-            errlist.append(RegistryValidationError('Location data is empty'))
-        else:
-            jsonreg = json.loads(location_file)
-            if 'Registry' in jsonreg:
-                if 'Type' in jsonreg and jsonreg['Type'] == \
-                                            'HpPropertiesRegistrySchema.1.0.0':
-                    reg = HpPropertiesRegistry.parse(jsonreg['Registry'])
-                    results = reg.validate_attribute_values(tdict)
-                    errlist.extend(results)
+        return (errlist, warnings)
 
     def get_registry_model(self, currdict=None, monolith=None, errlist=None, \
            skipcommit=False, searchtype=None, newarg=None, latestschema=None):
@@ -1068,65 +470,62 @@ class RepoRegistryEntry(RepoBaseEntry):
             return None
 
         if not searchtype:
-            searchtype = "ob"
+            searchtype = "object"
 
         location_file = None
         if currdict and monolith:
-            for itemtype in monolith.types:
-                if itemtype.lower().startswith(searchtype.lower()) and \
-                                    'Instances' in monolith.types[itemtype]:
-                    for instance in monolith.types[itemtype]['Instances']:
-                        try:
+            itemtype = monolith.gettypename(searchtype.lower())
+            if itemtype:
+                for instance in monolith.itertype(itemtype):
+                    try:
+                        if monolith.is_redfish and 'title' in instance.\
+                                    resp.dict and not instance.resp.dict\
+                                                ["title"].startswith('#'):
+                            currtype = currdict[instance._typestring].\
+                                                            split('#')[-1]
+                            currtype = currtype.split('.')[0] + '.'
+                        else:
+                            currtype = currdict[instance._typestring]
+
+                        if latestschema:
                             if monolith.is_redfish and 'title' in instance.\
-                                        resp.dict and not instance.resp.dict\
-                                                    ["title"].startswith('#'):
+                                    resp.dict and not instance.resp.dict\
+                                                ["title"].startswith('#'):
                                 currtype = currdict[instance._typestring].\
-                                                                split('#')[-1]
-                                currtype = currtype.split('.')[0] + '.'
+                                                            split('#')[-1]
+                                currtype = currtype.split('.')[0]
                             else:
-                                currtype = currdict[instance._typestring]
+                                currtype = currdict[instance._typestring].\
+                                                            split('.')[0]
+                            insttype = instance.resp.dict["title"].split('.')[0]
 
-                            if latestschema:
-                                if monolith.is_redfish and 'title' in instance.\
-                                        resp.dict and not instance.resp.dict\
-                                                    ["title"].startswith('#'):
-                                    currtype = currdict[instance._typestring].\
-                                                                split('#')[-1]
-                                    currtype = currtype.split('.')[0]
-                                else:
-                                    currtype = currdict[instance._typestring].\
-                                                                split('.')[0]
-                                insttype = instance.resp.dict["title"].split('.')[0]
-
-                                if currtype == insttype or currtype == \
-                                                    instance.resp.dict[\
-                                                   "oldtitle"].split('.')[0]:
-                                    location_file = instance.resp.dict
-                                    break
-                            elif searchtype == "ob" and instance.resp.dict[\
-                                       "title"].startswith(currtype) or \
-                                       "oldtitle" in list(instance.resp.dict.\
-                                       keys()) and currdict[instance._typestring\
-                                           ] == instance.resp.dict["oldtitle"]:
+                            if currtype == insttype or currtype == \
+                                                instance.resp.dict[\
+                                               "oldtitle"].split('.')[0]:
                                 location_file = instance.resp.dict
                                 break
-                            elif searchtype != "ob":
-                                #added for smart storage differences in ids
-                                tname = currdict[instance._typestring].split('.')[0]
-                                if tname[0] == '#':
-                                    tname = tname[1:]
-                                if tname == instance.resp.dict["RegistryPrefix"]:
-                                    location_file = instance.resp.dict
-                                    break
-                        except BaseException:
-                            pass
-                        else:
-                            pass
+                        elif searchtype == "object" and instance.resp.dict[\
+                                   "title"].startswith(currtype) or \
+                                   "oldtitle" in list(instance.resp.dict.\
+                                   keys()) and currdict[instance._typestring\
+                                       ] == instance.resp.dict["oldtitle"]:
+                            location_file = instance.resp.dict
+                            break
+                        elif searchtype != "object":
+                            #added for smart storage differences in ids
+                            tname = currdict[instance._typestring].split('.')[0]
+                            if tname[0] == '#':
+                                tname = tname[1:]
+                            if tname == instance.resp.dict["RegistryPrefix"]:
+                                location_file = instance.resp.dict
+                                break
+                    except BaseException:
+                        pass
+                    else:
+                        pass
 
-                if location_file:
-                    break
-        else:
-            location_file = self._read_location_file(currloc, errlist=errlist)
+                    if location_file:
+                        break
 
         if not location_file:
             errlist.append(RegistryValidationError('Location data is empty'))
@@ -1143,7 +542,8 @@ class RepoRegistryEntry(RepoBaseEntry):
             if 'properties' in jsonreg:
                 regitem = jsonreg['properties']
                 if 'Properties' in regitem:
-                    regitem = regitem['Properties']
+                    regitem.update(regitem['Properties'])
+                    del regitem['Properties']
                 reg = HpPropertiesRegistry.parse(regitem)
 
                 if newarg:
@@ -1241,24 +641,13 @@ class RepoRegistryEntry(RepoBaseEntry):
             # use default location if lang doesn't match
             currloc = defloc
 
-        if not currloc:
-            errlist.append(RegistryValidationError(
-                'Unable to determine location'))
-            return None
-
         location_file = None
         if currdict and monolith:
-            for itemtype in monolith.types:
-                if attregtype in itemtype and \
-                                    'Instances' in monolith.types[itemtype]:
-                    for instance in monolith.types[itemtype]['Instances']:
-                        location_file = instance.resp.dict
-                        break
-
-                if location_file:
+            itemtype = monolith.gettypename(attregtype)
+            if itemtype:
+                for instance in monolith.itertype(itemtype):
+                    location_file = instance.resp.dict
                     break
-        else:
-            location_file = self._read_location_file(currloc, errlist=errlist)
 
         if not location_file:
             errlist.append(RegistryValidationError('Location data is empty'))
@@ -1276,6 +665,41 @@ class RepoRegistryEntry(RepoBaseEntry):
 
         return None
 
+    def nestedreg(self, reg=None, args=None):
+        """Go through the registry entry to find the required nested attribute
+
+        :param reg: Registry entry of the given attribute.
+        :type reg: dict.
+        :param args: list of multi level properties to be modified.
+        :type args: list.
+        :returns: dict of Registry entry
+
+        """
+        for arg in args:
+            try:
+                arg = next(key for key in list(reg.keys()) if \
+                                        key.lower() == arg.lower())
+                if 'properties' in six.iterkeys(reg[arg]) \
+                                    and ('patternProperties' in \
+                                        six.iterkeys(reg[arg])):
+                    reg[arg]['properties'].update(\
+                                  reg[arg]['patternProperties'])
+                    reg = reg[arg]["properties"]
+                elif 'oneOf' in reg[arg]:
+                    oneof = reg[arg]['oneOf']
+                    for item in oneof:
+                        reg = item['properties']
+                elif 'type' in reg[arg] and reg[arg]['type'] == 'array' and \
+                    'items' in reg[arg] and "properties" in reg[arg]["items"]:
+                    reg = reg[arg]["items"]["properties"]
+                else:
+                    reg = reg[arg]["properties"]
+            except:
+                try:
+                    reg = reg[arg]['patternProperties']
+                except:
+                    return None
+        return reg
 
 class HpPropertiesRegistry(RisObject):
     """Models the HpPropertiesRegistry file"""
@@ -1405,7 +829,6 @@ class HpPropertiesRegistry(RisObject):
 
         """
 
-
         for item in self.Attributes:
             name = Typepathforval.typepath.defs.attributenametype
             if name not in list(item.keys()):
@@ -1468,7 +891,16 @@ class HpPropertiesRegistry(RisObject):
         return result
 
     def nulltypevalidationcheck(self, attrval=None, attrentry=None):
-        if 'type' in attrentry and attrval == None:
+        """Function to validate attribute against iLO schema
+
+        :param attrentry: attribute entry to be used for validation.
+        :type attrentry: str.
+        :param attrval: attribute value to be used for validation.
+        :type attrval: str.
+        :returns: returns boolean
+
+        """
+        if 'type' in attrentry and attrval is None:
             if isinstance(attrentry['type'], list):
                 for item in attrentry['type']:
                     if item.lower() == 'null':
@@ -1484,6 +916,68 @@ class BaseValidator(RisObject):
         raise RuntimeError('You must override this method in your derived ' \
                                                                         'class')
 
+    def common_print_help(self, name):
+        """Info command helper function for print outs
+
+        :param name: clean name for outputting.
+        :type name: str.
+        :returns: str
+
+        """
+        outdata = ''
+        wrapper = textwrap.TextWrapper()
+        wrapper.initial_indent = ' ' * 4
+        wrapper.subsequent_indent = ' ' * 4
+
+        outdata += '\nNAME\n'
+        outdata += '%s\n' % wrapper.fill('%s' % name)
+        outdata += '\n'
+
+        if 'DisplayName' in self:
+            outdata += '\nDISPLAY NAME\n'
+            outdata += '%s\n' % wrapper.fill('%(DisplayName)s' % self)
+            outdata += '\n'
+
+        if 'description' in self:
+            outdata += '\nDESCRIPTION\n'
+            outdata += '%s\n' % wrapper.fill('%(description)s' % self)
+            outdata += '\n'
+
+        if 'HelpText' in self:
+            outdata += '\nHELP TEXT\n'
+            outdata += '%s\n' % wrapper.fill('%(HelpText)s' % self)
+            outdata += '\n'
+
+        if 'WarningText' in self:
+            outdata += '\n************************************************\n'
+            outdata += '\nWARNING\n'
+            outdata += '%s\n' % wrapper.fill('%(WarningText)s' % self)
+            outdata += '\n\n**********************************************\n'
+            outdata += '\n'
+
+        if 'type' in self and isinstance(self['type'], list):
+            outdata += '\nTYPE\n'
+            for item in self['type']:
+                outdata += '%s\n' % wrapper.fill('%s' % item)
+            outdata += '\n'
+        elif 'type' in self:
+            outdata += '\nTYPE\n'
+            outdata += '%s\n' % wrapper.fill('%(type)s' % self)
+            outdata += '\n'
+        elif 'Type' in self:
+            outdata += '\nTYPE\n'
+            outdata += '%s\n' % wrapper.fill('%(Type)s' % self)
+            outdata += '\n'
+
+        if 'ReadOnly' in self:
+            outdata += '\nREAD-ONLY\n'
+            outdata += '%s\n' % wrapper.fill('%(ReadOnly)s' % self)
+            outdata += '\n'
+        elif 'readonly' in self:
+            outdata += '\nREAD-ONLY\n'
+            outdata += '%s\n' % wrapper.fill('%(readonly)s' % self)
+            outdata += '\n'
+        return outdata
 
 class EnumValidator(BaseValidator):
     """Enum validator class"""
@@ -1525,8 +1019,8 @@ class EnumValidator(BaseValidator):
     def validate(self, keyval, name):
         """Validate against iLO schema
 
-        :param newval: new value to be used for validation.
-        :type newval: str.
+        :param keyval: new value to be used for validation.
+        :type keyval: str.
         :param name: clean name for outputting.
         :type name: str.
         :returns: returns an error if fails
@@ -1537,7 +1031,7 @@ class EnumValidator(BaseValidator):
 
         try:
             for possibleval in self.enum:
-                if possibleval.lower() == newval.lower():
+                if possibleval and possibleval.lower() == newval.lower():
                     keyval[0] = possibleval
                     return result
         except Exception:
@@ -1551,77 +1045,24 @@ class EnumValidator(BaseValidator):
 
         return result
 
-    def print_help(self, name, out=sys.stdout):
+    def print_help(self, name):
         """Info command helper function for print outs
 
         :param name: clean name for outputting.
         :type name: str.
-        :param out: output type for verbosity.
-        :type out: output type.
+        :returns: str.
 
         """
-        wrapper = textwrap.TextWrapper()
-        wrapper.initial_indent = ' ' * 4
-        wrapper.subsequent_indent = ' ' * 4
-
-        out.write('\nNAME\n')
-        out.write('%s' % wrapper.fill('%s' % name))
-        out.write('\n')
-
-        if 'DisplayName' in self:
-            out.write('\nDISPLAY NAME\n')
-            out.write('%s' % wrapper.fill('%(DisplayName)s' % self))
-            out.write('\n')
-
-        if 'description' in self:
-            out.write('\nDESCRIPTION\n')
-            out.write('%s' % wrapper.fill('%(description)s' % self))
-            out.write('\n')
-
-        if 'HelpText' in self:
-            out.write('\nHELP TEXT\n')
-            out.write('%s' % wrapper.fill('%(HelpText)s' % self))
-            out.write('\n')
-
-        if 'WarningText' in self:
-            out.write('\n************************************************\n')
-            out.write('\nWARNING\n')
-            out.write('%s' % wrapper.fill('%(WarningText)s' % self))
-            out.write('\n\n**********************************************\n')
-            out.write('\n')
-
-        if 'type' in self and isinstance(self['type'], list):
-            out.write('\nTYPE\n')
-            for item in self['type']:
-                out.write('%s\n' % wrapper.fill('%s' % item))
-            out.write('\n')
-        elif 'type' in self:
-            out.write('\nTYPE\n')
-            out.write('%s' % wrapper.fill('%(type)s' % self))
-            out.write('\n')
-        elif 'Type' in self:
-            out.write('\nTYPE\n')
-            out.write('%s' % wrapper.fill('%(Type)s' % self))
-            out.write('\n')
-
-        if 'ReadOnly' in self:
-            out.write('\nREAD-ONLY\n')
-            out.write('%s' % wrapper.fill('%(ReadOnly)s' % self))
-            out.write('\n')
-        elif 'readonly' in self:
-            out.write('\nREAD-ONLY\n')
-            out.write('%s' % wrapper.fill('%(readonly)s' % self))
-            out.write('\n')
-
-        out.write('\nPOSSIBLE VALUES\n')
+        outdata = self.common_print_help(name)
+        outdata += '\nPOSSIBLE VALUES\n'
         try:
             for possibleval in self.enum:
-                out.write('    %s\n' % possibleval)
+                outdata += '    %s\n' % possibleval
         except Exception:
             for possibleval in self.Value:
-                out.write('    %(ValueName)s\n' % possibleval)
-        out.write('\n')
-
+                outdata += '    %(ValueName)s\n' % possibleval
+        outdata += '\n'
+        return outdata
 
 class BoolValidator(BaseValidator):
     """Bool validator class"""
@@ -1675,72 +1116,19 @@ class BoolValidator(BaseValidator):
 
         return result
 
-    def print_help(self, name, out=sys.stdout):
+    def print_help(self, name):
         """Info command helper function for print outs
 
         :param name: clean name for outputting.
         :type name: str.
-        :param out: output type for verbosity.
-        :type out: output type.
+        :returns: str.
 
         """
-        wrapper = textwrap.TextWrapper()
-        wrapper.initial_indent = ' ' * 4
-        wrapper.subsequent_indent = ' ' * 4
-
-        out.write('\nNAME\n')
-        out.write('%s' % wrapper.fill('%s' % name))
-        out.write('\n')
-
-        if 'DisplayName' in self:
-            out.write('\nDISPLAY NAME\n')
-            out.write('%s' % wrapper.fill('%(DisplayName)s' % self))
-            out.write('\n')
-
-        if 'description' in self:
-            out.write('\nDESCRIPTION\n')
-            out.write('%s' % wrapper.fill('%(description)s' % self))
-            out.write('\n')
-
-        if 'HelpText' in self:
-            out.write('\nHELP TEXT\n')
-            out.write('%s' % wrapper.fill('%(HelpText)s' % self))
-            out.write('\n')
-
-        if 'WarningText' in self:
-            out.write('\n************************************************\n')
-            out.write('\nWARNING\n')
-            out.write('%s' % wrapper.fill('%(WarningText)s' % self))
-            out.write('\n\n**********************************************\n')
-            out.write('\n')
-
-        if 'type' in self and isinstance(self['type'], list):
-            out.write('\nTYPE\n')
-            for item in self['type']:
-                out.write('%s\n' % wrapper.fill('%s' % item))
-            out.write('\n')
-        elif 'type' in self:
-            out.write('\nTYPE\n')
-            out.write('%s' % wrapper.fill('%(type)s' % self))
-            out.write('\n')
-        elif 'Type' in self:
-            out.write('\nTYPE\n')
-            out.write('%s' % wrapper.fill('%(Type)s' % self))
-            out.write('\n')
-
-        if 'ReadOnly' in self:
-            out.write('\nREAD-ONLY\n')
-            out.write('%s' % wrapper.fill('%(ReadOnly)s' % self))
-            out.write('\n')
-        elif 'readonly' in self:
-            out.write('\nREAD-ONLY\n')
-            out.write('%s' % wrapper.fill('%(readonly)s' % self))
-            out.write('\n')
-
-        out.write('\nPOSSIBLE VALUES\n')
-        out.write('    True or False\n')
-        out.write('\n')
-
+        outdata = self.common_print_help(name)
+        outdata += '\nPOSSIBLE VALUES\n'
+        outdata += '    True or False\n'
+        outdata += '\n'
+        return outdata
 
 class StringValidator(BaseValidator):
     """Constructor """
@@ -1806,78 +1194,28 @@ class StringValidator(BaseValidator):
 
         return result
 
-    def print_help(self, name, out=sys.stdout):
+    def print_help(self, name):
         """Info command helper function for print outs
 
         :param name: clean name for outputting.
         :type name: str.
-        :param out: output type for verbosity.
-        :type out: output type.
+        :returns: str.
 
         """
         wrapper = textwrap.TextWrapper()
         wrapper.initial_indent = ' ' * 4
         wrapper.subsequent_indent = ' ' * 4
-
-        out.write('\nNAME\n')
-        out.write('%s' % wrapper.fill('%s' % name))
-        out.write('\n')
-
-        if 'DisplayName' in self:
-            out.write('\nDISPLAY NAME\n')
-            out.write('%s' % wrapper.fill('%(DisplayName)s' % self))
-            out.write('\n')
-
-        if 'description' in self:
-            out.write('\nDESCRIPTION\n')
-            out.write('%s' % wrapper.fill('%(description)s' % self))
-            out.write('\n')
-
-        if 'HelpText' in self:
-            out.write('\nHELP TEXT\n')
-            out.write('%s' % wrapper.fill('%(HelpText)s' % self))
-            out.write('\n')
-
-        if 'WarningText' in self:
-            out.write('\n************************************************\n')
-            out.write('\nWARNING\n')
-            out.write('%s' % wrapper.fill('%(WarningText)s' % self))
-            out.write('\n\n**********************************************\n')
-            out.write('\n')
-
-        if 'type' in self and isinstance(self['type'], list):
-            out.write('\nTYPE\n')
-            for item in self['type']:
-                out.write('%s\n' % wrapper.fill('%s' % item))
-            out.write('\n')
-        elif 'type' in self:
-            out.write('\nTYPE\n')
-            out.write('%s' % wrapper.fill('%(type)s' % self))
-            out.write('\n')
-        elif 'Type' in self:
-            out.write('\nTYPE\n')
-            out.write('%s' % wrapper.fill('%(Type)s' % self))
-            out.write('\n')
-
+        outdata = self.common_print_help(name)
         if 'MinLength' in self:
-            out.write('\nMIN LENGTH\n')
-            out.write('%s' % wrapper.fill('%(MinLength)s' % self))
-            out.write('\n')
+            outdata += '\nMIN LENGTH\n'
+            outdata += '%s' % wrapper.fill('%(MinLength)s' % self)
+            outdata += '\n'
 
         if 'MaxLength' in self:
-            out.write('\nMAX LENGTH\n')
-            out.write('%s' % wrapper.fill('%(MaxLength)s' % self))
-            out.write('\n')
-
-        if 'ReadOnly' in self:
-            out.write('\nREAD-ONLY\n')
-            out.write('%s' % wrapper.fill('%(ReadOnly)s' % self))
-            out.write('\n')
-        elif 'readonly' in self:
-            out.write('\nREAD-ONLY\n')
-            out.write('%s' % wrapper.fill('%(readonly)s' % self))
-            out.write('\n')
-
+            outdata += '\nMAX LENGTH\n'
+            outdata += '%s' % wrapper.fill('%(MaxLength)s' % self)
+            outdata += '\n'
+        return outdata
 
 class IntegerValidator(BaseValidator):
     """Interger validator class"""
@@ -1919,6 +1257,7 @@ class IntegerValidator(BaseValidator):
 
         :param newval: new value to be used for validation.
         :type newval: str.
+        :returns: list.
 
         """
         result = list()
@@ -1948,68 +1287,16 @@ class IntegerValidator(BaseValidator):
 
         return result
 
-    def print_help(self, name, out=sys.stdout):
+    def print_help(self, name):
         """Info command helper function for print outs
 
         :param name: clean name for outputting.
         :type name: str.
-        :param out: output type for verbosity.
-        :type out: output type.
+        :returns: str.
 
         """
-        wrapper = textwrap.TextWrapper()
-        wrapper.initial_indent = ' ' * 4
-        wrapper.subsequent_indent = ' ' * 4
-
-        out.write('\nNAME\n')
-        out.write('%s' % wrapper.fill('%s' % name))
-        out.write('\n')
-
-        if 'DisplayName' in self:
-            out.write('\nDISPLAY NAME\n')
-            out.write('%s' % wrapper.fill('%(DisplayName)s' % self))
-            out.write('\n')
-
-        if 'description' in self:
-            out.write('\nDESCRIPTION\n')
-            out.write('%s' % wrapper.fill('%(description)s' % self))
-            out.write('\n')
-
-        if 'HelpText' in self:
-            out.write('\nHELP TEXT\n')
-            out.write('%s' % wrapper.fill('%(HelpText)s' % self))
-            out.write('\n')
-
-        if 'WarningText' in self:
-            out.write('\n************************************************\n')
-            out.write('\nWARNING\n')
-            out.write('%s' % wrapper.fill('%(WarningText)s' % self))
-            out.write('\n\n**********************************************\n')
-            out.write('\n')
-
-        if 'type' in self and isinstance(self['type'], list):
-            out.write('\nTYPE\n')
-            for item in self['type']:
-                out.write('%s\n' % wrapper.fill('%s' % item))
-            out.write('\n')
-        elif 'type' in self:
-            out.write('\nTYPE\n')
-            out.write('%s' % wrapper.fill('%(type)s' % self))
-            out.write('\n')
-        elif 'Type' in self:
-            out.write('\nTYPE\n')
-            out.write('%s' % wrapper.fill('%(Type)s' % self))
-            out.write('\n')
-
-        if 'ReadOnly' in self:
-            out.write('\nREAD-ONLY\n')
-            out.write('%s' % wrapper.fill('%(ReadOnly)s' % self))
-            out.write('\n')
-        elif 'readonly' in self:
-            out.write('\nREAD-ONLY\n')
-            out.write('%s' % wrapper.fill('%(readonly)s' % self))
-            out.write('\n')
-
+        outdata = self.common_print_help(name)
+        return outdata
 
 class ObjectValidator(BaseValidator):
     """Object validator class"""
@@ -2054,74 +1341,23 @@ class ObjectValidator(BaseValidator):
 
         :param newval: new value to be used for validation.
         :type newval: str.
+        :returns: list.
 
         """
         #TODO need to add so logic for objects class?
         result = list()
         return result
 
-    def print_help(self, name, out=sys.stdout):
+    def print_help(self, name):
         """Info command helper function for print outs
 
         :param name: clean name for outputting.
         :type name: str.
-        :param out: output type for verbosity.
-        :type out: output type.
+        :returns: str.
 
         """
-        wrapper = textwrap.TextWrapper()
-        wrapper.initial_indent = ' ' * 4
-        wrapper.subsequent_indent = ' ' * 4
-
-        out.write('\nNAME\n')
-        out.write('%s' % wrapper.fill('%s' % name))
-        out.write('\n')
-
-        if 'DisplayName' in self:
-            out.write('\nDISPLAY NAME\n')
-            out.write('%s' % wrapper.fill('%(DisplayName)s' % self))
-            out.write('\n')
-
-        if 'description' in self:
-            out.write('\nDESCRIPTION\n')
-            out.write('%s' % wrapper.fill('%(description)s' % self))
-            out.write('\n')
-
-        if 'HelpText' in self:
-            out.write('\nHELP TEXT\n')
-            out.write('%s' % wrapper.fill('%(HelpText)s' % self))
-            out.write('\n')
-
-        if 'WarningText' in self:
-            out.write('\n************************************************\n')
-            out.write('\nWARNING\n')
-            out.write('%s' % wrapper.fill('%(WarningText)s' % self))
-            out.write('\n\n**********************************************\n')
-            out.write('\n')
-
-        if 'type' in self and isinstance(self['type'], list):
-            out.write('\nTYPE\n')
-            for item in self['type']:
-                out.write('%s\n' % wrapper.fill('%s' % item))
-            out.write('\n')
-        elif 'type' in self:
-            out.write('\nTYPE\n')
-            out.write('%s' % wrapper.fill('%(type)s' % self))
-            out.write('\n')
-        elif 'Type' in self:
-            out.write('\nTYPE\n')
-            out.write('%s' % wrapper.fill('%(Type)s' % self))
-            out.write('\n')
-
-        if 'ReadOnly' in self:
-            out.write('\nREAD-ONLY\n')
-            out.write('%s' % wrapper.fill('%(ReadOnly)s' % self))
-            out.write('\n')
-        elif 'readonly' in self:
-            out.write('\nREAD-ONLY\n')
-            out.write('%s' % wrapper.fill('%(readonly)s' % self))
-            out.write('\n')
-
+        outdata = self.common_print_help(name)
+        return outdata
 
 class PasswordValidator(BaseValidator):
     """Password validator class"""
@@ -2190,77 +1426,28 @@ class PasswordValidator(BaseValidator):
 
         return result
 
-    def print_help(self, name, out=sys.stdout):
+    def print_help(self, name):
         """Info command helper function for print outs
 
         :param name: clean name for outputting.
         :type name: str.
-        :param out: output type for verbosity.
-        :type out: output type.
+        :returns: str.
 
         """
         wrapper = textwrap.TextWrapper()
         wrapper.initial_indent = ' ' * 4
         wrapper.subsequent_indent = ' ' * 4
-
-        out.write('\nNAME\n')
-        out.write('%s' % wrapper.fill('%s' % name))
-        out.write('\n')
-
-        if 'DisplayName' in self:
-            out.write('\nDISPLAY NAME\n')
-            out.write('%s' % wrapper.fill('%(DisplayName)s' % self))
-            out.write('\n')
-
-        if 'description' in self:
-            out.write('\nDESCRIPTION\n')
-            out.write('%s' % wrapper.fill('%(description)s' % self))
-            out.write('\n')
-
-        if 'HelpText' in self:
-            out.write('\nHELP TEXT\n')
-            out.write('%s' % wrapper.fill('%(HelpText)s' % self))
-            out.write('\n')
-
-        if 'WarningText' in self:
-            out.write('\n************************************************\n')
-            out.write('\nWARNING\n')
-            out.write('%s' % wrapper.fill('%(WarningText)s' % self))
-            out.write('\n\n**********************************************\n')
-            out.write('\n')
-
-        if 'type' in self and isinstance(self['type'], list):
-            out.write('\nTYPE\n')
-            for item in self['type']:
-                out.write('%s\n' % wrapper.fill('%s' % item))
-            out.write('\n')
-        elif 'type' in self:
-            out.write('\nTYPE\n')
-            out.write('%s' % wrapper.fill('%(type)s' % self))
-            out.write('\n')
-        elif 'Type' in self:
-            out.write('\nTYPE\n')
-            out.write('%s' % wrapper.fill('%(Type)s' % self))
-            out.write('\n')
-
+        outdata = self.common_print_help(name)
         if 'MinLength' in self:
-            out.write('\nMIN LENGTH\n')
-            out.write('%s' % wrapper.fill('%(MinLength)s' % self))
-            out.write('\n')
+            outdata += '\nMIN LENGTH\n'
+            outdata += '%s' % wrapper.fill('%(MinLength)s' % self)
+            outdata += '\n'
 
         if 'MaxLength' in self:
-            out.write('\nMAX LENGTH\n')
-            out.write('%s' % wrapper.fill('%(MaxLength)s' % self))
-            out.write('\n')
-
-        if 'ReadOnly' in self:
-            out.write('\nREAD-ONLY\n')
-            out.write('%s' % wrapper.fill('%(ReadOnly)s' % self))
-            out.write('\n')
-        elif 'readonly' in self:
-            out.write('\nREAD-ONLY\n')
-            out.write('%s' % wrapper.fill('%(readonly)s' % self))
-            out.write('\n')
+            outdata += '\nMAX LENGTH\n'
+            outdata += '%s' % wrapper.fill('%(MaxLength)s' % self)
+            outdata += '\n'
+        return outdata
 
 class Typepathforval(object):
     """Way to store the typepath defines object."""
@@ -2274,8 +1461,6 @@ def checkattr(aobj, prop):
     try:
         if hasattr(aobj, prop):
             return True
-        else:
-            return False
     except:
         pass
     return False

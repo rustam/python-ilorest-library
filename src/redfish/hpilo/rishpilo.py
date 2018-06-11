@@ -20,7 +20,6 @@
 #---------Imports---------
 
 import os
-import sys
 import time
 import struct
 import logging
@@ -76,7 +75,7 @@ class HpIlo(object):
     def __init__(self, dll=None):
         fhandle = c_void_p()
         self.dll = dll
-        if '-d' in sys.argv:
+        if LOGGER.isEnabledFor(logging.DEBUG):
             self.dll.enabledebugoutput()
         self.dll.ChifInitialize(None)
 

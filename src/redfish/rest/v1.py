@@ -28,7 +28,6 @@ import gzip
 import json
 import base64
 import codecs
-import ctypes
 import hashlib
 import logging
 import platform
@@ -51,7 +50,7 @@ except ImportError:
 
 from redfish.hpilo.rishpilo import HpIloChifPacketExchangeError
 from redfish.hpilo.risblobstore2 import BlobStore2, Blob2OverrideError, \
-                            ChifDllMissingError, Blob2SecurityError
+                            Blob2SecurityError
 
 #---------End of imports---------
 
@@ -104,7 +103,7 @@ class RisObject(dict):
         """
         super(RisObject, self).__init__()
         self.update(**dict((k, self.parse(value)) \
-                                                for k, value in d.items()))
+                                                for k, value in list(d.items())))
 
     @classmethod
     def parse(cls, value):
@@ -121,8 +120,8 @@ class RisObject(dict):
             return cls(value)
         elif isinstance(value, list):
             return [cls.parse(i) for i in value]
-        else:
-            return value
+
+        return value
 
 class RestRequest(object):
     """Holder for Request information"""
@@ -372,7 +371,7 @@ class RisRestResponse(RestResponse):
         if not isinstance(resp_txt, string_types):
             resp_txt = "".join(map(chr, resp_txt))
         self._respfh = StringIO(resp_txt)
-        self._socket = _FakeSocket(bytearray(map(ord, self._respfh.read())))
+        self._socket = _FakeSocket(bytearray(list(map(ord, self._respfh.read()))))
 
         response = http_client.HTTPResponse(self._socket)
         response.begin()
@@ -415,11 +414,11 @@ class StaticRestResponse(RestResponse):
         returnlist = list()
 
         if isinstance(self._headers, dict):
-            for key, value in self._headers.items():
+            for key, value in list(self._headers.items()):
                 returnlist.append((key, value))
         else:
             for item in self._headers:
-                returnlist.append(item.items()[0])
+                returnlist.append(list(item.items())[0])
 
         return returnlist
 
@@ -439,6 +438,7 @@ class MultipartFormdataEncoder(object):
 
     @classmethod
     def ukey(cls, skey):
+        """ Unicode key decode"""
         if sys.hexversion < 0x03000000 and isinstance(skey, str):
             skey = skey.decode('utf-8')
         if sys.hexversion >= 0x03000000 and isinstance(skey, bytes):
@@ -456,9 +456,8 @@ class MultipartFormdataEncoder(object):
             key = self.ukey(key)
             yield encoder('--{}\r\n'.format(self.boundary))
             yield encoder(self.ukey('Content-Disposition: form-data; name="{}"\r\n').format(key))
-            #yield encoder(self.ukey('Content-Type: application/json'))
             yield encoder('\r\n')
-            if isinstance(value, int) or isinstance(value, float):
+            if isinstance(value, (int, float)):
                 value = str(value)
             yield encoder(self.ukey(value))
             yield encoder('\r\n')
@@ -466,8 +465,8 @@ class MultipartFormdataEncoder(object):
             key = self.ukey(key)
             filename = self.ukey(filename)
             yield encoder('--{}\r\n'.format(self.boundary))
-            yield encoder(self.ukey('Content-Disposition: form-data; name="{}"; filename="{}"\r\n').format(key, filename))
-            #yield encoder('Content-Type: {}\r\n'.format(mimetypes.guess_type(filename)[0] or 'application/octet-stream'))
+            yield encoder(self.ukey('Content-Disposition: form-data; name="{}"; '\
+                                    'filename="{}"\r\n').format(key, filename))
             yield encoder('\r\n')
             with fdest:
                 buff = fdest.read()
@@ -638,8 +637,8 @@ class RestClientBase(object):
     def set_authorization_key(self, authorization_key):
         """Set authorization key
 
-        :param session_location: The session_location to be set.
-        :type session_location: str
+        :param authorization_key: The authorization_key to be set.
+        :type authorization_key: str
 
         """
         self.__authorization_key = authorization_key
@@ -810,7 +809,6 @@ class RestClientBase(object):
             headers['X-HPRESTFULAPI-AuthToken'] = \
                                                 hash_object.hexdigest().upper()
         elif optionalpassword:
-        #TODO: check if optional password is unicde
             optionalpassword = optionalpassword.encode('utf-8') if type(\
                 optionalpassword).__name__ in 'basestr' else optionalpassword
             hash_object = hashlib.new('SHA256')
@@ -885,7 +883,7 @@ class RestClientBase(object):
                         compresseddata = buf.getvalue()
                         if compresseddata:
                             data = bytearray()
-                            data.extend(buffer(compresseddata))
+                            data.extend(memoryview(compresseddata))
                             body = data
                 except BaseException as excp:
                     LOGGER.error('Error occur while compressing body: %s', excp)
@@ -982,7 +980,7 @@ class RestClientBase(object):
                 if restresp is not None:
                     for header in restresp.getheaders():
                         headerstr += '\t' + header[0] + ': ' + header[1] + '\n'
-    
+
                     try:
                         LOGGER.debug('HTTP RESPONSE for %s:\nCode: %s\nHeaders:\n' \
                                  '%s\nBody Response of %s: %s'%\
@@ -1144,7 +1142,7 @@ class HttpClient(RestClientBase):
         """Get the request headers for HTTP client
 
         :param headers: additional headers to be utilized
-        :type headers: str
+        :type headers: dict
         :param provideheader: provider id for the header
         :type providerheader: str
         :param optionalpassword: provide password for authentication
@@ -1245,6 +1243,7 @@ class Blobstore2RestClient(RestClientBase):
             self.creds = True
 
     def set_root(self, root):
+        """Set root from cache instead of performing extra get"""
         self.root = root
 
         if self.is_redfish:
@@ -1281,7 +1280,7 @@ class Blobstore2RestClient(RestClientBase):
 
         oribody = body
         if body is not None:
-            if isinstance(body, dict) or isinstance(body, list):
+            if isinstance(body, (dict, list)):
                 headers['Content-Type'] = 'application/json'
                 body = json.dumps(body)
             else:
@@ -1304,7 +1303,7 @@ class Blobstore2RestClient(RestClientBase):
                         compresseddata = buf.getvalue()
                         if compresseddata:
                             data = bytearray()
-                            data.extend(buffer(compresseddata))
+                            data.extend(memoryview(compresseddata))
                             body = data
                 except BaseException as excp:
                     LOGGER.error('Error occur while compressing body: %s', excp)
@@ -1324,7 +1323,7 @@ class Blobstore2RestClient(RestClientBase):
 
         str1 += 'Host: \r\n'
         str1 += 'Accept-Encoding: identity\r\n'
-        for header, value in headers.items():
+        for header, value in list(headers.items()):
             str1 += '%s: %s\r\n' % (header, value)
 
         str1 += '\r\n'

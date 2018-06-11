@@ -19,9 +19,9 @@
 #---------Imports---------
 import logging
 
+from redfish.rest.v1 import SecurityStateError, InvalidCredentialsError
 from redfish import redfish_client, rest_client
 from redfish.ris.rmc_helper import UnableToObtainIloVersionError
-from redfish.rest.v1 import SecurityStateError, InvalidCredentialsError
 #---------End of imports---------
 
 LOGGER = logging.getLogger(__name__)
@@ -67,7 +67,7 @@ class Typesandpathdefines(object):
                     restclient.logout()
                 except Exception as excep:
                     logger = logger if not logger else LOGGER
-                    logger.error("Gen get rest error:"+str(excep)+"\n")
+                    logger.info("Gen get rest error:"+str(excep)+"\n")
                 if excep:
                     raise
 
@@ -75,14 +75,20 @@ class Typesandpathdefines(object):
 
             try:
                 self.ilogen = rootresp["Oem"]["Hp"]["Manager"][0]["ManagerType"]
-            except:
-                self.ilogen = rootresp["Oem"]["Hpe"]["Manager"][0]["ManagerType"]
+            except KeyError:
+                if 'Hpe' in list(rootresp["Oem"].keys()):
+                    self.ilogen = rootresp["Oem"]["Hpe"]["Manager"][0]["ManagerType"]
+                else:
+                    # If we can't find iLO, go with redfish iLO 5 types
+                    self.ilogen = 5
         else:
             self.ilogen = int(gen)
         try:
             if not isinstance(self.ilogen, int):
                 self.ilogen = self.ilogen.split(' ')[-1]
                 self.flagiften = False
+                if self.ilogen == 'CM':
+                    self.ilogen = 4
             if int(self.ilogen) >= 5:
                 self.flagiften = True
         except:

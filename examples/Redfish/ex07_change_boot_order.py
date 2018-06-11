@@ -19,6 +19,10 @@ from redfish.rest.v1 import ServerDownOrUnreachableError
 def ex7_change_boot_order(redfishobj, bios_password=None):
     sys.stdout.write("\nEXAMPLE 7: Change Boot Order (UEFI)\n")
     instances = redfishobj.search_for_type("ServerBootSettings.")
+    if not len(instances) and redfishobj.typepath.defs.isgen9:
+        sys.stderr.write("\nNOTE: This example requires the Redfish schema "\
+                 "version TBD in the managed iLO. It will fail against iLOs"\
+                 " with the 2.50 firmware or earlier. \n")
 
     for instance in instances:
         response = redfishobj.redfish_get(instance["@odata.id"])

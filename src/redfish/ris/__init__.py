@@ -8,6 +8,7 @@ from .sharedtypes import (
 )
 
 from .ris import (
+    RisInstanceNotFoundError,
     RisMonolithMemberBase,
     RisMonolithMemberv100,
     RisMonolithv100,

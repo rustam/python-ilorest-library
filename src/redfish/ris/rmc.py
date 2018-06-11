@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ###
-
 # -*- coding: utf-8 -*-
 """RMC implementation """
 
@@ -47,7 +46,8 @@ from redfish.ris.rmc_helper import (UndefinedClientError, InstanceNotFoundError,
                           NothingSelectedSetError, LoadSkipSettingError, \
                           InvalidCommandLineError, FailureDuringCommitError, \
                           InvalidPathError, ValueChangedError, IloResponseError, \
-                          UserNotAdminError)
+                          UserNotAdminError, EmptyRaiseForEAFP, \
+                          IncompatibleiLOVersionError)
 
 #---------End of imports---------
 
@@ -66,9 +66,9 @@ class RmcApp(object):
         :type Args: str
 
         """
-        self._rmc_clients = []
         configfile = None
         self.logger = LOGGER
+        self._rmc_clients = None
 
         foundsomething = False
         for item in Args:
@@ -99,8 +99,8 @@ class RmcApp(object):
         self.config_file = configfile
         self._cm = RmcFileCacheManager(self)
         self._monolith = None
-        self._validationmanager = None
         self._iloversion = None
+        self._validationmanager = None
 
         if not "--showwarnings" in Args:
             self.logger.setLevel(logging.WARNING)
@@ -122,6 +122,20 @@ class RmcApp(object):
 
         """
         return self._cm.logout_del_function(url)
+
+    def set_encode_funct(self, funct):
+        """ set the encoding function for cache to use
+        :param funct: The function to use for encoding data
+        :type funct: function.
+        """
+        self._cm.encodefunct = funct
+
+    def set_decode_funct(self, funct):
+        """ set the decoding function for cache to use
+        :param funct: The function to use for decoding data
+        :type funct: function.
+        """
+        self._cm.decodefunct = funct
 
     def save(self):
         """Cache current monolith build"""
@@ -180,7 +194,7 @@ class RmcApp(object):
         """Return config"""
         return self._config
 
-    config = property(get_cache, None)
+    cache = property(get_cache, None)
 
     def config_from_file(self, filename):
         """Get config from file
@@ -192,91 +206,49 @@ class RmcApp(object):
         self._config = RmcConfig(filename=filename)
         self._config.load()
 
-    def add_rmc_client(self, client):
-        """Add new RMC client
-
-        :param client: The client to be added.
-        :type client: str.
-
-        """
-        for i in range(0, len(self._rmc_clients)):
-            if client.get_base_url() == self._rmc_clients[i].get_base_url():
-                self._rmc_clients[i] = client
-                return
-
-        # not found so add it
-        self._rmc_clients.append(client)
-
-    def remove_rmc_client(self, url=None):
+    def remove_rmc_client(self):
         """Remove RMC client
 
-        :param url: The URL to perform the removal to.
-        :type url: str.
-
         """
-        if url:
-            for i in range(0, len(self._rmc_clients)):
-                if url in self._rmc_clients[i].get_base_url():
-                    del self._rmc_clients[i]
-        else:
-            if self._rmc_clients and len(self._rmc_clients) > 0:
-                self._rmc_clients = self._rmc_clients[:-1]
+        self._rmc_clients = None
 
-    def get_rmc_client(self, url):
-        """Return rmc_client with the provided URL.
+    def checkandupdate_rmc_client(self, url=None, username=None,
+                                  password=None, biospassword=None, is_redfish=False):
+        """Return if RMC client already exists, do update to passed client
 
-        :param url: The URL of the client you are searching for.
+        :param url: The URL for the check and update request.
         :type url: str.
-
+        :param username: user name required to login to server.
+        :type: str.
+        :param password: password credentials required to login.
+        :type password: str.
+        :param biospassword: BIOS password for the server if set.
+        :type biospassword: str.
+        :param is_redfish: If True, a Redfish specific header (OData) will be
+            added to every request.
+        :type is_redfish: boolean.
         """
-        for i in range(0, len(self._rmc_clients)):
-            if url == self._rmc_clients[i].get_base_url():
-                return self._rmc_clients[i]
-
-        return None
-
-    def check_current_rmc_client(self, url):
-        """Return if RMC client already exists
-
-        :param url: The URL to perform a check on.
-        :type url: str.
-
-        """
-        if not len(self._rmc_clients):
-            return True
-
-        for i in range(0, len(self._rmc_clients)):
-            if url == self._rmc_clients[i].get_base_url():
-                return True
-
-        return False
-
-    def update_rmc_client(self, url, **kwargs):
-        """Do update to passed client
-
-        :param url: The URL for the update request.
-        :type url: str.
-
-        """
-        for i in range(0, len(self._rmc_clients)):
-            if url == self._rmc_clients[i].get_base_url():
-                if 'username' in kwargs:
-                    self._rmc_clients[i].set_username(kwargs['username'])
-
-                if 'password' in kwargs:
-                    self._rmc_clients[i].set_password(kwargs['password'])
-
-                if 'biospassword' in kwargs:
-                    self._rmc_clients[i].set_bios_password(\
-                                                        kwargs['biospassword'])
+        if self._rmc_clients and url == self._rmc_clients.get_base_url():
+            if username:
+                self._rmc_clients.set_username(username)
+            if password:
+                self._rmc_clients.set_password(password)
+            if biospassword:
+                self._rmc_clients.set_bios_password(biospassword)
+            return self._rmc_clients
+        if self._rmc_clients and not url == self._rmc_clients.get_base_url():
+            raise CurrentlyLoggedInError("Currently logged into another " \
+                                         "server. \nPlease log out out first " \
+                                         "before logging in to another.")
+        self._rmc_clients = RmcClient(username=username, \
+                    password=password, url=url, typepath=self.typepath, \
+                    biospassword=biospassword, is_redfish=is_redfish)
 
     def get_current_client(self):
         """Get the current client"""
-        if len(self._rmc_clients) > 0:
-            return self._rmc_clients[-1]
-
+        if self._rmc_clients:
+            return self._rmc_clients
         raise UndefinedClientError()
-
     current_client = property(get_current_client, None)
 
     def login(self, username=None, password=None, base_url='blobstore://.', \
@@ -305,32 +277,10 @@ class RmcApp(object):
         :type is_redfish: boolean.
 
         """
-        if not self.check_current_rmc_client(url=base_url):
-            raise CurrentlyLoggedInError("Currently logged into another " \
-                                         "server. \nPlease log out out first " \
-                                         "before logging in to another.")
-
-        existing_client = self.get_rmc_client(url=base_url)
-        if existing_client:
-            self.update_rmc_client(url=base_url, username=username,
-                                   password=password, biospassword=biospassword)
-        else:
-            try:
-                self.add_rmc_client(RmcClient(username=username, \
-                    password=password, url=base_url, typepath=self.typepath, \
-                    biospassword=biospassword, is_redfish=is_redfish))
-            except Exception as excp:
-                raise excp
-
-        try:
-            if base_url == "blobstore://." and \
-                            float(self.getiloversion(skipschemas=True)) >= 4.220:
-                self.current_client.login()
-            elif username and password:
-                self.current_client.login()
-        except Exception as excp:
-            raise excp
-
+        self.checkandupdate_rmc_client(url=base_url, username=username,
+                                       password=password, biospassword=biospassword,\
+                                                is_redfish=is_redfish)
+        self.current_client.login()
         if not skipbuild:
             self.build_monolith(verbose=verbose, path=path, \
                                                         includelogs=includelogs)
@@ -368,11 +318,6 @@ class RmcApp(object):
         self._iloversion = None
 
         try:
-            self.current_client.monolith.killthreads()
-        except Exception:
-            pass
-
-        try:
             self.current_client.logout()
         except Exception:
             sessionlocs = self.deletelogoutfunction(url)
@@ -385,7 +330,7 @@ class RmcApp(object):
                             sessionid=session[2], silent=True, service=True)
             except:
                 pass
-        self.remove_rmc_client(url)
+        self.remove_rmc_client()
         self.save()
 
         cachedir = self.config.get_cachedir()
@@ -432,7 +377,7 @@ class RmcApp(object):
         return results
 
     def get_save(self, selector=None, currentoverride=False, pluspath=False, \
-                                                                onlypath=None):
+                                            onlypath=None, remread=False):
         """Special main function for get in save command
 
         :param selector: the type selection for the get operation.
@@ -453,18 +398,24 @@ class RmcApp(object):
             raise NothingSelectedError()
 
         for instance in instances:
-            if self.get_save_helper(instance.resp.request.path, instances)\
+            if self.skipforsettings(instance.path, instances)\
                                                      and not currentoverride:
                 continue
             elif onlypath:
-                if not onlypath == instance.resp.request.path:
+                if not onlypath == instance.path:
                     continue
 
-            currdict = instance.resp.dict
+            currdict = instance.dict
 
             # apply patches to represent current edits
             for patch in instance.patches:
                 currdict = jsonpatch.apply_patch(currdict, patch)
+
+            if remread == True:
+                try:
+                    self.remove_readonly(currdict)
+                except:
+                    raise EmptyRaiseForEAFP()
 
             if selector:
                 for item in six.iterkeys(currdict):
@@ -488,13 +439,13 @@ class RmcApp(object):
                 results.append(temp_dict)
             else:
                 if pluspath:
-                    results.append({instance.resp.request.path: currdict})
+                    results.append({instance.path: currdict})
                 else:
                     results.append(currdict)
 
         return results
 
-    def get_save_helper(self, path, instances):
+    def skipforsettings(self, path, instances):
         """helper function for save helper to remove non /settings section
 
         :param path: originating path for the current instance.
@@ -504,207 +455,11 @@ class RmcApp(object):
         :returns: returns skip boolean
 
         """
-        skip = False
-
-        for item in instances:
-            if (path + "/settings").lower() == (item.resp.request.path).lower():
-                skip = True
-                break
-            elif (path + "settings/").lower() == \
-                                            (item.resp.request.path).lower():
-                skip = True
-                break
-
-        return skip
-
-    def set(self, selector=None, val=None, latestschema=False, \
-                                                        uniqueoverride=False):
-        """Main function for set command
-
-        :param selector: the type selection for the set operation.
-        :type selector: str.
-        :param val: value for the property to be modified.
-        :type val: str.
-        :param latestschema: flag to determine if we should use smart schema.
-        :type latestschema: boolean.
-        :param uniqueoverride: flag to determine override for unique properties.
-        :type uniqueoverride: str.
-        :returns: returns a status or list of changes set
-
-        """
-        results = list()
-        regloc = None
-        nochangesmade = False
-        patchremoved = False
-
-        iloversion = self.getiloversion()
-        type_str = self.current_client.monolith._typestring
-        validation_manager = self.get_validation_manager(iloversion)
-        (instances, _) = self.get_selection(setenable=True)
-
-        if not instances or len(instances) == 0:
-            raise NothingSelectedSetError()
-
-        if selector:
-            for instance in instances:
-                self.checkforetagchange(instance=instance)
-
-        (instances, attributeregistry) = self.get_selection(setenable=True)
-        if selector:
-            for instance in instances:
-                if self.validate_headers(instance):
-                    continue
-                else:
-                    nochangesmade = True
-
-                currdict = instance.resp.dict
-                if latestschema:
-                    schematype, regtype = self.latestschemahelper(currdict, \
-                                                          validation_manager)
-                else:
-                    schematype = currdict[type_str]
-                    try:
-                        regtype = attributeregistry[instance.type]
-                    except Exception:
-                        pass
-
-                try:
-                    if attributeregistry[instance.type]:
-                        regfound = validation_manager.find_bios_registry(\
-                                                                        regtype)
-                except Exception:
-                    regfound = validation_manager.find_schema(schematype)
-
-                if self.current_client.monolith.is_redfish and not \
-                                        isinstance(regfound, RepoRegistryEntry):
-                    regfound = self.get_handler(regfound['@odata.id'], \
-                                verbose=False, service=True, silent=True).obj
-                    regloc = regfound
-
-                    regfound = RepoRegistryEntry(regfound)
-
-                if not regfound:
-                    self.warn("Unable to locate registry/schema for '%s'", \
-                                                            currdict[type_str])
-                    continue
-                elif float(iloversion) >= 4.210:
-                    try:
-                        locationdict = self.geturidict(regfound.Location[0])
-                        self.check_type_and_download(\
-                                self.current_client.monolith, \
-                                locationdict, skipcrawl=True, loadtype='ref')
-                    except Exception as excp:
-                        raise excp
-
-                for item in six.iterkeys(currdict):
-                    if selector.lower() == item.lower():
-                        selector = item
-                        break
-
-                newdict = currdict.copy()
-                jsonpath_expr = jsonpath_rw.parse('%s' % selector)
-                matches = jsonpath_expr.find(currdict)
-
-                if not matches:
-                    self.warning_handler("Property not found in selection " \
-                         "'%s', skipping '%s'\n" % (instance.type, selector))
-                    nochangesmade = False
-
-                for match in matches:
-                    listfound = False
-                    newdict = currdict.copy()
-                    json_pstr = '/%s' % match.full_path
-                    val = self.checkforintvalue(selector, val, iloversion, \
-                                                validation_manager, instance)
-
-                    if val:
-                        if str(val)[0] == "[" and str(val)[-1] == "]":
-                            json_node = jsonpointer.set_pointer(newdict, \
-                                json_pstr, '"' + str(val) + '"', inplace=True)
-                        else:
-                            listfound = True
-                    else:
-                        listfound = True
-
-                    if listfound:
-                        json_node = jsonpointer.set_pointer(newdict, \
-                                                json_pstr, val, inplace=True)
-
-                    json_node = jsonpointer.resolve_pointer(newdict, json_pstr)
-
-                    entrydict = None
-                    entrymono = None
-
-                    if float(iloversion) >= 4.210:
-                        entrydict = currdict
-                        entrymono = self.current_client.monolith
-
-                    try:
-                        if attributeregistry[instance.type]:
-                            valman = validation_manager.bios_validate(\
-                                    newdict, attributeregistry[instance.type], \
-                                    selector, currdict=entrydict, \
-                                    monolith=entrymono)
-
-                            if valman == 'readonly':
-                                self.warning_handler("Property is read-only" \
-                                                 " skipping '%s'\n" % selector)
-                                continue
-                            elif valman == 'unique' and not uniqueoverride:
-                                self.warning_handler("Property is unique to " \
-                                     "the system skipping '%s'\n" % selector)
-                                continue
-                    except Exception:
-                        if not validation_manager.validate(newdict, \
-                                       selector=selector, currdict=entrydict, \
-                                       monolith=entrymono, regloc=regloc):
-                            self.warning_handler("Property is " \
-                                        "read-only skipping '%s'.\n" % selector)
-                            continue
-
-                    validation_errors = validation_manager.get_errors()
-                    if validation_errors and len(validation_errors) > 0:
-                        raise ValidationError(validation_errors)
-
-                    patch = jsonpatch.make_patch(currdict, newdict)
-
-                    if patch:
-                        for item in instance.patches:
-                            if patch == item:
-                                return
-
-                            try:
-                                if item[0]["path"] == patch.patch[0]["path"]:
-                                    instance.patches.remove(item)
-                            except Exception:
-                                if item.patch[0]["path"] == \
-                                                        patch.patch[0]["path"]:
-                                    instance.patches.remove(item)
-
-                        instance.patches.append(patch)
-                        results.append({selector:json_node})
-
-                    if not patch:
-                        for item in instance.patches:
-                            try:
-                                entry = item.patch[0]["path"].replace('/', '')
-                                value = item.patch[0]["value"]
-                            except Exception:
-                                entry = item[0]["path"].replace('/', '')
-                                value = item[0]["value"]
-
-                            if entry == selector and str(value) not in str(val):
-                                if currdict[selector] == val:
-                                    instance.patches.remove(item)
-                                    patchremoved = True
-                                    nochangesmade = True
-
-        if not nochangesmade:
-            return "No entries found"
-        if patchremoved:
-            return "reverting"
-        else:
-            return results
+        instpaths = [inst.path.lower() for inst in instances]
+        findpath = (path+"/settings", path+"settings/")
+        if any(fpath.lower() in instpaths for fpath in findpath):
+            return True
+        return False
 
     def validate_headers(self, instance, verbose=False):
         """Module to check read-only property before patching.
@@ -717,9 +472,9 @@ class RmcApp(object):
 
         skip = False
         try:
-            headervals = instance.resp._http_response.headers.keys()
+            headervals = list(instance.resp._http_response.headers.keys())
             if headervals is not None and len(headervals):
-                allow = list(filter(lambda x: x.lower() == "allow", headervals))
+                allow = list([x for x in headervals if x.lower() == "allow"])
                 if len(allow):
                     if not "PATCH" in instance.resp._http_response.headers\
                                                         [allow[0]]:
@@ -760,16 +515,14 @@ class RmcApp(object):
 
         return skip
 
-    def loadset(self, dicttolist=None, selector=None, val=None, newargs=None,\
+    def loadset(self, seldict=None, selector=None,\
                                     latestschema=False, uniqueoverride=False):
         """Optimized version of the old style of set properties
 
+        :param seldict: current selection dictionary with required changes.
+        :type seldict: dict.
         :param selector: the type selection for the set operation.
         :type selector: str.
-        :param val: value for the property to be modified.
-        :type val: str.
-        :param newargs: list of multi level properties to be modified.
-        :type newargs: list.
         :param latestschema: flag to determine if we should use smart schema.
         :type latestschema: boolean.
         :param uniqueoverride: flag to determine override for unique properties.
@@ -779,19 +532,10 @@ class RmcApp(object):
         """
         results = list()
 
-        if (selector and val is not None) and not dicttolist:
-            dicttolist = [(selector, val)]
-        elif dicttolist is None and not newargs:
-            return results
-        elif (selector and val and dicttolist) or (newargs and not val):
-            return False
-
         nochangesmade = False
         patchremoved = False
         iloversion = self.getiloversion()
-        biosmode = False
-        settingskipped = False
-        nametype = self.typepath.defs.attname
+        settingskipped = [False]
         validation_manager = self.get_validation_manager(iloversion)
         (instances, _) = self.get_selection(setenable=True)
 
@@ -803,15 +547,6 @@ class RmcApp(object):
                 self.checkforetagchange(instance=instance)
         (instances, attributeregistry) = self.get_selection(setenable=True)
 
-        newarg = None
-        if newargs:
-            (name, value) = newargs[-1].split('=')
-            outputline = '/'.join(newargs[:-1]) + "/" + name
-            newarg = newargs[:-1]
-            newarg.append(name)
-            value = val if isinstance(val, bool) else value
-            dicttolist = [(name, value)]
-
         for instance in instances:
             if self.validate_headers(instance):
                 continue
@@ -819,249 +554,144 @@ class RmcApp(object):
                 nochangesmade = True
 
             currdict = instance.resp.dict
-            model, biosmode, _ = self.get_model(currdict, validation_manager, \
+
+            self.get_model(currdict, validation_manager, \
                                 instance, iloversion, attributeregistry, \
-                                latestschema, newarg)
+                                latestschema, nomodel=True)
 
-            for ind in range(len(dicttolist)):
-                try:
-                    dicttolist[ind] = (next(key for key in list(model.keys()) if \
-                                    key.lower() == dicttolist[ind][0].lower()),\
-                                     dicttolist[ind][1])
-                except:
-                    pass
+            diffdict = self.diffdict(newdict=copy.deepcopy(seldict),\
+                 oridict=copy.deepcopy(currdict), settingskipped=settingskipped)
 
-            if model:
-                if biosmode:
-                    validator = list(map(model.get_validator_bios, (x[0] for x in \
-                                  dicttolist)))
-                else:
-                    validator = list(map(model.get_validator, (x[0] for x in \
-                                  dicttolist)))
+            self.validatechanges(validation_manager=validation_manager, instance=instance,\
+                iloversion=iloversion, attributeregistry=attributeregistry,\
+                newdict=diffdict, oridict=currdict, unique=uniqueoverride)
 
-                if validator:
-                    try:
-                        convert = [isinstance(x, redfish.ris.validation.\
-                                      IntegerValidator) for x in validator]
-                        indices = [i for i, j in enumerate(convert) if j]
+            patches = jsonpatch.make_patch(currdict, diffdict)
 
-                        for item in indices:
-                            dicttolist[item] = (dicttolist[item][0], \
-                                                    int(dicttolist[item][1]))
-                    except Exception:
-                        convert = [isinstance(x, redfish.ris.validation.\
-                                      IntegerValidator) for x in validator]
-                        indices = [i for i, j in enumerate(convert) if j]
+            if patches:
+                torem = []
+                [torem.append(patch) for patch in patches.patch if patch["op"] == "remove" ]
+                [patches.patch.remove(patch) for patch in torem]
 
-                        for item in indices:
-                            if not dicttolist[item][1]:
-                                dicttolist[item] = (dicttolist[item][0], \
-                                                    dicttolist[item][1])
-                            else:
-                                dicttolist[item] = (dicttolist[item][0], \
-                                                    int(dicttolist[item][1]))
-
-            currdictcopy = copy.deepcopy(currdict)
-            templist = []
-
-            if newargs and len(dicttolist) == 1:
-                for i in range(len(newargs)):
-                    for item in six.iterkeys(currdictcopy):
-                        if newarg[i].lower() == item.lower():
-                            newarg[i] = item
-
-                            if not i == (len(newargs) - 1):
-                                currdictcopy = currdictcopy[item]
-                            else:
-                                dicttolist = [(item, dicttolist[0][1])]
-
-                            break
-            else:
-                items = list(currdict.keys())
-                items = sorted(items)
-                itemslower = [x.lower() for x in items]
-
-                try:
-                    for ind, item in enumerate(dicttolist):
+            if patches:
+                for patch in patches.patch:
+                    for ind, item in enumerate(instance.patches):
                         try:
-                            if not isinstance(item[1], list):
-                                dicttolist[ind] = items[itemslower.index(\
-                                                    item[0].lower())], item[1]
-                            else:
-                                templist.append(item[0])
-                        except ValueError as excp:
-                            self.warning_handler("Skipping property {0}, not " \
-                                 "found in current server.\n".format(item[0]))
-
-                            templist.append(item[0])
-                            settingskipped = True
-
-                    if templist:
-                        dicttolist = [x for x in dicttolist if x not in \
-                                                                    templist]
-                except Exception as excp:
-                    raise excp
-
-            selectors = [x[0] for x in dicttolist]
-            readonly = list()
-            if model and biosmode:
-                for item in model.Attributes:
-                    try:
-                        if (item[nametype] in selectors) and item["ReadOnly"]:
-                            readonly.extend(item[nametype])
-                            self.warning_handler("Property is read-only" \
-                                             " skipping '%s'\n" % item[nametype])
-
-                            dicttolist = [x for x in dicttolist if x[0] != \
-                                                                item[nametype]]
-                        try:
-                            if (item[nametype] in selectors) and \
-                                                item["IsSystemUniqueProperty"] \
-                                                        and not uniqueoverride:
-                                self.warning_handler("Property is unique to " \
-                                                 "the system skipping '%s'\n" \
-                                                                % item[nametype])
-
-                                dicttolist = [x for x in dicttolist if x[0] != \
-                                                                item[nametype]]
+                            if item[0]["path"] == patch["path"]:
+                                del instance.patches[ind]
                         except Exception:
-                            continue
-                    except Exception as excp:
-                        raise excp
-            elif model:
-                templist = []
-                for xitem in selectors:
-                    try:
-                        if model[xitem].readonly:
-                            templist.append(xitem)
-                    except Exception:
-                        templist.append(xitem)
-                try:
-                    if templist:
-                        tempdict = copy.deepcopy(dicttolist)
-                        for i in templist:
-                            self.warning_handler("Property is read-only "   \
-                                                    "skipping '%s'\n" % str(i))
-
-                        dicttolist = [x for x in tempdict if x[0] not in \
-                                                                    templist]
-                except Exception as excp:
-                    raise excp
-
-            if len(dicttolist) < 1:
-                return results
-
-            oridict = copy.deepcopy(currdict)
-            newdict = copy.deepcopy(currdict)
-            patch = None
-
-            if newargs and len(dicttolist) == 1:
-                matches = self.setmultiworker(newargs, dicttolist, newdict)
-
-                if not matches:
-                    self.warning_handler("Property not found in selection " \
-                         "'%s', skipping '%s'\n" % (instance.type, outputline))
-
-                dicttolist = []
-
-            for (itersel, iterval) in dicttolist:
-                jsonpath_expr = jsonpath_rw.parse('%s' % itersel)
-                matches = jsonpath_expr.find(currdict)
-
-                if not matches:
-                    self.warning_handler("Property not found in selection " \
-                             "'%s', skipping '%s'\n" % (instance.type, itersel))
-                    nochangesmade = False
-
-                for match in matches:
-                    listfound = False
-                    json_pstr = '/%s' % match.full_path
-
-                    if iterval:
-                        if str(iterval)[0] == "[" and str(iterval)[-1] == "]":
-                            json_node = jsonpointer.set_pointer(newdict, \
-                                            json_pstr, '"' + str(iterval) + \
-                                            '"', inplace=True)
-                        else:
-                            listfound = True
-                    else:
-                        listfound = True
-
-                    if listfound:
-                        json_node = jsonpointer.set_pointer(newdict, \
-                                            json_pstr, iterval, inplace=True)
-
-                    json_node = jsonpointer.resolve_pointer(newdict, json_pstr)
-
-                    self.validatechanges(validation_manager=validation_manager, instance=instance,\
-                        iloversion=iloversion, attributeregistry=attributeregistry, \
-                        newdict=newdict, checkall=True, service=True, silent=True, oridict=oridict)
-
-                    patch = jsonpatch.make_patch(currdict, newdict)
-
-                    if patch:
-                        for item in instance.patches:
-                            try:
-                                if item[0]["path"] == patch.patch[0]["path"]:
-                                    instance.patches.remove(item)
-                            except Exception:
-                                if item.patch[0]["path"] == \
-                                                        patch.patch[0]["path"]:
-                                    instance.patches.remove(item)
-
-                        instance.patches.append(patch)
-                        results.append({itersel:json_node})
-
-                    currdict = newdict.copy()
-
-            if newargs and not dicttolist:
-                self.validatechanges(validation_manager=validation_manager, instance=instance,\
-                        iloversion=iloversion, attributeregistry=attributeregistry, \
-                        newdict=newdict, checkall=True, service=True, silent=True, oridict=oridict)
-                patch = jsonpatch.make_patch(currdict, newdict)
-
-                if patch:
-                    for item in instance.patches:
-                        try:
-                            if item[0]["path"] == patch.patch[0]["path"]:
-                                instance.patches.remove(item)
-                        except Exception:
-                            if item.patch[0]["path"] == \
-                                                    patch.patch[0]["path"]:
-                                instance.patches.remove(item)
-
-                    instance.patches.append(patch)
-                    results.append({outputline:val})
-                if not patch:
-                    for item in instance.patches:
-                        try:
-                            entry = item.patch[0]["path"].split('/')[1:]
-                        except Exception:
-                            entry = item[0]["path"].split('/')[1:]
-
-                        if len(entry) == len(newarg):
-                            check = 0
-                            for ind, elem in enumerate(entry):
-                                if elem == newarg[ind]:
-                                    check += 1
-
-                            if check == len(newarg):
-                                instance.patches.remove(item)
-                                patchremoved = True
-                                nochangesmade = True
+                            if item.patch[0]["path"] == patch["path"]:
+                                del instance.patches[ind]
+                    forprint = patch["value"] if "value" in patch\
+                                    else (patch["op"] + " " + patch["from"])
+                    results.append({patch["path"][1:]:forprint})
+                instance.patches.append(patches)
+            if not results:
+                for ind, item in enumerate(instance.patches):
+                    ppath = item.patch[0]["path"] if hasattr(item, "patch") else item[0]["path"]
+                    jpath = jsonpointer.JsonPointer(ppath.lower())
+                    jval = jpath.resolve(seldict, default='kasjdk?!')
+                    if not jval=='kasjdk?!':
+                        del instance.patches[ind]
+                        patchremoved = True
+                nochangesmade = True
 
         if not nochangesmade:
             return results
         if patchremoved:
             return "reverting"
-        elif settingskipped is True:
+        elif settingskipped[0] is True:
             raise LoadSkipSettingError()
         else:
             return results
 
-    def validatechanges(self, validation_manager=None, instance=None, entrydict=\
-                None, entrymono=None, iloversion=None, attributeregistry=None, \
-                newdict=None, checkall=True, service=True, silent=True, oridict=None):
+    def diffdict(self, newdict=None, oridict=None, settingskipped=[False]):
+        """Optimized version of the old style of set properties
+
+        :param newdict: selection dictionary with required changes.
+        :type newdict: dict.
+        :param oridict: selection dictionary with current state.
+        :type oridict: dict.
+        :param settingskipped: flag to determine if any settings was missing
+        :type settingskipped: list.
+        :returns: dictionary with only the properties that have changed.
+
+        """
+        try:
+            if newdict == oridict:
+                return {}
+        except:
+            try:
+                if set(newdict) == set(oridict):
+                    return {}
+            except:
+                pass
+
+        newdictkeys = list(newdict.keys())
+        oridictkeys = list(oridict.keys())
+        newdictkeyslower = [ki.lower() for ki in newdictkeys]
+        oridictkeyslower = [ki.lower() for ki in list(oridict.keys())]
+        missingkeys = list(set(newdictkeyslower)-set(oridictkeyslower))
+        for kis in missingkeys:
+            del newdict[newdictkeys[newdictkeyslower.index(kis)]]
+            self.warning_handler("Skipping property {0}, not " \
+                             "found in current server.\n".format(kis))
+            settingskipped = [True]
+        for key, val in list(newdict.items()):
+            if key not in oridict:
+                keycase = oridictkeys[oridictkeyslower.index(key.lower())]
+                del newdict[key]
+                key = keycase
+                newdict[key] = val
+            if isinstance(val, dict):
+                res = self.diffdict(newdict[key], oridict[key])
+                if res:
+                    newdict[key] = res
+                else:
+                    del newdict[key]
+            elif isinstance(val, list):
+                if len(val) == 1 and isinstance(val[0], dict):
+                    res = self.diffdict(newdict[key][0], oridict[key][0], \
+                                                    settingskipped)
+                    if res:
+                        newdict[key][0] = res
+                    else:
+                        del newdict[key]
+                if [li for li in val if not isinstance(li, six.string_types)]:
+                    continue
+                else:
+                    if [va.lower() for va in val] == [va.lower() if va else va \
+                                                      for va in oridict[key]]:
+                        del newdict[key]
+            #TODO: check if lowercase is correct or buggy for string types
+            elif isinstance(val, (six.string_types, int, type(None))):
+                if newdict[key] == oridict[key]:
+                    del newdict[key]
+
+        return newdict
+
+    def validatechanges(self, validation_manager=None, instance=None,\
+                                iloversion=None, attributeregistry=None, \
+                                newdict=None, oridict=None, unique=None):
+        """Validate the changes that are requested by the user.
+
+        :param newdict: dictionary with only the properties that have changed
+        :type newdict: dict.
+        :param oridict: selection dictionary with current state.
+        :type oridict: dict.
+        :param unique: flag to determine override for unique properties.
+        :type unique: str.
+        :param iloversion: current iLO version.
+        :type iloversion: float.
+        :param instance: current selection instance.
+        :type instance: RisMonolithMemberv100.
+        :param validation_manager: validation manager object.
+        :type validation_manager: validation object.
+        :param attrreg: Registry entry of the given attribute.
+        :type attrreg: RepoRegistryEntry.
+
+        """
+
         entrydict = None
         entrymono = None
         if float(iloversion) >= 4.210:
@@ -1071,300 +701,25 @@ class RmcApp(object):
         try:
             if attributeregistry[instance.type]:
                 validation_manager.bios_validate(newdict, \
-                        attributeregistry[instance.type], checkall=True, \
-                                    currdict=entrydict, monolith=entrymono)
+                        attributeregistry[instance.type], \
+                        currdict=entrydict, monolith=entrymono, unique=unique)
         except Exception:
-            attrreg = validation_manager.validate(newdict, checkall=True, \
-                                    currdict=entrydict, monolith=entrymono)
+            attregarg = validation_manager.find_prop(entrydict[entrymono._typestring])
+            attrreg = validation_manager.validate(newdict, \
+                currdict=entrydict, monolith=entrymono, attrreg=attregarg, unique=unique)
             if isinstance(attrreg, dict):
                 attrreg = self.get_handler(attrreg[self.current_client.\
                         monolith._hrefstring], service=True, silent=True)
                 attrreg = RepoRegistryEntry(attrreg.dict)
-                validation_manager.validate(newdict, checkall=True, \
+                validation_manager.validate(newdict, \
                                     currdict=entrydict, monolith=entrymono,\
-                                    attrreg=attrreg)
+                                    attrreg=attrreg, unique=unique)
 
         validation_errors = validation_manager.get_errors()
+        for warninngs in validation_manager.get_warnings():
+            self.warning_handler(warninngs)
         if validation_errors and len(validation_errors) > 0:
             raise ValidationError(validation_errors)
-
-    def checkforintvalue(self, selector, val, iloversion, validation_manager, \
-                                                        instance, newarg=None):
-        """Function for integer validation
-
-        :param selector: the type selection for the set operation.
-        :type selector: str.
-        :param val: value for the property to be modified.
-        :type val: str.
-        :param iloversion: current systems iLO versions.
-        :type iloversion: str.
-        :param validation_manager: validation manager object.
-        :type validation_manager: validation object.
-        :param instance: retrieved instance for a particular section.
-        :type instance: str.
-        :param newargs: list of multi level properties to be modified.
-        :type newargs: list.
-        :returns: returns value for property to be modified
-
-        """
-        biosmode = False
-        currdict = instance.resp.dict
-        (_, attributeregistry) = self.get_selection(setenable=True)
-
-        try:
-            if attributeregistry[instance.type]:
-                regfound = validation_manager.find_bios_registry(\
-                                             attributeregistry[instance.type])
-                biosmode = True
-        except Exception:
-            regfound = validation_manager.find_schema(\
-                                              currdict[instance._typestring])
-
-            if self.current_client.monolith.is_redfish and not \
-                                    isinstance(regfound, RepoRegistryEntry):
-                regfound = self.get_handler(regfound['@odata.id'], \
-                                verbose=False, service=True, silent=True).obj
-
-        if regfound:
-            model, _, _ = self.get_model(currdict, validation_manager, \
-                                     instance, iloversion, attributeregistry)
-
-            if model:
-                if biosmode:
-                    validator = model.get_validator_bios(selector)
-                else:
-                    validator = model.get_validator(selector, newarg)
-
-                if validator:
-                    try:
-                        if isinstance(validator, redfish.ris.validation.\
-                                      IntegerValidator):
-                            val = int(val)
-                    except Exception:
-                        if isinstance(validator, redfish.ris.validation.\
-                                      IntegerValidator):
-                            if val:
-                                val = int(val)
-
-        return val
-
-    def setmultilevel(self, val=None, newargs=None, latestschema=False):
-        """Main function for set multi level command
-
-        :param val: value for the property to be modified.
-        :type val: str.
-        :param newargs: list of multi level properties to be modified.
-        :type newargs: list.
-        :param latestschema: flag to determine if we should use smart schema.
-        :type latestschema: boolean.
-        :returns: returns a status or a list of set multi level properties
-
-        """
-        results = list()
-        selector = None
-        regloc = None
-        nochangesmade = False
-        patchremoved = False
-        iloversion = self.getiloversion()
-        validation_manager = self.get_validation_manager(iloversion)
-        type_string = self.current_client.monolith._typestring
-        (name, _) = newargs[-1].split('=', 1)
-        outputline = '/'.join(newargs[:-1]) + "/" + name
-
-        (instances, _) = self.get_selection(setenable=True)
-
-        if not instances or len(instances) == 0:
-            raise NothingSelectedError()
-
-        if newargs:
-            for instance in instances:
-                self.checkforetagchange(instance=instance)
-        (instances, attributeregistry) = self.get_selection(setenable=True)
-
-        if newargs:
-            for instance in instances:
-                currdict = instance.resp.dict
-                currdictcopy = currdict
-                newarg = newargs[:-1]
-                newarg.append(name)
-
-                for i in range(len(newargs)):
-                    for item in six.iterkeys(currdictcopy):
-                        if newarg[i].lower() == item.lower():
-                            selector = item
-                            newarg[i] = item
-
-                            if not newarg[i].lower() == newarg[-1].lower():
-                                currdictcopy = currdictcopy[item]
-                                break
-
-                if not selector:
-                    continue
-
-                if self.validate_headers(instance):
-                    continue
-                else:
-                    nochangesmade = True
-
-                if latestschema:
-                    schematype, regtype = self.latestschemahelper(currdict, \
-                                                          validation_manager)
-                else:
-                    schematype = currdict[type_string]
-
-                    try:
-                        regtype = attributeregistry[instance.type]
-                    except Exception:
-                        pass
-
-                try:
-                    if attributeregistry[instance.type]:
-                        regfound = validation_manager.find_bios_registry(\
-                                                                        regtype)
-                except Exception:
-                    regfound = validation_manager.find_schema(schematype)
-
-                if self.current_client.monolith.is_redfish and not \
-                                        isinstance(regfound, RepoRegistryEntry):
-                    regfound = self.get_handler(regfound['@odata.id'], \
-                                verbose=False, service=True, silent=True).obj
-                    regloc = regfound
-
-                if not regfound:
-                    self.warn("Unable to locate registry/schema for '%s'",\
-                                                        currdict[type_string])
-                    continue
-                elif float(iloversion) >= 4.210:
-                    try:
-                        locationdict = self.geturidict(regfound.Location[0])
-                        self.check_type_and_download(\
-                                self.current_client.monolith, locationdict, \
-                                skipcrawl=True, loadtype='ref')
-                    except Exception as excp:
-                        raise excp
-
-                newdict = copy.deepcopy(currdict)
-
-                matches = self.setmultiworker(newargs, newdict)
-
-                if not matches:
-                    self.warning_handler("Property not found in selection " \
-                         "'%s', skipping '%s'\n" % (instance.type, outputline))
-                else:
-                    entrydict = None
-                    entrymono = None
-
-                    if float(iloversion) >= 4.210:
-                        entrydict = currdict
-                        entrymono = self.current_client.monolith
-
-                    try:
-                        if attributeregistry[instance.type]:
-                            if not validation_manager.bios_validate(\
-                                    newdict, attributeregistry[instance.type], \
-                                    selector, currdict=entrydict, \
-                                    monolith=entrymono):
-                                self.warning_handler("Property is read-only" \
-                                                 " skipping '%s'\n" % selector)
-                                continue
-                    except Exception:
-                        selector = newarg[-1]
-                        newdictcopy = newdict
-
-                        for elem in newarg:
-                            for item in six.iterkeys(newdictcopy):
-                                if elem.lower() == item.lower():
-                                    if not elem.lower() == newarg[-1].lower():
-                                        newdictcopy = newdictcopy[item]
-
-                        newdictcopy[type_string] = newdict[type_string]
-                        currdictcopy[type_string] = currdict[type_string]
-
-                        if not validation_manager.validate(newdictcopy, \
-                                    selector=selector, currdict=currdictcopy, \
-                                    monolith=entrymono, newarg=newarg, \
-                                    regloc=regloc):
-                            self.warning_handler("Property is read-only " \
-                                                "skipping '%s'\n" % selector)
-                            continue
-
-                    validation_errors = validation_manager.get_errors()
-                    if validation_errors and len(validation_errors) > 0:
-                        raise ValidationError(validation_errors)
-
-                    patch = jsonpatch.make_patch(currdict, newdict)
-
-                    if patch:
-                        for item in instance.patches:
-                            if patch == item:
-                                return
-
-                            try:
-                                if item[0]["path"] == patch.patch[0]["path"]:
-                                    instance.patches.remove(item)
-                            except Exception:
-                                if item.patch[0]["path"] == \
-                                                        patch.patch[0]["path"]:
-                                    instance.patches.remove(item)
-
-                        instance.patches.append(patch)
-                        results.append({outputline:val})
-
-                    if not patch:
-                        for item in instance.patches:
-                            try:
-                                entry = item.patch[0]["path"].split('/')[1:]
-                            except Exception:
-                                entry = item[0]["path"].split('/')[1:]
-
-                            if len(entry) == len(newarg):
-                                check = 0
-
-                                for ind, elem in enumerate(entry):
-                                    if elem == newarg[ind]:
-                                        check += 1
-
-                                if check == len(newarg):
-                                    instance.patches.remove(item)
-                                    patchremoved = True
-                                    nochangesmade = True
-
-        if not nochangesmade:
-            return "No entries found"
-        if patchremoved:
-            return "reverting"
-        else:
-            return results
-
-    def setmultiworker(self, newargs, change, currdict, current=0):
-        """Helper function for multi level set function
-
-        :param newargs: list of multi level properties to be modified.
-        :type newargs: list.
-        :param currdict: current selection dictionary.
-        :type currdict: dict.
-        :param current: current location holder.
-        :type current: list.
-        :returns: returns boolean on whether properties are found
-
-        """
-        found = False
-
-        if not newargs[current] == newargs[-1]:
-            for attr, val in six.iteritems(currdict):
-                if attr.lower() == newargs[current].lower():
-                    current += 1
-                    found = self.setmultiworker(newargs, change, val, current)
-                    continue
-                else:
-                    continue
-        else:
-            for attr, val in six.iteritems(currdict):
-                if attr.lower() == change[0][0].lower():
-                    currdict[attr] = change[0][1]
-                    found = True
-
-        return found
 
     def info(self, selector=None, ignorelist=None, dumpjson=False, \
                             autotest=False, newarg=None, latestschema=False):
@@ -1385,6 +740,8 @@ class RmcApp(object):
         :returns: returns a list of keys from current dict that are not ignored
 
         """
+        model = None
+        outdata = ''
         results = list()
         iloversion = self.getiloversion()
         validation_manager = self.get_validation_manager(iloversion)
@@ -1394,7 +751,7 @@ class RmcApp(object):
             raise NothingSelectedError()
 
         for instance in instances:
-            if self.get_save_helper(instance.resp.request.path, instances):
+            if self.skipforsettings(instance.path, instances):
                 continue
 
             bsmodel = None
@@ -1435,12 +792,12 @@ class RmcApp(object):
                                                             % "/".join(newarg))
 
                     if autotest:
-                        return True
+                        return (True, [])
                     else:
                         break
                 else:
                     self.warn("Unable to locate registry model for " \
-                                                            ":'%s'", selector)
+                                                            ":'%s'" % selector)
                     continue
 
             if selector:
@@ -1470,13 +827,13 @@ class RmcApp(object):
 
                             if found:
                                 if dumpjson:
-                                    print(found)
-                                elif autotest:
-                                    return True
-                                else:
-                                    #TODO: find a way to not print
+                                    outdata = found
                                     results.append("Success")
-                                    found.print_help(selector, out=sys.stdout)
+                                elif autotest:
+                                    return (True, [])
+                                else:
+                                    results.append("Success")
+                                    outdata = found.print_help(selector)
                             else:
                                 self.warning_handler("No data available for " \
                                          "entry: '%s'\n" % ("/".join(newarg) \
@@ -1498,7 +855,7 @@ class RmcApp(object):
                     if key not in ignorelist and not '@odata' in key.lower():
                         results.append(key)
 
-        return results
+        return (results, outdata)
 
     def getcollectionmembers(self, path):
         """Returns collection/item lists of the provided path
@@ -1526,30 +883,24 @@ class RmcApp(object):
 
     def getbiosfamilyandversion(self):
         """Function that returns the current BIOS family"""
-        (founddir, entrytype) = \
-                        self.check_types_version(self.current_client.monolith)
+        monolith = self.current_client.monolith
+        rdirtype = monolith.gettypename(self.typepath.defs.resourcedirectorytype)
 
-        if founddir:
-            self.check_types_exists(entrytype, "ComputerSystem.", \
+        if rdirtype:
+            self.check_types_exists(rdirtype, "ComputerSystem.", \
                                 self.current_client.monolith, skipcrawl=True)
 
-        monolith = self.current_client.monolith
-
-        for ristype in monolith.types:
-            if 'Instances' in monolith.types[ristype]:
-                for instance in monolith.types[ristype]['Instances']:
-                    if "computersystem." in instance.type.lower():
-                        try:
-                            if "Current" in instance.resp.obj["Bios"]:
-                                oemjson = instance.resp.obj["Bios"]["Current"]
-                                parts = oemjson["VersionString"].split(" ")
-                                return (parts[0], parts[1][1:])
-                            else:
-                                parts = instance.resp.obj["BiosVersion"]\
-                                                                .split(" ")
-                                return (parts[0], parts[1][1:])
-                        except Exception:
-                            pass
+        try:
+            for inst in monolith.itertype("ComputerSystem."):
+                if "Current" in inst.resp.obj["Bios"]:
+                    oemjson = inst.resp.obj["Bios"]["Current"]
+                    parts = oemjson["VersionString"].split(" ")
+                    return (parts[0], parts[1][1:])
+                else:
+                    parts = inst.resp.obj["BiosVersion"].split(" ")
+                    return (parts[0], parts[1][1:])
+        except Exception:
+            pass
 
         return (None, None)
 
@@ -1581,8 +932,14 @@ class RmcApp(object):
             self._iloversion = iloversion
 
         if not skipschemas:
-            if iloversion and float(iloversion) > 4.210:
+            if iloversion and float(iloversion) >= 4.210:
                 self.verifyschemasdownloaded(self.current_client.monolith)
+            elif iloversion and float(iloversion) < 4.210:
+                raise IncompatibleiLOVersionError("Please upgrade to iLO 4 "\
+                                    "version 2.1 or above for schema support.")
+            else:
+                raise IncompatibleiLOVersionError("Schema support unavailable "\
+                                        "on the currently logged in system.")
 
         return iloversion
 
@@ -1595,73 +952,71 @@ class RmcApp(object):
         monolith = self.current_client.monolith
         (_, attributeregistry) = self.get_selection(setenable=True)
 
-        for ristype in monolith.types:
-            if 'Instances' in monolith.types[ristype]:
-                for instance in monolith.types[ristype]['Instances']:
-                    results = list()
+        for instance in monolith.iter():
+            results = list()
 
-                    if instance.patches and len(instance.patches) > 0:
-                        if isinstance(instance.patches[0], list):
-                            results.extend(instance.patches)
-                        else:
-                            if instance.patches[0]:
-                                for item in instance.patches:
-                                    results.extend(item)
+            if instance.patches and len(instance.patches) > 0:
+                if isinstance(instance.patches[0], list):
+                    results.extend(instance.patches)
+                else:
+                    if instance.patches[0]:
+                        for item in instance.patches:
+                            results.extend(item)
 
-                    currdict = instance.resp.dict
+            currdict = instance.resp.dict
 
-                    itemholder = list()
-                    for mainitem in results:
-                        item = copy.deepcopy(mainitem)
-                        regfound = None
+            itemholder = list()
+            for mainitem in results:
+                item = copy.deepcopy(mainitem)
+                regfound = None
 
+                try:
+                    if attributeregistry[instance.type]:
+                        regfound = validation_manager.\
+                                    find_prop(\
+                                       attributeregistry[instance.type])
+                except Exception:
+                    pass
+
+                if regfound:
+                    model, _, _ = self.get_model(currdict, \
+                                     validation_manager, instance, \
+                                     iloversion, attributeregistry)
+
+                    if model:
                         try:
-                            if attributeregistry[instance.type]:
-                                regfound = validation_manager.\
-                                            find_bios_registry(\
-                                               attributeregistry[instance.type])
+                            validator = \
+                                model.get_validator_bios(item[0]\
+                                                        ["path"][1:])
                         except Exception:
-                            pass
+                            validator = model.get_validator_bios(\
+                                                     item["path"][1:])
 
-                        if regfound:
-                            model, _, _ = self.get_model(currdict, \
-                                             validation_manager, instance, \
-                                             iloversion, attributeregistry)
+                        if validator:
+                            try:
+                                if isinstance(validator, redfish.ris.\
+                                          validation.PasswordValidator):
+                                    item[0]["value"] = "******"
+                            except Exception:
+                                if isinstance(validator, redfish.ris.\
+                                          validation.PasswordValidator):
+                                    item["value"] = "******"
 
-                            if model:
-                                try:
-                                    validator = \
-                                        model.get_validator_bios(item[0]\
-                                                                ["path"][1:])
-                                except Exception:
-                                    validator = model.get_validator_bios(\
-                                                             item["path"][1:])
+                itemholder.append(item)
 
-                                if validator:
-                                    try:
-                                        if isinstance(validator, redfish.ris.\
-                                                  validation.PasswordValidator):
-                                            item[0]["value"] = "******"
-                                    except Exception:
-                                        if isinstance(validator, redfish.ris.\
-                                                  validation.PasswordValidator):
-                                            item["value"] = "******"
-
-                        itemholder.append(item)
-
-                    if itemholder:
-                        finalresults.append({instance.type: itemholder})
+            if itemholder:
+                finalresults.append({instance.type: itemholder})
 
         return finalresults
 
     def capture(self):
         """Build and return the entire monolith"""
         monolith = self.current_client.monolith
-        vistedurls = monolith.get_visited_urls()
+        vistedurls = monolith.visited_urls
 
-        monolith.set_visited_urls(list())
+        monolith.visited_urls = list()
         monolith.load(includelogs=True, skipcrawl=False, loadcomplete=True)
-        monolith.set_visited_urls(vistedurls)
+        monolith.visited_urls = vistedurls
 
         results = list()
         instances = self.get_selection(selector='"*"')
@@ -1671,60 +1026,6 @@ class RmcApp(object):
             results.append({instance.resp.request.path: currdict})
 
         return monolith.to_dict()
-
-    def commitworkerfunc(self, patch):
-        """Helper function for the commit command
-
-        :param patch: dictionary containing all patches to be applied.
-        :type patch: dict.
-        :returns: returns a dictionary of patches applied
-
-        """
-        try:
-            entries = patch.patch[0]["path"][1:].split("/")
-        except Exception:
-            entries = patch[0]["path"][1:].split("/")
-
-        counter = 0
-        results = dict()
-        for item in reversed(entries):
-            if counter == 0:
-                boolfound = False
-
-                try:
-                    boolfound = isinstance(patch.patch[0]["value"], bool)
-                except Exception:
-                    boolfound = isinstance(patch[0]["value"], bool)
-                try:
-                    intfound = isinstance(patch.patch[0]["value"], int)
-                except Exception:
-                    intfound = isinstance(patch[0]["value"], int)
-
-                if boolfound or intfound:
-                    try:
-                        results = {item:patch.patch[0]["value"]}
-                    except Exception:
-                        results = {item:patch[0]["value"]}
-
-                else:
-                    try:
-                        if patch.patch[0]["value"][0] == '"' and\
-                                            patch.patch[0]["value"][-1] == '"':
-                            results = {item:patch.patch[0]["value"][1:-1]}
-                        else:
-                            results = {item:patch.patch[0]["value"]}
-                    except Exception:
-                        if patch[0]["value"][0] == '"' and\
-                                                patch[0]["value"][-1] == '"':
-                            results = {item:patch[0]["value"][1:-1]}
-                        else:
-                            results = {item:patch[0]["value"]}
-
-                counter += 1
-            else:
-                results = {item:results}
-
-        return results
 
     def commit(self, out=sys.stdout, verbose=False):
         """Main function for commit command
@@ -1747,7 +1048,8 @@ class RmcApp(object):
                 continue
 
             currdict = dict()
-
+            oridict = instance.resp.dict
+            totpayload = dict()
             # apply patches to represent current edits
             for patch in instance.patches:
                 try:
@@ -1757,69 +1059,35 @@ class RmcApp(object):
 
                 if hasattr(patch, 'patch'):
                     if len(patch.patch):
-                        if "/" in patch.patch[0]["path"][1:]:
-                            newdict = self.commitworkerfunc(patch)
-
-                            if newdict:
-                                self.merge_dict(currdict, newdict)
-                        else:
-                            if isinstance(patch.patch[0]["value"], int):
-                                currdict[patch.patch[0]["path"][1:]] = \
-                                                        patch.patch[0]["value"]
-                            elif not isinstance(patch.patch[0]["value"], bool):
-                                if patch.patch[0]["value"]:
-                                    if patch.patch[0]["value"][0] == '"' and\
-                                        patch.patch[0]["value"][-1] == '"' and\
-                                        len(patch.patch[0]["value"]) == 2:
-                                        currdict[patch.patch[0]["path"][1:]] = \
-                                                                            ''
-                                    elif patch.patch[0]["value"][0] == '"' and\
-                                        patch.patch[0]["value"][-1] == '"':
-                                        line = patch.patch[0]["value"]\
-                                                        [2:-2].replace("'", "")
-                                        line = line.replace(", ", ",")
-                                        currdict[patch.patch[0]["path"]\
-                                                        [1:]] = line.split(',')
-                                    else:
-                                        currdict[patch.patch[0]["path"][1:]] = \
-                                                        patch.patch[0]["value"]
-                                else:
-                                    currdict[patch.patch[0]["path"][1:]] = \
-                                                        patch.patch[0]["value"]
-                            else:
-                                currdict[patch.patch[0]["path"][1:]] = \
-                                                    patch.patch[0]["value"]
+                        patchpath = patch.patch[0]["path"]
                 else:
-                    if "/" in patch[0]["path"][1:]:
-                        newdict = self.commitworkerfunc(patch)
-                        if newdict:
-                            self.merge_dict(currdict, newdict)
+                    patchpath = patch[0]["path"] if isinstance(patch, list) \
+                                            else patch["path"]
+
+                fulldict = jsonpatch.apply_patch(oridict, patch)
+                pobj = jsonpointer.JsonPointer(patchpath)
+                currdict = copy.deepcopy(fulldict)
+                indpayloadcount = 0
+                for item in pobj.parts:
+                    payload = pobj.walk(currdict, item)
+                    indpayloadcount = indpayloadcount+1
+                    if isinstance(payload, list):
+                        break
                     else:
-                        if isinstance(patch[0]["value"], int):
-                            currdict[patch[0]["path"][1:]] = patch[0]["value"]
-                        elif not isinstance(patch[0]["value"], bool):
-                            if patch[0]["value"]:
-                                if patch[0]["value"][0] == '"' and\
-                                            patch[0]["value"][-1] == '"' and \
-                                                    len(patch[0]["value"]) == 2:
-                                    currdict[patch[0]["path"][1:]] = ''
-                                elif patch[0]["value"][0] == '"' and\
-                                                patch[0]["value"][-1] == '"':
-                                    currdict[patch[0]["path"][1:]] = \
-                                            patch[0]["value"][2:-2].split(',')
-                                else:
-                                    currdict[patch[0]["path"][1:]] = \
-                                                            patch[0]["value"]
-                            else:
-                                currdict[patch[0]["path"][1:]] = \
-                                                            patch[0]["value"]
-                        else:
-                            currdict[patch[0]["path"][1:]] = patch[0]["value"]
+                        if not isinstance(payload, dict):
+                            break
+                        currdict = copy.deepcopy(payload)
+                indices = pobj.parts[:indpayloadcount]
+                createdict = lambda x, y: {x:y}
+                while len(indices):
+                    payload = createdict(indices.pop(), payload)
+                self.merge_dict(totpayload, payload)
+                currdict = copy.deepcopy(totpayload)
 
             if currdict:
                 changesmade = True
                 if verbose:
-                    out.write('Changes made to path: %s\n' % \
+                    out.write('Changes are being made to path: %s\n' % \
                                                     instance.resp.request.path)
 
                 put_path = instance.resp.request.path
@@ -1858,13 +1126,17 @@ class RmcApp(object):
         LOGGER.info("Entering validation...")
         errmessages = {}
         reglist = []
-        iloversion = self.getiloversion()
+        try:
+            iloversion = self.getiloversion()
+        except IncompatibleiLOVersionError:
+            return errmessages
+
         typestr = self.current_client.monolith._typestring
-        colstr = self.typepath.defs.collectionstring
         validation_manager = self.get_validation_manager(iloversion)
-        if not validation_manager._classes_registry:
+
+        if not validation_manager._classes:
             return None
-        for reg in validation_manager._classes_registry[0][colstr]:
+        for reg in validation_manager.iterregmems():
             try:
                 if reg and 'Registry' in reg and not 'biosattributeregistry' in \
                                                         reg['Registry'].lower():
@@ -1885,7 +1157,7 @@ class RmcApp(object):
         for reg in reglist:
             #added for smart storage differences in ids
             reg = reg.replace("%23", "#")
-            regfound = validation_manager.find_registry(reg)
+            regfound = validation_manager.find_prop(reg)
 
             if regfound and self.current_client.monolith.is_redfish\
                                  and not isinstance(regfound, RepoRegistryEntry):
@@ -1943,13 +1215,13 @@ class RmcApp(object):
         errmessages = None
 
         if sessionid:
-            if url == None:
+            if url is None:
                 url = 'blobstore://'
             if not self.typepath.defs:
                 self.getgen(url=url, username=username, password=password)
 
         (put_path, body) = self.checkpostpatch(body=body, path=put_path, \
-                    verbose=verbose, service=False, url=None, sessionid=None, \
+                    service=False, url=None, sessionid=None, \
                     headers=None, iloresponse=False, silent=True, patch=True)
 
         if sessionid:
@@ -2008,7 +1280,7 @@ class RmcApp(object):
         errmessages = None
 
         if sessionid:
-            if url == None:
+            if url is None:
                 url = 'blobstore://'
             if not self.typepath.defs:
                 self.getgen(url=url, username=username, password=password)
@@ -2033,13 +1305,13 @@ class RmcApp(object):
 
         if results.status == 200 or response:
             return results
-        else:
-            return None
+
+        return None
 
     def post_handler(self, put_path, body, verbose=False, url=None, \
                              sessionid=None, headers=None, response=False, \
-                             silent=False, providerheader=None, service=False,
-                             username=None, password=None):
+                             silent=False, providerheader=None, service=False, \
+                                     username=None, password=None):
         """Main worker function for raw post command
 
         :param put_path: the URL path.
@@ -2072,7 +1344,7 @@ class RmcApp(object):
                 self.getgen(url=url, username=username, password=password)
 
         (put_path, body) = self.checkpostpatch(body=body, path=put_path, \
-                    verbose=verbose, service=False, url=None, sessionid=None,\
+                    service=False, url=None, sessionid=None,\
                     headers=None, iloresponse=False, silent=True)
 
         if sessionid:
@@ -2185,7 +1457,7 @@ class RmcApp(object):
         errmessages = None
 
         if sessionid:
-            if url == None:
+            if url is None:
                 url = 'blobstore://'
             if not self.typepath.defs:
                 rflag = None
@@ -2260,7 +1532,7 @@ class RmcApp(object):
 
     _QUERY_PATTERN = re.compile(r'(?P<instance>[\w\.]+)(:(?P<xpath>.*))?')
     def _parse_query(self, querystr):
-        """Parse query and return as a dict. TODO probably need to move"""
+        """Parse query and return as a tuple. TODO probably need to move"""
         """ this into its own class if it gets too complicated
 
         :param querystr: query string.
@@ -2272,11 +1544,8 @@ class RmcApp(object):
         if not qmatch:
             raise InvalidSelectionError("Unable to locate instance for " \
                                                             "'%s'" % querystr)
-
         qgroups = qmatch.groupdict()
-
-        return dict(instance=qgroups['instance'], \
-                                            xpath=qgroups.get('xpath', None))
+        return (qgroups['instance'], qgroups.get('xpath', None))
 
     def invalid_return_handler(self, results, verbose=False, errmessages=None):
         """Main worker function for handling all error messages
@@ -2340,7 +1609,7 @@ class RmcApp(object):
                                                                         output))
                         if results.status == 200 or results.status == 201:
                             self.warning_handler("{0}\n".format(output))
-                        if results.status is not 200 and results.status is not 201:
+                        if not results.status == 200 and not results.status == 201:
                             self.warning_handler("iLO response with code [%d]: %s\n"%(\
                                                         results.status, output))
                             raise IloResponseError("")
@@ -2350,6 +1619,14 @@ class RmcApp(object):
                         raise excp
                     except Exception:
                         pass
+            if not output:
+                if results.status == 200 or results.status == 201:
+                    self.warning_handler("[%d] The operation completed " \
+                                            "successfully.\n" % results.status)
+                else:
+                    self.warning_handler("[{0}] iLO error response: {1}\n".format( \
+                                                results.status, contents))
+                    raise IloResponseError("")
         else:
             if results.status == 200 or results.status == 201:
                 if verbose:
@@ -2359,9 +1636,9 @@ class RmcApp(object):
                     self.warning_handler("The operation completed "\
                                                             "successfully.\n")
             elif contents:
-                self.warning_handler("iLO responsed with code [{0}]: {1}\n".format(\
+                self.warning_handler("iLO response with code [{0}]: {1}\n".format(\
                                                         results.status, contents))
-                raise IloResponseError()
+                raise IloResponseError("")
             else:
                 self.warning_handler("[%d] No message returned.\n" % \
                                                                 results.status)
@@ -2489,27 +1766,26 @@ class RmcApp(object):
         """
         instances = list()
         monolith = self.current_client.monolith
-        (founddir, entrytype) = self.check_types_version(monolith)
+        rdirtype = monolith.gettypename(self.typepath.defs.resourcedirectorytype)
 
-        if not founddir:
-            for ristype in monolith.types:
-                if 'Instances' in monolith.types[ristype]:
-                    for instance in monolith.types[ristype]['Instances']:
-                        instances.append(instance.type)
+        if not rdirtype:
+            for inst in monolith.iter():
+                if not any([x for x in ['ExtendedError', 'object', 'string']\
+                                             if x in inst.type]):
+                    instances.append(inst.type)
         else:
-            if 'Instances' in monolith.types[entrytype]:
-                for instance in monolith.types[entrytype]['Instances']:
-                    for item in instance.resp.dict["Instances"]:
-                        if item and instance._typestring in list(item.keys()) and \
-                            not 'ExtendedError' in item[instance._typestring]:
-                            if not fulltypes and instance._typestring == \
-                                                                '@odata.type':
-                                tval = item["@odata.type"].split('#')
-                                tval = tval[-1].split('.')[:-1]
-                                tval = '.'.join(tval)
-                                instances.append(tval)
-                            elif item:
-                                instances.append(item[instance._typestring])
+            for instance in monolith.itertype(rdirtype):
+                for item in instance.resp.dict["Instances"]:
+                    if item and instance._typestring in list(item.keys()) and \
+                        not 'ExtendedError' in item[instance._typestring]:
+                        if not fulltypes and instance._typestring == \
+                                                            '@odata.type':
+                            tval = item["@odata.type"].split('#')
+                            tval = tval[-1].split('.')[:-1]
+                            tval = '.'.join(tval)
+                            instances.append(tval)
+                        elif item:
+                            instances.append(item[instance._typestring])
 
         return instances
 
@@ -2519,15 +1795,13 @@ class RmcApp(object):
         instances = dict()
         monolith = self.current_client.monolith
 
-        for ristype in monolith.types:
-            if 'Instances' in monolith.types[ristype]:
-                for instance in monolith.types[ristype]['Instances']:
-                    instancepath[instance.type] = instance.resp.request.path
-                    templist = instance.resp.getheaders()
-                    for ind, val in enumerate(templist):
-                        if val[0] in ['etag', 'ETag']:
-                            tempindex = ind
-                    instances[instance.type] = templist[tempindex][1]
+        for inst in monolith.iter():
+            instancepath[inst.path] = inst.type
+            templist = inst.resp.getheaders()
+            for ind, val in enumerate(templist):
+                if val[0] in ['etag', 'ETag']:
+                    tempindex = ind
+            instances[inst.path] = templist[tempindex][1]
 
         return [instances, instancepath]
 
@@ -2545,8 +1819,8 @@ class RmcApp(object):
                                                                 skipcrawl=True)
             self.current_client.monolith.reload = False
             return True
-        else:
-            return False
+
+        return False
 
     def checkforetagchange(self, instance=None):
         """Function to check the status of the etag
@@ -2556,10 +1830,11 @@ class RmcApp(object):
 
         """
         if instance:
-            (oldtag, paths) = self.gettypeswithetag()
-            self.reloadmonolith(paths[instance.type])
-            (newtag, paths) = self.gettypeswithetag()
-            if (oldtag[instance.type] != newtag[instance.type]) and \
+            path = instance.path
+            (oldtag, _) = self.gettypeswithetag()
+            self.reloadmonolith(path)
+            (newtag, _) = self.gettypeswithetag()
+            if (oldtag[path] != newtag[path]) and \
                         not self.typepath.defs.hpilodatetimetype in instance.type:
                 self.warning_handler("The property you are trying to change " \
                                  "has been updated. Please check entry again " \
@@ -2583,35 +1858,19 @@ class RmcApp(object):
             schemaid = "/rest/v1/schemas"
             regid = "/rest/v1/registries"
 
-        for itemtype in monolith.types:
-            if itemtype.startswith("Collection.") and \
-                                    'Instances' in monolith.types[itemtype]:
-                for instance in monolith.types[itemtype]['Instances']:
-                    if instance.resp.request.path.lower() == schemaid:
-                        schemasfound = True
-                    elif instance.resp.request.path.lower() == regid:
-                        registriesfound = True
+        if monolith.gettypename("Collection."):
+
+            collectionpaths = monolith.typesadded[monolith.gettypename("Collection.")]
+            if any(paths.lower() == schemaid for paths in collectionpaths):
+                schemasfound = True
+            if any(paths.lower() == regid for paths in collectionpaths):
+                registriesfound = True
 
         if not schemasfound:
             self.check_type_and_download(monolith, schemaid, skipcrawl=True)
 
         if not registriesfound:
             self.check_type_and_download(monolith, regid, skipcrawl=True)
-
-    def check_types_version(self, monolith):
-        """Check the types version
-
-        :param monolith: full data model retrieved from server.
-        :type monolith: dict.
-        :returns: returns boolean based on if resource directory type is in monolith types
-
-        """
-        for ristype in monolith.types:
-            if self.typepath.defs.resourcedirectorytype.lower() \
-                                                in ristype.lower():
-                return (True, ristype)
-
-        return (False, None)
 
     def check_type_and_download(self, monolith, foundhref, skipcrawl=False, \
                                                             loadtype='href'):
@@ -2627,19 +1886,8 @@ class RmcApp(object):
         :type loadtype: str.
 
         """
-        found = False
-        for ristype in monolith.types:
-            if 'Instances' in monolith.types[ristype]:
-                for instance in monolith.types[ristype]['Instances']:
-                    if foundhref == instance.resp.request.path:
-                        found = True
-                        break
-                    elif foundhref == instance.resp.request.path + '/':
-                        found = True
-                        break
-
-                if found:
-                    break
+        findhref = foundhref[:-1] if foundhref[-1] == '/' else foundhref
+        found = any(linkref in monolith.pathsadded for linkref in (findhref, foundhref))
 
         if not found:
             try:
@@ -2658,7 +1906,7 @@ class RmcApp(object):
                 else:
                     raise excp
 
-    def check_types_exists(self, entrytype, currtype, monolith, \
+    def check_types_exists(self, rdirtype, currtype, monolith, \
                                                             skipcrawl=False):
         """Check if type exists in current monolith
 
@@ -2672,21 +1920,20 @@ class RmcApp(object):
         :type skipcrawl: boolean.
 
         """
-        if 'Instances' in monolith.types[entrytype]:
-            for instance in monolith.types[entrytype]['Instances']:
-                try:
-                    for item in instance.resp.dict["Instances"]:
-                        if item and monolith._typestring in list(item.keys()) and \
-                            currtype.lower() in item[monolith._typestring].lower():
-                            self.check_type_and_download(monolith, \
-                                 item[monolith._hrefstring], skipcrawl=skipcrawl)
-                        elif currtype == '"*"':
-                            self.check_type_and_download(monolith, \
-                                item[monolith._hrefstring], skipcrawl=skipcrawl)
-                except:
-                    LOGGER.debug("Instance error, Instance contents: %s" % \
-                                 instance.resp.text)
-                    raise
+        inst = None
+        try:
+            for inst in monolith.itertype(rdirtype):
+                for item in inst.resp.dict["Instances"]:
+                    if currtype == '"*"' or (item and monolith._typestring in \
+                        list(item.keys()) and currtype.lower() in item[monolith.\
+                                                        _typestring].lower()):
+                        self.check_type_and_download(monolith, \
+                             item[monolith._hrefstring], skipcrawl=skipcrawl)
+        except:
+            if inst:
+                LOGGER.debug("Instance error, Instance contents: %s" % \
+                                                            inst.resp.text)
+            raise
 
     def get_selection(self, selector=None, sel=None, val=None, setenable=False):
         """Special main function for set/filter with select command
@@ -2709,17 +1956,15 @@ class RmcApp(object):
         monolith = self.current_client.monolith
 
         if selector:
-            (founddir, entrytype) = self.check_types_version(monolith)
-
-            if founddir:
-                skipcrawl = True
-                if selector.lower().startswith("log"):
-                    skipcrawl = False
+            rdirtype = monolith.gettypename(self.typepath.defs.resourcedirectorytype)
+            if rdirtype:
+                skipcrawl = False if selector.lower().startswith("log") else True
+                if not skipcrawl:
                     self.warning_handler("Full data retrieval enabled. You " \
                                     "may experience longer download times.\n")
-
-                self.check_types_exists(entrytype, selector, monolith, \
+                self.check_types_exists(rdirtype, selector, monolith, \
                                                             skipcrawl=skipcrawl)
+
 
         instances = list()
         if not selector:
@@ -2728,77 +1973,63 @@ class RmcApp(object):
         if not selector:
             if setenable:
                 return instances, attributeregistryfound
-            else:
-                return instances
+            return instances
 
         xpath = None
-        odata = ''
 
         if not selector == '"*"':
-            qvars = self._parse_query(selector)
-            qinstance = qvars['instance']
-            xpath = qvars['xpath']
+            (qinstance, xpath) = self._parse_query(selector)
         else:
             qinstance = selector
 
-        for ristype in monolith.types:
-            if 'Instances' in monolith.types[ristype]:
-                for instance in monolith.types[ristype]['Instances']:
+        for inst in monolith.iter():
+            if qinstance.lower() in inst.type.lower() or qinstance == '"*"':
+                if setenable:
                     try:
-                        odata = instance.resp.dict['@odata.type'].lower()
+                        if inst.resp.obj["AttributeRegistry"]:
+                            attributeregistryfound[inst.type] = \
+                                inst.resp.obj["AttributeRegistry"]
                     except Exception:
-                        odata = ''
-
-                    if qinstance.lower() in instance.type.lower() \
-                            or qinstance == '"*"' or qinstance.lower() in odata:
-                        if setenable:
-                            try:
-                                if instance.resp.obj["AttributeRegistry"]:
-                                    attributeregistryfound[instance.type] = \
-                                        instance.resp.obj["AttributeRegistry"]
-                            except Exception:
-                                pass
-
-                            if self.get_save_helper(instance.resp.request.path,\
-                                        monolith.types[ristype]['Instances']):
-                                continue
-
-                        if not sel is None and not val is None:
-                            currdict = instance.resp.dict
-
-                            try:
-                                if not "/" in sel:
-                                    for item in six.iterkeys(currdict):
-                                        if sel.lower() == item.lower():
-                                            sel = item
-                                    if val[-1] == "*":
-                                        if not val[:-1] in str(currdict[sel]):
-                                            continue
-                                    else:
-                                        if not str(currdict[sel]).\
-                                                                startswith(val):
-                                            continue
-                                else:
-                                    newargs = sel.split("/")
-                                    content = copy.deepcopy(currdict)
-
-                                    if self.filterworkerfunction(workdict=\
-                                                content, sel=sel, val=val, \
-                                                newargs=newargs, loopcount=0):
-                                        instances.append(instance)
+                        pass
+                    findpath = (inst.path+"/settings", inst.path+"settings/")
+                    if any(fpath.lower() in monolith.typesadded[inst.maj_type]\
+                            for fpath in findpath):
+                        continue
+                if not (sel is None or val is None):
+                    currdict = inst.resp.dict
+                    try:
+                        if not "/" in sel:
+                            for item in six.iterkeys(currdict):
+                                if sel.lower() == item.lower():
+                                    sel = item
+                            if val[-1] == "*":
+                                if not val[:-1] in str(currdict[sel]):
                                     continue
-                            except Exception:
-                                continue
-
-                        if xpath:
-                            raise RuntimeError("Not implemented")
+                            else:
+                                #Changed from startswith to in
+                                if not val in str(currdict[sel]):
+                                    continue
                         else:
-                            instances.append(instance)
+                            newargs = sel.split("/")
+                            content = copy.deepcopy(currdict)
+
+                            if self.filterworkerfunction(workdict=\
+                                        content, sel=sel, val=val, \
+                                        newargs=newargs, loopcount=0):
+                                instances.append(inst)
+                            continue
+                    except Exception:
+                        continue
+
+                if xpath:
+                    raise RuntimeError("Not implemented")
+                else:
+                    instances.append(inst)
 
         if setenable:
             return instances, attributeregistryfound
-        else:
-            return instances
+
+        return instances
 
     def filterworkerfunction(self, workdict=None, sel=None, val=None, \
                                                     newargs=None, loopcount=0):
@@ -2853,12 +2084,7 @@ class RmcApp(object):
         """Special main function for commit command"""
         instances = list()
         monolith = self.current_client.monolith
-
-        for ristype in monolith.types:
-            if 'Instances' in monolith.types[ristype]:
-                for instance in monolith.types[ristype]['Instances']:
-                    instances.append(instance)
-
+        _ = [instances.append(inst) for inst in monolith.iter() if inst.patches]
         return instances
 
     def get_save_header(self, selector=None):
@@ -2880,50 +2106,43 @@ class RmcApp(object):
 
         instances["Comments"] = OrderedDict()
 
-        (founddir, entrytype) = self.check_types_version(\
-                                                 self.current_client.monolith)
+        rdirtype = monolith.gettypename(self.typepath.defs.resourcedirectorytype)
 
-        if founddir:
-            self.check_types_exists(entrytype, "ComputerSystem.", \
+        if rdirtype:
+            self.check_types_exists(rdirtype, "ComputerSystem.", \
                                 self.current_client.monolith, skipcrawl=True)
-            self.check_types_exists(entrytype, "Bios.", \
+            self.check_types_exists(rdirtype, "Bios.", \
                                 self.current_client.monolith, skipcrawl=True)
 
-        for ristype in monolith.types:
-            if 'Instances' in monolith.types[ristype]:
-                for instance in monolith.types[ristype]['Instances']:
-                    if "computersystem." in instance.type.lower():
-                        try:
-                            if instance.resp.obj["Manufacturer"]:
-                                instances["Comments"]["Manufacturer"] = \
-                                            instance.resp.obj["Manufacturer"]
 
-                            if instance.resp.obj["Model"]:
-                                instances["Comments"]["Model"] = \
-                                                    instance.resp.obj["Model"]
+        try:
+            for instance in monolith.itertype("ComputerSystem."):
+                if instance.resp.obj["Manufacturer"]:
+                    instances["Comments"]["Manufacturer"] = \
+                                instance.resp.obj["Manufacturer"]
 
-                            if instance.resp.obj["Oem"][self.typepath.\
-                                                defs.oemhp]["Bios"]["Current"]:
-                                oemjson = instance.resp.obj["Oem"]\
-                                    [self.typepath.defs.oemhp]["Bios"]["Current"]
-                                instances["Comments"]["BIOSFamily"] = \
-                                                            oemjson["Family"]
-                                instances["Comments"]["BIOSDate"] = \
-                                                                oemjson["Date"]
-                        except Exception:
-                            pass
-                    if self.typepath.defs.biostype.lower() in \
-                                                        instance.type.lower():
-                        try:
-                            if "Attributes" in instance.resp.obj.keys() and \
-                                instance.resp.obj["Attributes"]["SerialNumber"]:
-                                instances["Comments"]["SerialNumber"] = \
-                                    instance.resp.obj["Attributes"]["SerialNumber"]
-                            elif instance.resp.obj["SerialNumber"]:
-                                instances["Comments"]["SerialNumber"] = \
-                                                instance.resp.obj["SerialNumber"]
-                        except Exception:
-                            pass
+                if instance.resp.obj["Model"]:
+                    instances["Comments"]["Model"] = \
+                                        instance.resp.obj["Model"]
+
+                if instance.resp.obj["Oem"][self.typepath.\
+                                    defs.oemhp]["Bios"]["Current"]:
+                    oemjson = instance.resp.obj["Oem"]\
+                        [self.typepath.defs.oemhp]["Bios"]["Current"]
+                    instances["Comments"]["BIOSFamily"] = \
+                                                oemjson["Family"]
+                    instances["Comments"]["BIOSDate"] = \
+                                                    oemjson["Date"]
+            for instance in monolith.itertype(self.typepath.defs.biostype):
+                if "Attributes" in list(instance.resp.obj.keys()) and \
+                    instance.resp.obj["Attributes"]["SerialNumber"]:
+                    instances["Comments"]["SerialNumber"] = \
+                        instance.resp.obj["Attributes"]["SerialNumber"]
+                elif instance.resp.obj["SerialNumber"]:
+                    instances["Comments"]["SerialNumber"] = \
+                                    instance.resp.obj["SerialNumber"]
+        except Exception:
+            pass
         return instances
 
     def get_selector(self):
@@ -2931,21 +2150,19 @@ class RmcApp(object):
         if self.current_client:
             if self.current_client.selector:
                 return self.current_client.selector
-
         return None
 
     def get_filter_settings(self):
-        """Helper function to return current select option"""
+        """Helper function to get current filter settings"""
         if self.current_client:
             if not self.current_client.filter_attr is None and not \
                                     self.current_client.filter_value is None:
                 return (self.current_client.filter_attr, \
                                             self.current_client.filter_value)
-
         return (None, None)
 
     def erase_filter_settings(self):
-        """Helper function to return current select option"""
+        """Helper function to erase current filter settings"""
         if self.current_client:
             if not self.current_client.filter_attr is None or \
                                 not self.current_client.filter_value is None:
@@ -2953,7 +2170,7 @@ class RmcApp(object):
                 self.current_client.filter_value = None
 
     def update_bios_password(self, value):
-        """Helper function to return current select option
+        """Helper function to set bios password
 
         :param value: value to be set as the new BIOS password.
         :type value: str.
@@ -2973,6 +2190,7 @@ class RmcApp(object):
 
         if self._validationmanager:
             self._validationmanager._errors = list()
+            self._validationmanager._warnings = list()
             return self._validationmanager
 
         monolith = None
@@ -2980,12 +2198,8 @@ class RmcApp(object):
         if float(iloversion) >= 4.210:
             monolith = self.current_client.monolith
 
-        (romfamily, biosversion) = self.getbiosfamilyandversion()
-        validation_manager = ValidationManager(\
-                            local_path=self._config.get_schemadir(), \
-                            bios_local_path=self._config.get_biosschemadir(), \
-                            romfamily=romfamily, biosversion=biosversion, \
-                            iloversion=iloversion, monolith=monolith, \
+#         (romfamily, biosversion) = self.getbiosfamilyandversion()
+        validation_manager = ValidationManager(monolith, \
                             defines=self.typepath)
         self._validationmanager = validation_manager
 
@@ -3020,15 +2234,15 @@ class RmcApp(object):
         try:
             if attributeregistry[body[type_str]]:
                 biosmode = True
-                regfound = validation_manager.find_bios_registry(regtype)
-                biosschemafound = validation_manager.find_schema(schematype)
+                regfound = validation_manager.find_prop(regtype)
+                biosschemafound = validation_manager.find_prop(schematype)
 
                 if isredfish and not isinstance(biosschemafound, RepoRegistryEntry):
                     regfound = self.get_handler(regfound['@odata.id'], \
                                 verbose=False, service=True, silent=True).obj
                     regfound = RepoRegistryEntry(regfound)
         except Exception:
-            regfound = validation_manager.find_schema(schematype)
+            regfound = validation_manager.find_prop(schematype)
 
         if isredfish and not isinstance(regfound, RepoRegistryEntry):
             regfound = self.get_handler(regfound['@odata.id'], \
@@ -3079,7 +2293,7 @@ class RmcApp(object):
 
         templist = ["Name", "Modified", "Type", "Description", \
                     "AttributeRegistry", "links", "SettingsResult", "Status", \
-                    "@odata.context", "@odata.type"]
+                    "@odata.context", "@odata.type", "@odata.id", "@odata.etag"]
 
         for item in model['Attributes']:
             if item['AttributeName'] in bodykeys:
@@ -3113,7 +2327,7 @@ class RmcApp(object):
         :returns: returns body with readonly removed
 
         """
-        templist = []
+        templist = ["Links", "Actions"]
 
         for key in list(model.keys()):
             readonly = True
@@ -3162,7 +2376,7 @@ class RmcApp(object):
 
     def get_model(self, currdict, validation_manager, instance, \
                   iloversion, attributeregistry, latestschema=None, \
-                  newarg=None, autotest=False):
+                  newarg=None, autotest=False, nomodel=False):
         """Returns the model for the current instance's schema/registry
 
         :param currdict: current selection dictionary.
@@ -3215,9 +2429,9 @@ class RmcApp(object):
                 pass
         try:
             if attributeregistry[instance.type]:
-                regfound = validation_manager.find_bios_registry(regtype)
+                regfound = validation_manager.find_prop(regtype)
                 biosmode = True
-                biosschemafound = validation_manager.find_schema(schematype)
+                biosschemafound = validation_manager.find_prop(schematype)
 
                 if biosschemafound and isredfish and not \
                                 isinstance(biosschemafound, RepoRegistryEntry):
@@ -3226,7 +2440,7 @@ class RmcApp(object):
                     biosschemafound = RepoRegistryEntry(biosschemafound)
 
         except Exception:
-            regfound = validation_manager.find_schema(schematype)
+            regfound = validation_manager.find_prop(schematype)
 
         if regfound and isredfish and not isinstance(regfound, RepoRegistryEntry):
             regfound = self.get_handler(regfound['@odata.id'], \
@@ -3250,26 +2464,27 @@ class RmcApp(object):
             except Exception as excp:
                 raise excp
 
-        if biosmode:
-            if float(iloversion) >= 4.210:
-                model = regfound.get_registry_model_bios_version(\
-                    currdict=currdict, monolith=self.current_client.monolith)
+        if not nomodel:
+            if biosmode:
+                if float(iloversion) >= 4.210:
+                    model = regfound.get_registry_model_bios_version(\
+                        currdict=currdict, monolith=self.current_client.monolith)
 
-            if biosschemafound:
-                bsmodel = biosschemafound.get_registry_model(\
-                    currdict=currdict, monolith=self.current_client.monolith, \
-                    latestschema=latestschema)
-            if not biosschemafound and not model:
-                model = regfound.get_registry_model_bios_version(currdict)
-        else:
-            if float(iloversion) >= 4.210:
-                model = regfound.get_registry_model(currdict=currdict, \
-                                    monolith=self.current_client.monolith, \
-                                    newarg=newarg, latestschema=latestschema)
+                if biosschemafound:
+                    bsmodel = biosschemafound.get_registry_model(\
+                        currdict=currdict, monolith=self.current_client.monolith, \
+                        latestschema=latestschema)
+                if not biosschemafound and not model:
+                    model = regfound.get_registry_model_bios_version(currdict)
             else:
-                model = regfound.get_registry_model(currdict)
+                if float(iloversion) >= 4.210:
+                    model = regfound.get_registry_model(currdict=currdict, \
+                                        monolith=self.current_client.monolith, \
+                                        newarg=newarg, latestschema=latestschema)
+                else:
+                    model = regfound.get_registry_model(currdict)
 
-        return model, biosmode, bsmodel
+            return model, biosmode, bsmodel
 
     def geturidict(self, locationobj):
         """Return the external reference link.
@@ -3290,7 +2505,7 @@ class RmcApp(object):
 
     def getgen(self, gen=None, url=None, username=None, password=None):
         """Updates the defines object based on the iLO manager version"""
-        if self.typepath.adminpriv == False and url.startswith("blob"):
+        if self.typepath.adminpriv is False and url.startswith("blob"):
             raise UserNotAdminError("")
         self.typepath.getgen(gen=gen, url=url, username=username, \
                                         password=password, logger=self.logger)
@@ -3315,7 +2530,7 @@ class RmcApp(object):
             return redfishflag
 
     #TODO: need to see if we do have a dependency on the verbose flag here
-    def checkpostpatch(self, body=None, path=None, verbose=False, \
+    def checkpostpatch(self, body=None, path=None,\
                         service=False, url=None, sessionid=None, headers=None, \
                         iloresponse=False, silent=False, patch=False):
         """Make the post file compatible with the system generation
@@ -3430,25 +2645,24 @@ class RmcApp(object):
         :returns: returns the schematype and regtype found for the dict.
 
         """
+        regtype = None
         type_str = self.current_client.monolith._typestring
         isredfish = self.current_client.monolith.is_redfish
         href_str = self.current_client.monolith._hrefstring
 
         schematype = currdict[type_str].split('.')[0] + '.'
+        reglist = list(validation_manager.iterregmems())
 
         if isredfish:
             schematype = schematype[1:-1]
 
-            reglist = validation_manager._classes_registry[0]['Members']
             regs = [x[href_str] for x in reglist if\
                     'biosattributeregistry' in x[href_str].lower()]
             i = [reglist.index(x) for x in reglist if \
                             'biosattributeregistry' in x[href_str].lower()]
             regs = list(zip(regs, i))
         else:
-            reglist = validation_manager._classes_registry[0]['Items']
-
-            for item in validation_manager._classes[0]['Items']:
+            for item in list(validation_manager.itermems()):
                 if item and item['Schema'].startswith(schematype):
                     schematype = item['Schema']
                     break

@@ -22,14 +22,12 @@
 import re
 import sys
 import logging
-import threading
 
 from collections import (OrderedDict)
 
 #Added for py3 compatibility
 import six
 
-from six.moves.queue import Queue
 from six.moves.urllib.parse import urlparse, urlunparse
 
 import jsonpath_rw
@@ -61,6 +59,10 @@ class RisMonolithMemberBase(Dictable):
     """RIS monolith member base class"""
     pass
 
+class RisInstanceNotFoundError(Exception):
+    """Raised when attempting to select an instance that does not exist"""
+    pass
+
 class RisMonolithMemberv100(RisMonolithMemberBase):
     """Wrapper around RestResponse that adds the monolith data"""
     def __init__(self, restresp, isredfish):
@@ -72,31 +74,47 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
         else:
             self._typestring = 'Type'
 
-    def _get_type(self):
+    @property
+    def type(self):
         """Return type from monolith"""
         if self._typestring in self._resp.dict:
             return self._resp.dict[self._typestring]
+        #Added for object type
         elif 'type' in self._resp.dict:
             return self._resp.dict['type']
         return None
-    type = property(_get_type, None)
 
-    def _get_maj_type(self):
+    @property
+    def maj_type(self):
         """Return maj type from monolith"""
         if self.type:
-            return self.type[:-4]
+            if '.' in self.type:
+                types = ".".join(self.type.split(".", 2)[:2])
+                retval = types[1:] if types.startswith('#') else types
+            else:
+                retval = self.type
+            return retval
         return None
-    maj_type = property(_get_maj_type, None)
 
-    def _get_resp(self):
+    @property
+    def resp(self):
         """Return resp from monolith"""
         return self._resp
-    resp = property(_get_resp, None)
 
-    def _get_patches(self):
+    @property
+    def path(self):
+        """Return path from monolith"""
+        return self._resp.request.path
+
+    @property
+    def patches(self):
         """Return patches from monolith"""
         return self._patches
-    patches = property(_get_patches, None)
+
+    @property
+    def dict(self):
+        """Return dict from monolith"""
+        return self._resp.dict
 
     def to_dict(self):
         """Convert monolith to dict"""
@@ -131,7 +149,6 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
 
         :param src: source to load from
         :type src: dict
-
         """
         if 'Type' in src:
             self._type = src['Type']
@@ -141,104 +158,6 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
             src['restreq'] = restreq
             self._resp = redfish.rest.v1.StaticRestResponse(**src)
             self._patches = src['Patches']
-
-    def _reducer(self, indict, breadcrumbs=None, outdict=OrderedDict()):
-        """Monolith reducer
-
-        :param indict: input dictionary.
-        :type indict: dict.
-        :param breadcrumbs: breadcrumbs from previous operations.
-        :type breadcrumbs: dict.
-        :param outdict: expected output format.
-        :type outdict: dictionary type.
-        :returns: returns outdict
-
-        """
-        if breadcrumbs is None:
-            breadcrumbs = []
-
-        if isinstance(indict, dict):
-            for key, val in list(indict.items()):
-                breadcrumbs.append(key) # push
-
-                if isinstance(val, dict):
-                    self._reducer(val, breadcrumbs, outdict)
-                elif isinstance(val, list) or isinstance(val, tuple):
-                    for i in range(0, len(val)):
-                        breadcrumbs.append('%s' % i) # push
-                        self._reducer(val[i], breadcrumbs, outdict)
-
-                        del breadcrumbs[-1] # pop
-                elif isinstance(val, tuple):
-                    self._reducer(val, breadcrumbs, outdict)
-                else:
-                    self._reducer(val, breadcrumbs, outdict)
-
-                del breadcrumbs[-1] # pop
-        else:
-            outkey = '/'.join(breadcrumbs)
-            outdict[outkey] = indict
-
-        return outdict
-
-    def _jsonpath_reducer(self, indict, breadcrumbs=None, \
-                                                        outdict=OrderedDict()):
-        """JSON Path Reducer
-
-        :param indict: input dictionary.
-        :type indict: dict.
-        :param breadcrumbs: breadcrumbs from previous operations.
-        :type breadcrumbs: dict.
-        :param outdict: expected output format.
-        :type outdict: dictionary type.
-        :returns: returns outdict
-
-        """
-        if breadcrumbs is None:
-            breadcrumbs = []
-
-        if isinstance(indict, dict):
-            for key, val in list(indict.items()):
-                breadcrumbs.append(key) # push
-
-                if isinstance(val, dict):
-                    self._reducer(val, breadcrumbs, outdict)
-                elif isinstance(val, list) or isinstance(val, tuple):
-                    for i in range(0, len(val)):
-                        breadcrumbs.append('[%s]' % i) # push
-                        self._reducer(val[i], breadcrumbs, outdict)
-
-                        del breadcrumbs[-1] # pop
-                elif isinstance(val, tuple):
-                    self._reducer(val, breadcrumbs, outdict)
-                else:
-                    self._reducer(val, breadcrumbs, outdict)
-
-                del breadcrumbs[-1] # pop
-        else:
-            outkey = '.'.join(breadcrumbs)
-            outkey = outkey.replace('.[', '[')
-            outdict[outkey] = indict
-
-        return outdict
-
-    def reduce(self):
-        """Returns a "flatten" dict with nested data represented in
-        JSONpath notation"""
-        result = OrderedDict()
-
-        if self.type:
-            result['Type'] = self.type
-
-            if self.maj_type == 'Collection.1' and \
-                                            'MemberType' in self._resp.dict:
-                result['MemberType'] = self._resp.dict['MemberType']
-
-            self._reducer(self._resp.dict)
-            result['OriginalUri'] = self._resp.request.path
-            result['Content'] = self._reducer(self._resp.dict)
-
-        return result
 
 class RisMonolithv100(Dictable):
     """Monolithic cache of RIS data"""
@@ -251,15 +170,15 @@ class RisMonolithv100(Dictable):
         """
         self._client = client
         self.name = "Monolithic output of RIS Service"
-        self.types = OrderedDict()
         self._visited_urls = list()
-        self._current_location = '/' # "root"
-        self.queue = Queue()
+        self._current_location = '/'
         self._type = None
         self._name = None
         self.progress = 0
         self.reload = False
         self.is_redfish = client._rest_client.is_redfish
+        self.typesadded = dict()
+        self.pathsadded = dict()
 
         if self.is_redfish:
             self._resourcedir = '/redfish/v1/ResourceDirectory/'
@@ -270,24 +189,62 @@ class RisMonolithv100(Dictable):
             self._typestring = 'Type'
             self._hrefstring = 'href'
 
-    def _get_type(self):
+    @property
+    def type(self):
         """Return monolith version type"""
         return "Monolith.1.0.0"
 
-    type = property(_get_type, None)
+    @property
+    def visited_urls(self):
+        """Return the visited URLS"""
+        return self._visited_urls
+
+    @visited_urls.setter
+    def visited_urls(self, visited_urls):
+        """Set visited URLS to given list."""
+        self._visited_urls = visited_urls
+
+    @property
+    def types(self):
+        """Returns list of types of members in monolith
+        :rtype: list
+        """
+        return list(self.typesadded.keys())
+
+    @types.setter
+    def types(self, member):
+        """Adds a member to monolith
+
+        :param member: Member created based on response.
+        :type member: RisMonolithMemberv100.
+        """
+        if member.maj_type in list(self.typesadded.keys()):
+            if member.path not in self.typesadded[member.maj_type]:
+                self.typesadded[member.maj_type].append(member.path)
+        else:
+            self.typesadded[member.maj_type] = [member.path]
+        patches = []
+        if member.path in list(self.pathsadded.keys()):
+            patches = self.pathsadded[member.path].patches
+        self.pathsadded[member.path] = member
+        self.pathsadded[member.path].patches.extend([patch for patch in patches])
+
+    def path(self, path):
+        """Provide the response of requested path
+
+        :param path: path of response requested
+        :type path: str.
+        :rtype: RestResponse
+        """
+        try:
+            return self.pathsadded[path]
+        except:
+            return None
 
     def update_progress(self):
         """Simple function to increment the dot progress"""
         if self.progress % 6 == 0:
             sys.stdout.write('.')
-
-    def get_visited_urls(self):
-        """Return the visited URLS"""
-        return self._visited_urls
-
-    def set_visited_urls(self, visited_urls):
-        """Set visited URLS to given list."""
-        self._visited_urls = visited_urls
 
     def load(self, path=None, includelogs=False, skipinit=False, \
                         skipcrawl=False, loadtype='href', loadcomplete=False):
@@ -314,22 +271,12 @@ class RisMonolithv100(Dictable):
                 LOGGER.info("Discovering data...")
             self.name = self.name + ' at %s' % self._client.base_url
 
-            if not self.types:
-                self.types = OrderedDict()
-
-        if not threading.active_count() >= 6:
-            for _ in range(5):
-                workhand = SuperDuperWorker(self.queue)
-                workhand.setDaemon(True)
-                workhand.start()
-
         selectivepath = path
         if not selectivepath:
             selectivepath = self._client._rest_client.default_prefix
 
         self._load(selectivepath, skipcrawl=skipcrawl, includelogs=includelogs,\
              skipinit=skipinit, loadtype=loadtype, loadcomplete=loadcomplete)
-        self.queue.join()
 
         if not skipinit:
             if LOGGER.getEffectiveLevel() == 40:
@@ -395,7 +342,7 @@ class RisMonolithv100(Dictable):
         if loadtype == "ref":
             self.parse_schema(resp)
 
-        self.queue.put((resp, path, skipinit, self))
+        self.update_member(resp=resp, path=path, skipinit=skipinit)
 
         if loadtype == 'href':
             #follow all the href attributes
@@ -507,12 +454,13 @@ class RisMonolithv100(Dictable):
 
                     instance = list()
 
-                    if 'st' in self.types:
-                        for stitem in self.types['st']['Instances']:
-                            instance.append(stitem)
-                    if 'ob' in self.types:
-                        for obitem in self.types['ob']['Instances']:
-                            instance.append(obitem)
+                    #deprecated type "string" for Type.json
+                    if 'string' in self.types:
+                        for item in self.itertype('string'):
+                            instance.append(item)
+                    if 'object' in self.types:
+                        for item in self.itertype('object'):
+                            instance.append(item)
 
                     for item in instance:
                         if jsonfile in item.resp._rest_request._path:
@@ -558,6 +506,7 @@ class RisMonolithv100(Dictable):
                                 if '$ref' in six.iterkeys(itempath.resolve(respcopy)):
                                     itempath.resolve(respcopy).pop('$ref')
                                     itempath.resolve(respcopy).update(dictcopy)
+                                    break
 
                 if jsonpath:
                     if 'anyOf' in fullpath:
@@ -601,9 +550,12 @@ class RisMonolithv100(Dictable):
 
         return (False, None)
 
-    def branch_worker(self, resp, path, skipinit):
-        """Helper for load function, creates threaded worker
+    def update_member(self, member=None, resp=None, path=None, skipinit=None):
+        """Adds member to this monolith. If the member already exists the
+        data is updated in place.
 
+        :param member: Ris monolith member object made by branch worker.
+        :type member: RisMonolithMemberv100.
         :param resp: response received.
         :type resp: str.
         :param path: path correlating to the response.
@@ -612,46 +564,19 @@ class RisMonolithv100(Dictable):
         :type skipinit: boolean.
 
         """
-        self._visited_urls.append(path.lower())
+        if not member:
+            self._visited_urls.append(path.lower())
 
-        member = RisMonolithMemberv100(resp, self.is_redfish)
-        if not member.type:
-            return
+            member = RisMonolithMemberv100(resp, self.is_redfish)
+            if not member.type:
+                return
 
-        self.update_member(member)
+        self.types = member
 
         if not skipinit:
             self.progress += 1
             if LOGGER.getEffectiveLevel() == 40:
                 self.update_progress()
-
-    def update_member(self, member):
-        """Adds member to this monolith. If the member already exists the
-        data is updated in place.
-
-        :param member: Ris monolith member object made by branch worker.
-        :type member: RisMonolithMemberv100.
-
-        """
-        if member.maj_type not in self.types:
-            self.types[member.maj_type] = OrderedDict()
-            self.types[member.maj_type]['Instances'] = list()
-
-        found = False
-
-        for indices in range(len(self.types[member.maj_type]['Instances'])):
-            inst = self.types[member.maj_type]['Instances'][indices]
-
-            if inst.resp.request.path == member.resp.request.path:
-                self.types[member.maj_type]['Instances'][indices] = member
-                self.types[member.maj_type]['Instances'][indices].patches.\
-                                    extend([patch for patch in inst.patches])
-
-                found = True
-                break
-
-        if not found:
-            self.types[member.maj_type]['Instances'].append(member)
 
     def load_from_dict(self, src):
         """Load data to monolith from dict
@@ -662,128 +587,77 @@ class RisMonolithv100(Dictable):
         """
         self._type = src['Type']
         self._name = src['Name']
-        self.types = OrderedDict()
-
-        for typ in src['Types']:
-            for inst in typ['Instances']:
-                member = RisMonolithMemberv100(None, self.is_redfish)
-                member.load_from_dict(inst)
-                self.update_member(member)
-
+        self.typesadded = src["typepath"]
+        for _, resp in list(src['resps'].items()):
+            member = RisMonolithMemberv100(None, self.is_redfish)
+            member.load_from_dict(resp)
+            self.update_member(member=member, skipinit=True)
         return
 
     def to_dict(self):
-        """Convert data to monolith from dict"""
+        """Convert data to dict from monolith"""
         result = OrderedDict()
         result['Type'] = self.type
         result['Name'] = self.name
-        types_list = list()
-
-        for typ in list(self.types.keys()):
-            type_entry = OrderedDict()
-            type_entry['Type'] = typ
-            type_entry['Instances'] = list()
-
-            for inst in self.types[typ]['Instances']:
-                type_entry['Instances'].append(inst.to_dict())
-
-            types_list.append(type_entry)
-
-        result['Types'] = types_list
+        result["typepath"] = self.typesadded
+        result["resps"] = {x:v.to_dict() for x, v in list(self.pathsadded.items())}
         return result
 
-    def reduce(self):
-        """Reduce monolith data"""
-        result = OrderedDict()
-        result['Type'] = self.type
-        result['Name'] = self.name
-        types_list = list()
-
-        for typ in list(self.types.keys()):
-            type_entry = OrderedDict()
-            type_entry['Type'] = typ
-
-            for inst in self.types[typ]['Instances']:
-                type_entry['Instances'] = inst.reduce()
-
-            types_list.append(type_entry)
-
-        result['Types'] = types_list
-        return result
-
-    def _jsonpath2jsonpointer(self, instr):
-        """Convert json path to json pointer
-
-        :param instr: input path to be converted to pointer.
-        :type instr: str.
-
-        """
-        outstr = instr.replace('.[', '[')
-        outstr = outstr.replace('[', '/')
-        outstr = outstr.replace(']', '/')
-
-        if outstr.endswith('/'):
-            outstr = outstr[:-1]
-
-        return outstr
-
-    def _get_current_location(self):
+    @property
+    def location(self):
         """Return current location"""
         return self._current_location
 
-    def _set_current_location(self, newval):
+    @location.setter
+    def location(self, newval):
         """Set current location"""
         self._current_location = newval
 
-    location = property(_get_current_location, _set_current_location)
+    def iter(self):
+        """Returns each member of monolith
 
-    def list(self, lspath=None):
-        """Function for list command
-
-        :param lspath: path list.
-        :type lspath: list.
-
+        :rtype: RisMonolithMemberv100
         """
-        results = list()
-        path_parts = ['Types'] # Types is always assumed
+        for _, val in self.pathsadded.items():
+            yield val
 
-        if isinstance(lspath, list) and len(lspath) > 0:
-            lspath = lspath[0]
-            path_parts.extend(lspath.split('/'))
-        elif not lspath:
-            lspath = '/'
+    def itertype(self, typeval):
+        """Returns member of given type in monolith
+
+        :param typeval: type name of the requested response.
+        :type typeval: str.
+
+        :rtype: RisMonolithMemberv100
+        """
+        types = self.gettypename(typeval)
+        if types in self.typesadded:
+            for item in self.typesadded[types]:
+                yield self.pathsadded[item]
         else:
-            path_parts.extend(lspath.split('/'))
+            raise RisInstanceNotFoundError("Unable to locate instance for" \
+                                                            " '%s'" % types)
 
-        currpos = self.to_dict()
-        for path_part in path_parts:
-            if not path_part:
-                continue
+    def typecheck(self, types):
+        """Check if a member of given type exists
 
-            if isinstance(currpos, RisMonolithMemberv100):
-                break
-            elif isinstance(currpos, dict) and path_part in currpos:
-                currpos = currpos[path_part]
-            elif isinstance(currpos, list):
-                for positem in currpos:
-                    if 'Type' in positem and path_part == positem['Type']:
-                        currpos = positem
-                        break
+        :param types: type name of the requested response.
+        :type types: str.
 
-        results.append(currpos)
+        :rtype: bool.
+        """
+        if any(types in val for val in self.types):
+            return True
+        return False
 
-        return results
+    def gettypename(self, types):
+        """Get the maj_type name of given type
 
-    def killthreads(self):
-        """Function to kill threads on logout"""
-        threads = []
-        for thread in threading.enumerate():
-            if isinstance(thread, SuperDuperWorker):
-                self.queue.put(('KILL', 'KILL', 'KILL', 'KILL'))
-                threads.append(thread)
-
-        for thread in threads:
-            thread.join()
+        :param types: type name of the requested response.
+        :type types: str.
+        """
+        types = types[1:] if types[0] in ("#", "#") else types
+        val = list([x for x in self.types if types.lower() in x.lower()])
+        return val[0] if val else None
 
 class RisMonolith(RisMonolithv100):
     """Latest implementation of RisMonolith"""
@@ -792,28 +666,5 @@ class RisMonolith(RisMonolithv100):
 
         :param client: client to utilize
         :type client: RmcClient object
-
         """
         super(RisMonolith, self).__init__(client)
-
-class SuperDuperWorker(threading.Thread):
-    """Recursive worker implementation"""
-    def __init__(self, queue):
-        """Initialize SuperDuperWorker
-
-        :param queue: queue for worker
-        :type queue: Queue object
-
-        """
-        threading.Thread.__init__(self)
-        self.queue = queue
-
-    def run(self):
-        """Thread creator"""
-        while True:
-            (resp, path, skipinit, thobj) = self.queue.get()
-            if resp == 'KILL' and path == 'KILL' and skipinit == 'KILL' and\
-                                                            thobj == 'KILL':
-                break
-            thobj.branch_worker(resp, path, skipinit)
-            self.queue.task_done()
