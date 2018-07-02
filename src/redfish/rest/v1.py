@@ -911,12 +911,21 @@ class RestClientBase(object):
                             logbody = restreq.body
                         else:
                             raise
-                    LOGGER.debug('HTTP REQUEST: %s\n\tPATH: %s\n\t'\
-                                'HEADERS: %s\n\tBODY: %s'% \
+                    if restreq.method in ['POST', 'PATCH']:
+                        debugjson = json.loads(restreq.body)
+                        if 'Password' in debugjson.keys():
+                            debugjson['Password'] = '******'
+                        if 'OldPassword' in debugjson.keys():
+                            debugjson['OldPassword'] = '******'                          
+                        if 'NewPassword' in debugjson.keys():
+                            debugjson['NewPassword'] = '******'
+                        logbody = json.dumps(debugjson)
+                    LOGGER.debug('HTTP REQUEST: {}\n\tPATH: {}\n\t'\
+                                'HEADERS: {}\n\tBODY: {}'.format\
                                 (restreq.method, restreq.path, headers, logbody))
                 except:
-                    LOGGER.debug('HTTP REQUEST: %s\n\tPATH: %s\n\tBODY: %s'% \
-                                (restreq.method, restreq.path, 'binary body'))
+                    LOGGER.debug('HTTP REQUEST: {}\n\tPATH: {}\n\tBODY: {}'.\
+                            format(restreq.method, restreq.path, 'binary body'))
             attempts = attempts + 1
             LOGGER.info('Attempt %s of %s', attempts, path)
 
@@ -1340,12 +1349,29 @@ class Blobstore2RestClient(RestClientBase):
             str1 = str1.encode("ASCII")
         if LOGGER.isEnabledFor(logging.DEBUG):
             try:
-                LOGGER.debug('Blobstore REQUEST: %s\n' % str1)
-#                 LOGGER.debug('Blobstore REQUEST: %s\n\tPATH: %s\n\tBODY: %s'% \
-#                          (method, path, body))
+                logbody = None
+                if body:
+                    if body[0] == '{':
+                        logbody = body
+                    else:
+                        raise
+                if method in ['POST', 'PATCH']:
+                    debugjson = json.loads(body)
+                    if 'Password' in debugjson.keys():
+                        debugjson['Password'] = '******'
+                    if 'OldPassword' in debugjson.keys():
+                        debugjson['OldPassword'] = '******'
+                    if 'NewPassword' in debugjson.keys():
+                        debugjson['NewPassword'] = '******'
+                    logbody = json.dumps(debugjson)
+
+                LOGGER.debug('Blobstore REQUEST: %s\n\tPATH: %s\n\tHEADERS: '\
+                             '%s\n\tBODY: %s' % (method, str(headers),\
+                             path, logbody))
             except:
-                LOGGER.debug('Blobstore REQUEST: %s\n\tPATH: %s\n\tBODY: %s'% \
-                         (method, path, 'binary body'))
+                LOGGER.debug('Blobstore REQUEST: %s\n\tPATH: %s\n\tHEADERS: '\
+                             '%s\n\tBODY: %s' % (method, str(headers),\
+                                                        path, 'binary body'))
 
         inittime = time.time()
 

@@ -1051,37 +1051,32 @@ class RmcApp(object):
             oridict = instance.resp.dict
             totpayload = dict()
             # apply patches to represent current edits
-            for patch in instance.patches:
+            for patches in instance.patches:
                 try:
                     self.checkforetagchange(instance=instance)
                 except Exception as excp:
                     raise excp
 
-                if hasattr(patch, 'patch'):
-                    if len(patch.patch):
-                        patchpath = patch.patch[0]["path"]
-                else:
-                    patchpath = patch[0]["path"] if isinstance(patch, list) \
-                                            else patch["path"]
-
-                fulldict = jsonpatch.apply_patch(oridict, patch)
-                pobj = jsonpointer.JsonPointer(patchpath)
-                currdict = copy.deepcopy(fulldict)
-                indpayloadcount = 0
-                for item in pobj.parts:
-                    payload = pobj.walk(currdict, item)
-                    indpayloadcount = indpayloadcount+1
-                    if isinstance(payload, list):
-                        break
-                    else:
-                        if not isinstance(payload, dict):
+                fulldict = jsonpatch.apply_patch(oridict, patches)
+                for patch in patches:
+                    currdict = copy.deepcopy(fulldict)
+                    patchpath = patch["path"]
+                    pobj = jsonpointer.JsonPointer(patchpath)
+                    indpayloadcount = 0
+                    for item in pobj.parts:
+                        payload = pobj.walk(currdict, item)
+                        indpayloadcount = indpayloadcount+1
+                        if isinstance(payload, list):
                             break
-                        currdict = copy.deepcopy(payload)
-                indices = pobj.parts[:indpayloadcount]
-                createdict = lambda x, y: {x:y}
-                while len(indices):
-                    payload = createdict(indices.pop(), payload)
-                self.merge_dict(totpayload, payload)
+                        else:
+                            if not isinstance(payload, dict):
+                                break
+                            currdict = copy.deepcopy(payload)
+                    indices = pobj.parts[:indpayloadcount]
+                    createdict = lambda x, y: {x:y}
+                    while len(indices):
+                        payload = createdict(indices.pop(), payload)
+                    self.merge_dict(totpayload, payload)
                 currdict = copy.deepcopy(totpayload)
 
             if currdict:
