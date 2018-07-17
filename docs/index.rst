@@ -17,6 +17,7 @@ Documentation
 .. toctree::
    :maxdepth: 1
 
+   Overview
    API-Overview
    Installation-Guide
    Downloading-the-Code
