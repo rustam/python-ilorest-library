@@ -10,15 +10,22 @@
 Examples
 ========
 
-RestfulApiExamples.py and RedfishAPiExamples.py modules contain few examples for performing different iLO tasks using legacy RESTful API and Redfish API respectively. The examples in this page are legacy RESTful examples and are very similar to their  Redfish equivalents. The HPE RESTful API 1.x expresses the root Uniform Resource Identifier (URI) protocol version as “**/rest/v1**”. Redfish 1.0 expresses
-the starting URI as “**/redfish/v1/**”.
+RestfulApiExamples.py and RedfishAPiExamples.py modules contain few examples
+for performing different iLO tasks using legacy RESTful API and Redfish API
+respectively. The examples in this page are legacy RESTful examples and are
+very similar to their Redfish equivalents. The HPE RESTful API 1.x expresses
+the root Uniform Resource Identifier (URI) protocol version as “**/rest/v1**”.
+Redfish 1.0 expresses the starting URI as “**/redfish/v1/**”.
 
-Redfish changes the linking between resources, for example  “**href**” is renamed to “**@odata.id**”. For more information about Redfish implementation click `here <http://www8.hp.com/h20195/v2/GetPDF.aspx/4AA6-1727ENW.pdf>`_ .
+Redfish changes the linking between resources, for example “**href**” is
+renamed to “**@odata.id**”. For more information about Redfish implementation
+click `here <http://www8.hp.com/h20195/v2/GetPDF.aspx/4AA6-1727ENW.pdf>`_ .
 
-The following examples can all be used as guidance for `managing iLO using iLO RESTful API <https://github.com/HewlettPackard/python-ilorest-library/blob/master/docs/Managing_HPE_Servers_Using_RESTful_API.md>`_.
+The following examples can all be used as guidance for `managing iLO using iLO
+RESTful API
+<https://github.com/HewlettPackard/python-ilorest-library/blob/master/docs/Managing_HPE_Servers_Using_RESTful_API.md>`_.
 
-.. toctree::
-   :maxdepth: 1
+.. toctree:: :maxdepth: 1
 
    ex1_get_resource_directory
    ex2_get_base_registry
