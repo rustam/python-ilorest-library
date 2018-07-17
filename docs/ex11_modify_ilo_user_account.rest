@@ -3,7 +3,11 @@
 
 |
 
-First create an instance of Rest or Redfish Object using the  **RestObject** or **RedfishObject** class respectively. The class constructor takes iLO hostname/ ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username and password as arguments. The class also initializes a login session, gets systems resources and message registries.
+First create an instance of Rest or Redfish Object using the **RestObject** or
+**RedfishObject** class respectively. The class constructor takes iLO hostname/
+ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username
+and password as arguments. The class also initializes a login session, gets
+systems resources and message registries.
 
 Rest Object creation:
 
@@ -20,7 +24,10 @@ Redfish Object creation:
 Example 11: Modify iLO user account
 ===================================
 
-The method **ex11_modify_ilo_user_account** takes an instance of rest object , iLO login account name to modify, new iLO login name, new user name, new password, remote console privilege, iLO configuration privilege, virtual media privilege, user configuration privilege and virtual power and reset privilege.
+The method **ex11_modify_ilo_user_account** takes an instance of rest object,
+iLO login account name to modify, new iLO login name, new user name, new
+password, remote console privilege, iLO configuration privilege, virtual media
+privilege, user configuration privilege and virtual power and reset privilege.
 
 .. code-block:: python
 
@@ -47,7 +54,8 @@ Send another GET request to get  accounts resources.
 
  accounts = restobj.rest_get(response.dict["links"]["Accounts"]["href"])
 
-For the requested account to modify, add the requested fields and value from the arguments passed.
+For the requested account to modify, add the requested fields and value from
+the arguments passed.
 
 .. code-block:: python
 
@@ -88,8 +96,8 @@ Organize the PATCH request body.
  if len(body_oemhp):
      body["Oem"] = {"Hp": body_oemhp}
 
-Update the account through a PATCH request. Warning, if you don't change anything, you will
-get an HTTP 400 response back.
+Update the account through a PATCH request. Warning, if you don't change
+anything, you will get an HTTP 400 response back.
 
 .. code-block:: python
 

@@ -3,7 +3,11 @@
 
 |
 
-First create an instance of Rest or Redfish Object using the  **RestObject** or **RedfishObject** class respectively. The class constructor takes iLO hostname/ ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username and password as arguments. The class also initializes a login session, gets systems resources and message registries.
+First create an instance of Rest or Redfish Object using the **RestObject** or
+**RedfishObject** class respectively. The class constructor takes iLO hostname/
+ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username
+and password as arguments. The class also initializes a login session, gets
+systems resources and message registries.
 
 Rest Object creation:
 
@@ -20,7 +24,8 @@ Redfish Object creation:
 Example 18: Set server asset tag
 ================================
 
-The method **ex18_set_server_asset_tag** takes an instance of rest object ( or redfish object if using Redfish API ) and asset tag to be set as arguments.
+The method **ex18_set_server_asset_tag** takes an instance of rest object (or
+redfish object if using Redfish API) and asset tag to be set as arguments.
 
 .. code-block:: python
 
@@ -32,7 +37,8 @@ Find and get the system resource for computer system.
 
  instances = restobj.search_for_type("ComputerSystem.")
 
-For each system for the systems collection asset tag parameter is set as the body for PATCH request.
+For each system for the systems collection asset tag parameter is set as the
+body for PATCH request.
 
 .. code-block:: python
 
