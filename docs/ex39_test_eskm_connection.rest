@@ -6,7 +6,11 @@
 .. toctree::
    :maxdepth: 1
 
-First create an instance of Rest or Redfish Object using the  **RestObject** or **RedfishObject** class respectively. The class constructor takes iLO hostname/ ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username and password as arguments. The class also initializes a login session, gets systems resources and message registries.
+First create an instance of Rest or Redfish Object using the **RestObject** or
+**RedfishObject** class respectively. The class constructor takes iLO hostname/
+ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username
+and password as arguments. The class also initializes a login session, gets
+systems resources and message registries.
 
 Rest Object creation:
 
@@ -23,7 +27,8 @@ Redfish Object creation:
 Example 39: test ESKM conenction
 ================================
 
-The method **ex39_set_ESKM_username_password** takes an instance of rest object ( or redfish object if using Redfish API ) as arguments.
+The method **ex39_set_ESKM_username_password** takes an instance of rest object
+(or redfish object if using Redfish API) as arguments.
 
 .. code-block:: python
 
@@ -50,4 +55,6 @@ Send HTTP POST request to the system URI(s) using the prepared request body.
  response = restobj.rest_post(instance["href"], body)
  restobj.error_handler(response)
 
-A successful POST response will set the ESKM settings "TestESKMConnection" and return a success code, however the changes will go into effect only after a system reset or reboot.
+A successful POST response will set the ESKM settings "TestESKMConnection" and
+return a success code, however the changes will go into effect only after a
+system reset or reboot.

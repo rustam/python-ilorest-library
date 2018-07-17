@@ -6,7 +6,11 @@
 .. toctree::
    :maxdepth: 1
 
-First create an instance of Rest or Redfish Object using the  **RestObject** or **RedfishObject** class respectively. The class constructor takes iLO hostname/ ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username and password as arguments. The class also initializes a login session, gets systems resources and message registries.
+First create an instance of Rest or Redfish Object using the **RestObject** or
+**RedfishObject** class respectively. The class constructor takes iLO hostname/
+ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username
+and password as arguments. The class also initializes a login session, gets
+systems resources and message registries.
 
 Rest Object creation:
 
@@ -23,7 +27,9 @@ Redfish Object creation:
 Example 37: Set ESKM Primary Key Server
 =======================================
 
-The method **ex37_set_ESKM_PrimaryKeyServer** takes an instance of rest object ( or redfish object if using Redfish API ) and primary key server address and port settings as arguments.
+The method **ex37_set_ESKM_PrimaryKeyServer** takes an instance of rest object
+(or redfish object if using Redfish API) and primary key server address and
+port settings as arguments.
 
 .. code-block:: python
 
@@ -36,7 +42,8 @@ Find and get the ESKM settings URI from the systems resources collection.
 
  instances = restobj.search_for_type("ESKM.")
 
-For the ESKM settings, prepare the request body with the Primary key server settings we want to change and perform the PATCH request.
+For the ESKM settings, prepare the request body with the Primary key server
+settings we want to change and perform the PATCH request.
 
 .. code-block:: python
 
@@ -49,4 +56,6 @@ For the ESKM settings, prepare the request body with the Primary key server sett
      response = restobj.rest_patch(instance["href"], body)
      restobj.error_handler(response)
 
-A successful PATCH response will set the primary key server settings to the new values provided in ESKM settings, however the changes will go into effect only after a system reset or reboot.
+A successful PATCH response will set the primary key server settings to the new
+values provided in ESKM settings, however the changes will go into effect only
+after a system reset or reboot.

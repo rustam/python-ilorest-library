@@ -3,7 +3,11 @@
 
 |
 
-First create an instance of Rest or Redfish Object using the  **RestObject** or **RedfishObject** class respectively. The class constructor takes iLO hostname/ ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username and password as arguments. The class also initializes a login session, gets systems resources and message registries.
+First create an instance of Rest or Redfish Object using the **RestObject** or
+**RedfishObject** class respectively. The class constructor takes iLO hostname/
+ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username
+and password as arguments. The class also initializes a login session, gets
+systems resources and message registries.
 
 Rest Object creation:
 
@@ -20,7 +24,8 @@ Redfish Object creation:
 Example 32: Set BIOS DHCP
 =============================
 
-The method **ex32_set_bios_dhcp** takes an instance of rest object ( or redfish object if using Redfish API ) and DHCP properties as arguments.
+The method **ex32_set_bios_dhcp** takes an instance of rest object (or redfish
+object if using Redfish API) and DHCP properties as arguments.
 
 .. code-block:: python
 

@@ -3,7 +3,11 @@
 
 |
 
-First create an instance of Rest or Redfish Object using the  **RestObject** or **RedfishObject** class respectively. The class constructor takes iLO hostname/ ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username and password as arguments. The class also initializes a login session, gets systems resources and message registries.
+First create an instance of Rest or Redfish Object using the **RestObject** or
+**RedfishObject** class respectively. The class constructor takes iLO hostname/
+ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username
+and password as arguments. The class also initializes a login session, gets
+systems resources and message registries.
 
 Rest Object creation:
 
@@ -20,7 +24,9 @@ Redfish Object creation:
 Example 34: Set BIOS UEFI shell startup settings
 ================================================
 
-The method **ex34_set_bios_uefi_shell_startup** takes an instance of rest object ( or redfish object if using Redfish API ) and BIOS service settings as arguments.
+The method **ex34_set_bios_uefi_shell_startup** takes an instance of rest
+object (or redfish object if using Redfish API) and BIOS service settings as
+arguments.
 
 .. code-block:: python
 
@@ -32,7 +38,8 @@ Find and get the BIOS settings URI from the systems resources collection.
 
  instances = restobj.search_for_type("Bios.")
 
-For the UEFI settings, prepare the request body with only the UEFI settings we want to change and perform the PATCH request.
+For the UEFI settings, prepare the request body with only the UEFI settings we
+want to change and perform the PATCH request.
 
 .. code-block:: python
 
@@ -41,6 +48,10 @@ For the UEFI settings, prepare the request body with only the UEFI settings we w
      response = restobj.rest_patch(instance["href"], body, bios_password)
      restobj.error_handler(response)
 
-A successful PATCH response will set the UEFI settings to the new values provided, however the changes will go into effect only after a system reset or reboot.
+A successful PATCH response will set the UEFI settings to the new values
+provided, however the changes will go into effect only after a system reset or
+reboot.
 
-**Note:** The Bios. type is not supported in Gen9 servers for Redfish but the example includes Redfish implementation for Redfish Bios. type support in Gen10. Rest works as intended.
+**Note:** The Bios. type is not supported in Gen9 servers for Redfish but the
+example includes Redfish implementation for Redfish Bios. type support in
+Gen10. Rest works as intended.

@@ -3,7 +3,11 @@
 
 |
 
-First create an instance of Rest or Redfish Object using the  **RestObject** or **RedfishObject** class respectively. The class constructor takes iLO hostname/ ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username and password as arguments. The class also initializes a login session, gets systems resources and message registries.
+First create an instance of Rest or Redfish Object using the **RestObject** or
+**RedfishObject** class respectively. The class constructor takes iLO hostname/
+ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username
+and password as arguments. The class also initializes a login session, gets
+systems resources and message registries.
 
 Rest Object creation:
 
@@ -20,7 +24,8 @@ Redfish Object creation:
 Example 31: Set license key
 ===========================
 
-The method **ex31_set_ilicense_key** takes an instance of rest object ( or redfish object if using Redfish API ) and  iLO key as arguments.
+The method **ex31_set_ilicense_key** takes an instance of rest object (or
+redfish object if using Redfish API) and iLO key as arguments.
 
 .. code-block:: python
 
@@ -39,14 +44,14 @@ Send HTTP GET request to manager URI(s).
  for instance in instances:
      rsp = restobj.rest_get(instance["href"])
 
-Prepare the  request body with iLO license key provided.
+Prepare the request body with iLO license key provided.
 
 .. code-block:: python
 
  body = dict()
  body["LicenseKey"] = iLO_Key
 
-Perform  POST request and check response.
+Perform POST request and check response.
 
 .. code-block:: python
 
