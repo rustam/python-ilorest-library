@@ -1,7 +1,7 @@
 
 .. image:: /images/hpe_logo2.png
    :width: 150pt
-   
+
 |
 
 .. toctree::
@@ -11,11 +11,8 @@
 Overview
 ========
 
-
-
-
 Why HPE iLO RESTful SDK?
------------------------
+------------------------
 
 This HPE RESTful API for iLO will become the main management API for iLO and iLO Chassis Manager
 based HPE servers. Its feature set will become larger than the existing iLO XML API (RIBCL) and IPMI
@@ -35,7 +32,6 @@ blades, as well as newer types of systems like Moonshot. This advantage comes be
 model is designed to self-describe the service’s capabilities to the client and has room for flexibility
 designed in from the start.
 
-
 Resource operations
 -------------------
 
@@ -47,10 +43,10 @@ manager, is not changed.
 +------------------------+---------------------------------+-----------------------------------------------------------+
 | Operation              | HTTP Verb                       | Description                                               |
 +========================+=================================+===========================================================+
-|       Create           | POST resource URI (payload =    | Create new resources. A synchronous POST returns the newly|         
+|       Create           | POST resource URI (payload =    | Create new resources. A synchronous POST returns the newly|
 |                        | resource data)                  | created resource.                                         |
 +------------------------+---------------------------------+-----------------------------------------------------------+
-|        Read            | GET resource URI                | Returns the requested resource representations.           |        
+|        Read            | GET resource URI                | Returns the requested resource representations.           |
 +------------------------+---------------------------------+-----------------------------------------------------------+
 |        Update          | PATCH resource URI (payload =   | Updates an existing resource. You can only PATCH          |
 |                        | update data)                    | properties that are marked readonly = false in the schema.|
@@ -64,11 +60,9 @@ Return codes
 +------------------------+---------------------------------------------------------------------------------------------+
 | Return code            | Description                                                                                 |
 +========================+=================================+===========================================================+
-| 2xx                    | Successful operation.                                                                       |         
+| 2xx                    | Successful operation.                                                                       |
 +------------------------+---------------------------------+-----------------------------------------------------------+
-| 4xx                    | Client-side error with error message returned.                                              |        
+| 4xx                    | Client-side error with error message returned.                                              |
 +------------------------+---------------------------------+-----------------------------------------------------------+
 | 5xx                    | iLO error with error message returned.                                                      |
 +------------------------+---------------------------------+-----------------------------------------------------------+
-
-
