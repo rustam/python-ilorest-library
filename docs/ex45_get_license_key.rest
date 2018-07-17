@@ -6,7 +6,11 @@
 .. toctree::
    :maxdepth: 1
 
-First create an instance of Rest or Redfish Object using the  **RestObject** or **RedfishObject** class respectively. The class constructor takes iLO hostname/ ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username and password as arguments. The class also initializes a login session, gets systems resources and message registries.
+First create an instance of Rest or Redfish Object using the **RestObject** or
+**RedfishObject** class respectively. The class constructor takes iLO hostname/
+ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username
+and password as arguments. The class also initializes a login session, gets
+systems resources and message registries.
 
 Rest Object creation:
 
@@ -23,7 +27,8 @@ Redfish Object creation:
 Example 45: Get license key
 ===========================
 
-The method **ex45_get_license_key** takes an instance of rest object ( or redfish object if using Redfish API ) as argument.
+The method **ex45_get_license_key** takes an instance of rest object (or
+redfish object if using Redfish API) as argument.
 
 .. code-block:: python
 
@@ -35,7 +40,8 @@ Find and get the system resource for HpSmartStorageArrayController.
 
  instances = restobj.search_for_type("HpiLOLicense.")
 
-Create a dictionary to hold license results. Create a list of license properties.
+Create a dictionary to hold license results. Create a list of license
+properties.
 
 .. code-block:: python
 
@@ -49,7 +55,8 @@ Send HTTP GET request to the system URI(s).
  for instance in instances:
      response = restobj.rest_get(instance["href"])
 
-For each license property, check the license property from the response body. Then print the value.
+For each license property, check the license property from the response body.
+Then print the value.
 
 .. code-block:: python
 

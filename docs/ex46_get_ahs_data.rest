@@ -6,7 +6,11 @@
 .. toctree::
    :maxdepth: 1
 
-First create an instance of Rest or Redfish Object using the  **RestObject** or **RedfishObject** class respectively. The class constructor takes iLO hostname/ ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username and password as arguments. The class also initializes a login session, gets systems resources and message registries.
+First create an instance of Rest or Redfish Object using the **RestObject** or
+**RedfishObject** class respectively. The class constructor takes iLO hostname/
+ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username
+and password as arguments. The class also initializes a login session, gets
+systems resources and message registries.
 
 Rest Object creation:
 
@@ -23,7 +27,8 @@ Redfish Object creation:
 Example 46: Get AHS data
 ========================
 
-The method **ex46_get_ahs_data** takes an instance of rest object ( or redfish object if using Redfish API ) as an argument.
+The method **ex46_get_ahs_data** takes an instance of rest object (or redfish
+object if using Redfish API) as an argument.
 
 .. code-block:: python
 

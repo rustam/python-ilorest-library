@@ -6,7 +6,11 @@
 .. toctree::
    :maxdepth: 1
 
-First create an instance of Rest or Redfish Object using the  **RestObject** or **RedfishObject** class respectively. The class constructor takes iLO hostname/ ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username and password as arguments. The class also initializes a login session, gets systems resources and message registries.
+First create an instance of Rest or Redfish Object using the **RestObject** or
+**RedfishObject** class respectively. The class constructor takes iLO hostname/
+ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username
+and password as arguments. The class also initializes a login session, gets
+systems resources and message registries.
 
 Rest Object creation:
 
@@ -23,7 +27,8 @@ Redfish Object creation:
 Example 44: Get logical drives
 ==============================
 
-The method **ex44_get_LogicalDrives** takes an instance of rest object ( or redfish object if using Redfish API ) as argument.
+The method **ex44_get_LogicalDrives** takes an instance of rest object (or
+redfish object if using Redfish API) as argument.
 
 .. code-block:: python
 
@@ -42,7 +47,8 @@ Send HTTP GET request to the system URI(s).
  for instance in instances:
      response = restobj.rest_get(instance["href"])
 
-For each system print array controllers from the response body. Return an error if not available.
+For each system print array controllers from the response body. Return an error
+if not available.
 
 .. code-block:: python
 

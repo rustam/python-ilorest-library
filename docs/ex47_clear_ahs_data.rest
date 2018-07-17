@@ -6,7 +6,11 @@
 .. toctree::
    :maxdepth: 1
 
-First create an instance of Rest or Redfish Object using the  **RestObject** or **RedfishObject** class respectively. The class constructor takes iLO hostname/ ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username and password as arguments. The class also initializes a login session, gets systems resources and message registries.
+First create an instance of Rest or Redfish Object using the **RestObject** or
+**RedfishObject** class respectively. The class constructor takes iLO hostname/
+ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username
+and password as arguments. The class also initializes a login session, gets
+systems resources and message registries.
 
 Rest Object creation:
 
@@ -23,7 +27,8 @@ Redfish Object creation:
 Example 47: Clear AHS data
 ==========================
 
-The method **ex47_clear_ahs_data** takes an instance of rest object ( or redfish object if using Redfish API ) as an argument.
+The method **ex47_clear_ahs_data** takes an instance of rest object (or redfish
+object if using Redfish API) as an argument.
 
 .. code-block:: python
 
@@ -35,7 +40,8 @@ Search for Manager URI type.
 
  instances = restobj.search_for_type("Manager.")
 
-Set body to the ClearLog action, then set the response to the ActiveHealthSystem URI.
+Set body to the ClearLog action, then set the response to the
+ActiveHealthSystem URI.
 
 .. code-block:: python
 
