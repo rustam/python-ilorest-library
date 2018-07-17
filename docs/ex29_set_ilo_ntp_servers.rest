@@ -3,7 +3,11 @@
 
 |
 
-First create an instance of Rest or Redfish Object using the  **RestObject** or **RedfishObject** class respectively. The class constructor takes iLO hostname/ ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username and password as arguments. The class also initializes a login session, gets systems resources and message registries.
+First create an instance of Rest or Redfish Object using the **RestObject** or
+**RedfishObject** class respectively. The class constructor takes iLO hostname/
+ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username
+and password as arguments. The class also initializes a login session, gets
+systems resources and message registries.
 
 Rest Object creation:
 
@@ -20,7 +24,10 @@ Redfish Object creation:
 Example 29: Set iLO NTP servers
 ===============================
 
-The method **ex29_set_ilo_ntp_servers** takes an instance of rest object ( or redfish object if using Redfish API ) and  NTP server list as arguments. The method doesn't work if SNTP configuration is currently managed by DHCP and is therefore read-only.
+The method **ex29_set_ilo_ntp_servers** takes an instance of rest object (or
+redfish object if using Redfish API) and NTP server list as arguments. The
+method doesn't work if SNTP configuration is currently managed by DHCP and is
+therefore read-only.
 
 .. code-block:: python
 
@@ -45,7 +52,7 @@ Prepare the PATCH request body with NTP server list provided.
 
  body = {"StaticNTPServers": ntp_servers}
 
-Perform  PATCH request and check response.
+Perform PATCH request and check response.
 
 .. code-block:: python
 

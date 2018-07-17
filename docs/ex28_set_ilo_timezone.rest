@@ -3,7 +3,7 @@
 
 |
 
-First create an instance of Rest or Redfish Object using the  **RestObject** or **RedfishObject** class respectively. The class constructor takes iLO hostname/ ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username and password as arguments. The class also initializes a login session, gets systems resources and message registries.
+First create an instance of Rest or Redfish Object using the **RestObject** or **RedfishObject** class respectively. The class constructor takes iLO hostname/ ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username and password as arguments. The class also initializes a login session, gets systems resources and message registries.
 
 Rest Object creation:
 
@@ -20,7 +20,10 @@ Redfish Object creation:
 Example 28: Set iLO time zone
 =============================
 
-The method **ex28_set_ilo_timezone** takes an instance of rest object ( or redfish object if using Redfish API ) and  expected time zone as arguments. The method only works if iLO is not configured to take the time settings from DHCP v4 or v6.
+The method **ex28_set_ilo_timezone** takes an instance of rest object (or
+redfish object if using Redfish API) and expected time zone as arguments. The
+method only works if iLO is not configured to take the time settings from DHCP
+v4 or v6.
 
 .. code-block:: python
 

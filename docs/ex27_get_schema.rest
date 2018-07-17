@@ -3,7 +3,11 @@
 
 |
 
-First create an instance of Rest or Redfish Object using the  **RestObject** or **RedfishObject** class respectively. The class constructor takes iLO hostname/ ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username and password as arguments. The class also initializes a login session, gets systems resources and message registries.
+First create an instance of Rest or Redfish Object using the **RestObject** or
+**RedfishObject** class respectively. The class constructor takes iLO hostname/
+ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username
+and password as arguments. The class also initializes a login session, gets
+systems resources and message registries.
 
 Rest Object creation:
 
@@ -20,7 +24,8 @@ Redfish Object creation:
 Example 27: Get schema
 ======================
 
-The method **ex27_get_schema** takes an instance of rest object ( or redfish object if using Redfish API ) and schema prefix as arguments.
+The method **ex27_get_schema** takes an instance of rest object (or redfish
+object if using Redfish API) and schema prefix as arguments.
 
 .. code-block:: python
 
@@ -41,7 +46,7 @@ From the response body find the requested schema URI.
         for location in schema["Location"]:
             extref_uri = location["Uri"]["extref"]
 
-Get the schema with the requested schema prefix through GET  request.
+Get the schema with the requested schema prefix through GET request.
 
 .. code-block:: python
 
