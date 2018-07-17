@@ -3,7 +3,11 @@
 
 |
 
-First create an instance of Rest or Redfish Object using the  **RestObject** or **RedfishObject** class respectively. The class constructor takes iLO hostname/ ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username and password as arguments. The class also initializes a login session, gets systems resources and message registries.
+First create an instance of Rest or Redfish Object using the **RestObject** or
+**RedfishObject** class respectively. The class constructor takes iLO hostname/
+ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username
+and password as arguments. The class also initializes a login session, gets
+systems resources and message registries.
 
 Rest Object creation:
 
@@ -20,7 +24,9 @@ Redfish Object creation:
 Example 8: Change temporary boot order
 ======================================
 
-The method **ex8_change_temporary_boot_order** takes an instance of rest object (or redfish object if using Redfish API), boot target and BIOS password (default None) as arguments.
+The method **ex8_change_temporary_boot_order** takes an instance of rest object
+(or redfish object if using Redfish API), boot target and BIOS password
+(default None) as arguments.
 
 .. code-block:: python
 
@@ -39,7 +45,8 @@ Send a HTTP GET request to the  systems URI(s) retrieved.
  for instance in instances:
      response = restobj.rest_get(instance["href"])
 
-Get the supported boot options from the response body and check if the boot target provided as argument is supported.
+Get the supported boot options from the response body and check if the boot
+target provided as argument is supported.
 
 .. code-block:: python
  
@@ -63,4 +70,5 @@ PATCH request is sent next and response error is handled if any.
  response = restobj.rest_patch(instance["href"], body, optionalpassword=bios_password)
  restobj.error_handler(response)
 
-A successful PATCH response will set the Boot order in BIOS, however the settings remain pending until next reboot.
+A successful PATCH response will set the Boot order in BIOS, however the
+settings remain pending until next reboot.

@@ -3,7 +3,11 @@
 
 |
 
-First create an instance of Rest or Redfish Object using the  **RestObject** or **RedfishObject** class respectively. The class constructor takes iLO hostname/ ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username and password as arguments. The class also initializes a login session, gets systems resources and message registries.
+First create an instance of Rest or Redfish Object using the **RestObject** or
+**RedfishObject** class respectively. The class constructor takes iLO hostname/
+ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username
+and password as arguments. The class also initializes a login session, gets
+systems resources and message registries.
 
 Rest Object creation:
 
@@ -20,7 +24,8 @@ Redfish Object creation:
 Example 9: Find iLO mac address
 ===============================
 
-The method **ex9_find_ilo_mac_address** takes an instance of rest object (or redfish object if using Redfish API) as argument.
+The method **ex9_find_ilo_mac_address** takes an instance of rest object (or
+redfish object if using Redfish API) as argument.
 
 .. code-block:: python
 
@@ -39,7 +44,8 @@ Send a HTTP GET request to the  manager URI(s).
  for instance in instances:
      tmp = restobj.rest_get(instance["href"])
 
-Ethernet interfaces URI link found from the response body is used for another GET request.
+Ethernet interfaces URI link found from the response body is used for another
+GET request.
 
 .. code-block:: python
  

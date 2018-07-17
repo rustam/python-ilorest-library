@@ -3,7 +3,11 @@
 
 |
 
-First create an instance of Rest or Redfish Object using the  **RestObject** or **RedfishObject** class respectively. The class constructor takes iLO hostname/ ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username and password as arguments. The class also initializes a login session, gets systems resources and message registries.
+First create an instance of Rest or Redfish Object using the **RestObject** or
+**RedfishObject** class respectively. The class constructor takes iLO hostname/
+ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username
+and password as arguments. The class also initializes a login session, gets
+systems resources and message registries.
 
 Rest Object creation:
 
@@ -20,7 +24,10 @@ Redfish Object creation:
 Example 10: Add iLO user account
 ================================
 
-The method **ex10_add_ilo_user_account** takes an instance of rest object , new iLO login name, new iLO user name, new iLO password, remote console privilege, iLO configuration privilege, virtual media privilege, user configuration privilege and virtual power and reset privilege.
+The method **ex10_add_ilo_user_account** takes an instance of rest object, new
+iLO login name, new iLO user name, new iLO password, remote console privilege,
+iLO configuration privilege, virtual media privilege, user configuration
+privilege and virtual power and reset privilege.
 
 .. code-block:: python
 
@@ -41,13 +48,18 @@ Send a HTTP GET request to the  account service URI(s).
  for instance in instances:
      rsp = restobj.rest_get(instance["href"])
 
-Prepare the request body for new  user account. iLO has two user account properties, Login name is the string used as the user identity to log in, we use this for 'UserName'. User name is the friendly (or full) name of the user, potentially easy to reverse. Use the iLO account login name as 'UserName' in the API.
+Prepare the request body for new  user account. iLO has two user account
+properties, Login name is the string used as the user identity to log in, we
+use this for 'UserName'. User name is the friendly (or full) name of the user,
+potentially easy to reverse. Use the iLO account login name as 'UserName' in
+the API.
 
 .. code-block:: python
 
  body = {"UserName": new_ilo_loginname, "Password": new_ilo_password, "Oem": {}}
 
-Set up rest of the request body with the requested privileges to the  new user, by default only the login privilege is enabled..
+Set up rest of the request body with the requested privileges to the  new user,
+by default only the login privilege is enabled.
 
 .. code-block:: python
 

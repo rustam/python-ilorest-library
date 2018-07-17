@@ -3,7 +3,11 @@
 
 |
 
-First create an instance of Rest or Redfish Object using the  **RestObject** or **RedfishObject** class respectively. The class constructor takes iLO hostname/ ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username and password as arguments. The class also initializes a login session, gets systems resources and message registries.
+First create an instance of Rest or Redfish Object using the **RestObject** or
+**RedfishObject** class respectively. The class constructor takes iLO hostname/
+ip address formatted as a string ("https://xx.xx.xx.xx"), iLO login username
+and password as arguments. The class also initializes a login session, gets
+systems resources and message registries.
 
 Rest Object creation:
 
@@ -20,13 +24,15 @@ Redfish Object creation:
 Example 4: Reset a server
 =========================
 
-The method **ex4_reset_server** takes an instance of rest object (or redfish object if using redfish API) and BIOS password (default None) as arguments.
+The method **ex4_reset_server** takes an instance of rest object (or redfish
+object if using redfish API) and BIOS password (default None) as arguments.
 
 .. code-block:: python
 
  def ex4_reset_server(restobj, bios_password=None):
 
-Find and get the Computer System settings URI from the systems resources collection.
+Find and get the Computer System settings URI from the systems resources
+collection.
 
 .. code-block:: python
 
