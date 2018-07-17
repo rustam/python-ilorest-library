@@ -9,7 +9,17 @@
 Python iLO RESTful Library
 ==========================
 
-The Python iLO RESTful library is the platform on which the HPE RESTful tool was built on. It's main purpose is to simplify the inband and outband communication to the HPE RESTful API. The HPE RESTful API for iLO is a RESTful application programming interface for the management of iLO and iLO Chassis Manager based HPE servers. REST (Representational State Transfer) is a web based software architectural style consisting a set of constraints that focus on a system's resource. HPE REST library performs the basic HTTP operations GET, POST, PUT, PATCH and DELETE on resources using the HATEOS (Hypermedia as the Engine of Application) REST architecture. The API allows the clients to manage and interact with iLO through a fixed URL and several URIs. Go to the `API overview <API-Overview.html>`_ section for more details.
+The Python iLO RESTful library is the platform on which the HPE RESTful tool
+was built on. It's main purpose is to simplify the inband and outband
+communication to the HPE RESTful API. The HPE RESTful API for iLO is a RESTful
+application programming interface for the management of iLO and iLO Chassis
+Manager based HPE servers. REST (Representational State Transfer) is a web
+based software architectural style consisting a set of constraints that focus
+on a system's resource. HPE REST library performs the basic HTTP operations
+GET, POST, PUT, PATCH and DELETE on resources using the HATEOS (Hypermedia as
+the Engine of Application) REST architecture. The API allows the clients to
+manage and interact with iLO through a fixed URL and several URIs. Go to the
+`API overview <API-Overview.html>`_ section for more details.
 
 Documentation
 -------------
