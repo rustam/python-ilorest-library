@@ -1,126 +1,141 @@
 python-ilorest-library
-==============
+======================
 .. image:: https://travis-ci.org/HewlettPackard/python-ilorest-library.svg?branch=master
-    :target: https://travis-ci.org/HewlettPackard/python-ilorest-library
+ :target: https://travis-ci.org/HewlettPackard/python-ilorest-library
 .. image:: https://img.shields.io/pypi/v/python-ilorest-library.svg?maxAge=2592000
-	:target: https://pypi.python.org/pypi/python-ilorest-library
+ :target: https://pypi.python.org/pypi/python-ilorest-library
 .. image:: https://img.shields.io/github/release/HewlettPackard/python-ilorest-library.svg?maxAge=2592000
-	:target: 
+ :target:
 .. image:: https://img.shields.io/badge/license-Apache%202-blue.svg
-	:target: https://raw.githubusercontent.com/HewlettPackard/python-ilorest-library/master/LICENSE
+ :target: https://raw.githubusercontent.com/HewlettPackard/python-ilorest-library/master/LICENSE
 .. image:: https://img.shields.io/pypi/pyversions/python-ilorest-library.svg?maxAge=2592000
-	:target: https://pypi.python.org/pypi/python-ilorest-library
+ :target: https://pypi.python.org/pypi/python-ilorest-library
 .. image:: https://api.codacy.com/project/badge/Grade/1283adc3972d42b4a3ddb9b96660bc07
-	:target: https://www.codacy.com/app/rexysmydog/python-ilorest-library?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=HewlettPackard/python-ilorest-library&amp;utm_campaign=Badge_Grade
-
+ :target: https://www.codacy.com/app/rexysmydog/python-ilorest-library?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=HewlettPackard/python-ilorest-library&amp;utm_campaign=Badge_Grade
 
 .. contents:: :depth: 1
 
 Description
 ----------
-
-HPE RESTful API for iLO is a RESTful application programming interface for the management of iLO and iLO Chassis Manager based HPE servers. REST (Representational State Transfer) is a web based software architectural style consisting of a set of constraints that focuses on a system's resources. iLO REST library performs the basic HTTP operations GET, POST, PUT, PATCH and DELETE on resources using the HATEOAS (Hypermedia as the Engine of Application State) REST architecture. The API allows the clients to manage and interact with iLO through a fixed URL and several URIs. Go to the `wiki <../../wiki>`_ for more details.
+HPE RESTful API for iLO is a RESTful application programming interface for the
+management of iLO and iLO Chassis Manager based HPE servers. REST
+(Representational State Transfer) is a web based software architectural style
+consisting of a set of constraints that focuses on a system's resources. iLO
+REST library performs the basic HTTP operations GET, POST, PUT, PATCH and
+DELETE on resources using the HATEOAS (Hypermedia as the Engine of Application
+State) REST architecture. The API allows the clients to manage and interact
+with iLO through a fixed URL and several URIs. Go to the `wiki <../../wiki>`_
+for more details.
 
 Installing
 ----------
-
 .. code-block:: console
 
-	pip install python-ilorest-library
+ pip install python-ilorest-library
 
 Building from zip file source
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. code-block:: console
 
-	python setup.py sdist --formats=zip (this will produce a .zip file)
-	cd dist
-	pip install python-ilorest-library-x.x.x.zip
+ python setup.py sdist --formats=zip (this will produce a .zip file)
+ cd dist
+ pip install python-ilorest-library-x.x.x.zip
 
 Requirements
-----------
+------------
 
 Remote communication
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
+~~~~~~~~~~~~~~~~~~~~
 No special requirements.
- 
-Inband communication
-~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To enable support for inband communications, you must download the DLL/SO for your system from: windows_ / linux_. It must be placed in your working environment path.
- 
- 
+Inband communication
+~~~~~~~~~~~~~~~~~~~~
+To enable support for inband communications, you must download the DLL/SO for
+your system from: windows_ / linux_. It must be placed in your working
+environment path.
+
  .. _windows: https://downloads.hpe.com/pub/softlib2/software1/pubsw-windows/p1463761240/v145660/ilorest_chif.dll
  .. _linux: https://downloads.hpe.com/pub/softlib2/software1/pubsw-linux/p1093353304/v145585/ilorest_chif.so
 
 Usage
-----------
-A large set of examples is provided under the examples directory of this project. In addition to the directives present in this paragraph, you will find valuable implementation tips and tricks in those examples.
+-----
+A large set of examples is provided under the examples directory of this
+project. In addition to the directives present in this paragraph, you will find
+valuable implementation tips and tricks in those examples.
 
 Import the relevant python module
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Depending on your desire to develop an HPE legacy REST or Redfish compliant application import the relevant python module.
- 
+Depending on your desire to develop an HPE legacy REST or Redfish compliant
+application import the relevant python module.
+
 For a legacy REST application:
- 
+
 .. code-block:: python
 
-	from _restobject import RestObject
+ from _restobject import RestObject
 
 For Redfish compliant application:
 
 .. code-block:: python
 
-	from _redfishobject import RedfishObject
+ from _redfishobject import RedfishObject
 
 Create a REST or Redfish Object
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Both legacy REST and Redfish Objects contain 3 parameters: the target secured URL (i.e. "https://ilo-IP" or "https://X.Y.Z.T"), an iLO user name and its password.
+Both legacy REST and Redfish Objects contain 3 parameters: the target secured
+URL (i.e. "https://ilo-IP" or "https://X.Y.Z.T"), an iLO user name and its
+password.
 
 To create a REST object, call the RestObject method:
 
 .. code-block:: python
 
-	REST_OBJ = RestObject(iLO_https_url, iLO_account, iLO_password)
+ REST_OBJ = RestObject(iLO_https_url, iLO_account, iLO_password)
 
 To create a Redfish Object, call the RedfishObject method:
 
 .. code-block:: python
 
-	REDFISH_OBJ = RedfishObject(iLO_https_url, iLO_account, iLO_password)
+ REDFISH_OBJ = RedfishObject(iLO_https_url, iLO_account, iLO_password)
 
 Login to the server
-~~~~~~~~~~~~~~~~~~~~~~~~~
-The login operation is performed when creating the REST_OBJ or REDFISH_OBJ. You can continue with a basic authentication, but it would less secure.
+~~~~~~~~~~~~~~~~~~~
+The login operation is performed when creating the REST_OBJ or REDFISH_OBJ. You
+can continue with a basic authentication, but it would less secure.
 
 .. code-block:: python
 
-	REST_OBJ.login(auth="session")
+ REST_OBJ.login(auth="session")
 
 Perform a GET operation
-~~~~~~~~~~~~~~~~~~~~~~~~~
-A simple GET operation can be performed to obtain the data present in any valid path.
-An example of rawget operation on the path "/rest/v1/system/1" is shown below:
+~~~~~~~~~~~~~~~~~~~~~~~
+A simple GET operation can be performed to obtain the data present in any valid
+path.  An example of rawget operation on the path "/rest/v1/system/1" is shown
+below:
 
 .. code-block:: python
 
-	response = REST_OBJ.get("/rest/v1/systems/1", None)
+ response = REST_OBJ.get("/rest/v1/systems/1", None)
 
-A safer implementation of GET operation is performed in the library. This method finds the path of requested data based on the selected type. This will allow for the script to work seamlessly with any changes of location of data. The response obtained is also validated against schema for correct return values.
+A safer implementation of GET operation is performed in the library. This
+method finds the path of requested data based on the selected type. This will
+allow for the script to work seamlessly with any changes of location of data.
+The response obtained is also validated against schema for correct return
+values.
 
 Logout the created session
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 Make sure you logout every session you create as it will remain alive until it times out.
 
 .. code-block:: python
 
-	REST_OBJ.logout()
+ REST_OBJ.logout()
 
-A logout deletes the current sesssion from the system. The redfish_client and the rest_client object destructor includes a logout statement. 
+A logout deletes the current sesssion from the system. The redfish_client and
+the rest_client object destructor includes a logout statement.
 
 Contributing
-----------
+------------
 
  1. Fork it!
  2. Create your feature branch: `git checkout -b my-new-feature`
@@ -129,7 +144,7 @@ Contributing
  5. Submit a pull request :D
 
 History
-----------
+-------
 
   * 04/01/2016: Initial Commit
   * 06/23/2016: Release of v1.1.0
@@ -146,6 +161,7 @@ History
   * 10/30/2017: Release of v2.1.0
   * 02/20/2018: Release of v2.2.0
   * 06/11/2018: Release of v2.3.0
+  * 07/02/2018: Release of v2.3.1
 
 Copyright and License
 ---------------------
