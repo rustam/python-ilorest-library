@@ -18,7 +18,10 @@ from redfish.rest.v1 import ServerDownOrUnreachableError
 
 def ex49_generate_csr(redfishobj, csr_properties):
     sys.stdout.write("\nEXAMPLE 49: Generate CSR\n")
-    instances = redfishobj.search_for_type("HpHttpsCert.")
+    if redfishobj.typepath.defs.isgen9:
+        instances = redfishobj.search_for_type("HpHttpsCert.")
+    else:
+        instances = redfishobj.search_for_type("HpeHttpsCert.")
 
     for instance in instances:
         body = dict()

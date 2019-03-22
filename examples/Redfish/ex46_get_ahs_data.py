@@ -34,7 +34,7 @@ def ex46_get_ahs_data(redfishobj):
                                          ["extref"])
 
         with open("data.ahs", 'wb') as ahsoutput:
-            ahsoutput.write(ahslink.read)
+            ahsoutput.write(ahslink.ori)
             ahsoutput.close()
 
         sys.stdout.write("AHS Data saved successfully as data.ahs\n")
