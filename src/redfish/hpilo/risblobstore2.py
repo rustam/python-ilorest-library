@@ -24,6 +24,7 @@ import sys
 import struct
 import random
 import string
+import logging
 
 from ctypes import c_char_p, c_ubyte, c_uint, cdll, POINTER, \
                     create_string_buffer, c_ushort
@@ -37,7 +38,11 @@ else:
     from _ctypes import dlclose
 
 #---------End of imports---------
+#---------Debug logger---------
 
+LOGGER = logging.getLogger(__name__)
+
+#---------End of debug logger---------
 #-----------------------Error Returns----------------------
 
 class UnexpectedResponseError(Exception):
@@ -108,6 +113,7 @@ class BlobReturnCodes(object):
     """Blob store return codes.
 
     SUCCESS           success
+    BADPARAMETER      bad parameter supplied
     NOTFOUND          blob name not found
     NOTMODIFIED       call did not perform the operation
 
@@ -123,7 +129,7 @@ class BlobStore2(object):
     def __init__(self):
         lib = self.gethprestchifhandle()
         self.channel = HpIlo(dll=lib)
-        self.MAX_RETRIES = 3
+        self.max_retries = 3
 
     def __del__(self):
         """Blob store 2 close channel function"""
@@ -185,7 +191,7 @@ class BlobStore2(object):
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
         if errorcode == BlobReturnCodes.BADPARAMETER:
-            if retries < self.MAX_RETRIES:
+            if retries < self.max_retries:
                 self.get_info(key=key, namespace=namespace, retries=\
                                                         retries+1)
             else:
@@ -239,7 +245,7 @@ class BlobStore2(object):
                                                             (newreadsize)]))[0]
 
             if bytesread == 0:
-                if retries < self.MAX_RETRIES:
+                if retries < self.max_retries:
                     data = self.read(key=key, namespace=namespace, retries=\
                                                         retries+1)
                     return data
@@ -381,7 +387,7 @@ class BlobStore2(object):
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
         if errorcode == BlobReturnCodes.BADPARAMETER:
-            if retries < self.MAX_RETRIES:
+            if retries < self.max_retries:
                 self.delete(key=key, namespace=namespace, retries=\
                                                     retries+1)
             else:
@@ -822,8 +828,9 @@ class BlobStore2(object):
                 libhandle = cdll.LoadLibrary(libpath)
                 if libhandle:
                     break
-            except Exception as excp:
-                pass
+            except Exception as exp:
+                excp = exp
+
         if libhandle:
             BlobStore2.setglobalhprestchifrandnumber(libhandle)
             return libhandle
@@ -849,6 +856,8 @@ class BlobStore2(object):
         """
 
         dll = BlobStore2.gethprestchifhandle()
+        if LOGGER.isEnabledFor(logging.DEBUG):
+            dll.enabledebugoutput()
         dll.ChifInitialize(None)
         if dll.ChifIsSecurityRequired() > 0:
             if not username or not password:
@@ -884,6 +893,12 @@ class BlobStore2(object):
             libpath = os.path.join(os.path.split(sys.executable)[0], libpath)
         elif os.path.isfile(os.path.join(os.getcwd(), libpath)):
             libpath = os.path.join(os.getcwd(), libpath)
+        elif os.environ.has_key("LD_LIBRARY_PATH"):
+            paths = os.getenv("LD_LIBRARY_PATH", libpath).split(';')
+            libpath = [os.path.join(pat, libname) for pat in paths if \
+                                                        os.path.isfile(os.path.join(pat, libname))]
+            libpath = libpath[0] if libpath else libname
+
         return libpath
 
     @staticmethod

@@ -24,12 +24,12 @@ def ex41_dump_eskm_event_log(redfishobj):
         tmp = redfishobj.redfish_get(instance["@odata.id"])
         response = redfishobj.redfish_get(tmp.dict["Links"]["ESKM"]["@odata.id"])
         try:
-			for entry in response.dict["ESKMEvents"]:
-				#response = redfishobj.redfish_get(entry["@odata.id"])
-				sys.stdout.write(entry["Timestamp"] + "\n" + \
-								  entry["Event"] + "\n")
+            for entry in response.dict["ESKMEvents"]:
+                #response = redfishobj.redfish_get(entry["@odata.id"])
+                sys.stdout.write(entry["Timestamp"] + "\n" + \
+                                    entry["Event"] + "\n")
         except:
-			sys.stdout.write("No ESKM events on the system\n")
+            sys.stdout.write("No ESKM events on the system\n")
         redfishobj.error_handler(response)
 
 if __name__ == "__main__":
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     # iLO account name, and password to send https requests
     # iLO_https_url acceptable examples:
     # "https://10.0.0.100"
-    # "https://f250asha.americas.hpqcorp.net"
+    # "https://ilo.hostname"
     iLO_https_url = "https://10.0.0.100"
     iLO_account = "admin"
     iLO_password = "password"

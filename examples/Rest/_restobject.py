@@ -84,8 +84,7 @@ LOGGER.info("HPE Restful API examples")
 class RestObject(object):
     def __init__(self, host, login_account, login_password):
         self.rest_client = rest_client(base_url=host, \
-                          username=login_account, password=login_password, \
-                          default_prefix="/rest/v1")
+                          username=login_account, password=login_password)
         self.rest_client.login(auth=AuthMethod.SESSION)
         self.SYSTEMS_RESOURCES = self.ex1_get_resource_directory()
         self.MESSAGE_REGISTRIES = self.ex2_get_base_registry()
@@ -118,7 +117,7 @@ class RestObject(object):
             sys.stderr.write("ERROR: No message registries found.")
 
         try:
-            message = json.loads(response.text)
+            message = response.dict
             newmessage = message["Messages"][0]["MessageID"].split(".")
         except:
             sys.stdout.write("\tNo extended error information returned by " \

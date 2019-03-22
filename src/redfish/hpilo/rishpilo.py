@@ -86,7 +86,7 @@ class HpIlo(object):
             status = self.dll.ChifCreate(byref(fhandle))
             if status != BlobReturnCodes.SUCCESS:
                 raise HpIloInitialError("Error %s occurred while trying " \
-                                        "to open a channel to iLO" % status)
+                                        "to create a channel." % status)
 
             self.fhandle = fhandle
 
@@ -100,10 +100,10 @@ class HpIlo(object):
                     errmsg = "You must be root/Administrator to use this program."
                 raise HpIloInitialError(errmsg)
 
-            self.dll.ChifSetRecvTimeout(self.fhandle, 30000)
-        except Exception as excp:
+            self.dll.ChifSetRecvTimeout(self.fhandle, 60000)
+        except:
             self.unload()
-            raise excp
+            raise
 
     def chif_packet_exchange(self, data):
         """ Function for handling chif packet exchange

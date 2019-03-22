@@ -14,7 +14,7 @@ login_password = "password"
 
 # Create a REST object
 REST_OBJ = redfish.rest_client(base_url=iLO_host,username=login_account, \
-                      password=login_password, default_prefix='/rest/v1')
+                      password=login_password)
 
 # Login into the server and create a session
 REST_OBJ.login(auth="session")

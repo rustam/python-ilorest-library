@@ -1,9 +1,9 @@
 """
-Provides examples of using the HP RESTful API on iLO for common use cases.  This is for tutorial/example purposes only.
+Provides examples of using the HPE RESTful API on iLO for common use cases.  This is for tutorial/example purposes only.
 ---------------------------------------------------------------------------------------------------------------------
 IMPORTANT!!!
 ---------------------------------------------------------------------------------------------------------------------
-When developing a client for the HP RESTful API, be sure to not code based upon assumptions that are not guaranteed.
+When developing a client for the HPE RESTful API, be sure to not code based upon assumptions that are not guaranteed.
 Search for, and note any 'NOTE' comments in this code to read about ways to avoid incorrect assumptions.
 The reason avoiding these assumptions is so important is that implementations may vary across systems and firmware
 versions, and we want your code to work consistently.
@@ -11,7 +11,7 @@ versions, and we want your code to work consistently.
 STARTING ASSUMPTIONS
 ---------------------------------------------------------------------------------------------------------------------
 On URIs:
-The HP RESTful API is a "hypermedia API" by design.  This is to avoid building in restrictive assumptions to the
+The HPE RESTful API is a "hypermedia API" by design.  This is to avoid building in restrictive assumptions to the
 data model that will make it difficult to adapt to future hardware implementations.  A hypermedia API avoids these
 assumptions by making the data model discoverable via links between resources.
 A URI should be treated by the client as opaque, and thus should not be attempted to be understood or deconstructed
@@ -84,8 +84,7 @@ class RedfishObject(object):
     def __init__(self, host, login_account, login_password):
         try:
             self.redfish_client = redfish_client(base_url=host, \
-                      username=login_account, password=login_password, \
-                      default_prefix="/redfish/v1")
+                      username=login_account, password=login_password)
         except:
             raise
         self.typepath = redfish.ris.tpdefs.Typesandpathdefines()
@@ -127,7 +126,7 @@ class RedfishObject(object):
             sys.stderr.write("ERROR: No message registries found.")
 
         try:
-            message = json.loads(response.text)
+            message = response.dict
             newmessage = message["error"]["@Message.ExtendedInfo"][0]\
                                                         ["MessageId"].split(".")
         except:

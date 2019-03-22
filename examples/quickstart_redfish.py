@@ -14,7 +14,7 @@ login_password = "password"
 
 ## Create a REDFISH object
 REDFISH_OBJ = redfish.redfish_client(base_url=iLO_host,username=login_account, \
-                          password=login_password, default_prefix='/redfish/v1')
+                          password=login_password)
 
 # Login into the server and create a session
 REDFISH_OBJ.login(auth="session")

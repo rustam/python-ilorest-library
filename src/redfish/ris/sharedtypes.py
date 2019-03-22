@@ -42,6 +42,8 @@ class JSONEncoder(JSONEncoder):
 		"""
         if isinstance(obj, Dictable):
             return obj.to_dict()
+        elif isinstance(obj, set):
+            return list(obj)
         elif isinstance(obj, jsonpatch.JsonPatch):
             return obj.patch
         return super(JSONEncoder, self).default(obj)

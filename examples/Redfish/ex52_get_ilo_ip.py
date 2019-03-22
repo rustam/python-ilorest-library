@@ -44,7 +44,7 @@ if __name__ == "__main__":
     # iLO account name, and password to send https requests
     # iLO_https_url acceptable examples:
     # "https://10.0.0.100"
-    # "https://f250asha.americas.hpqcorp.net"
+    # "https://ilo.hostname"
     # iLO_https_url = "https://10.0.0.100"
     # iLO_account = "admin"
     # iLO_password = "password"

@@ -27,9 +27,9 @@ def ex3_change_bios_setting(redfishobj, bios_property, property_value, \
 
     for instance in instances:
         if redfishobj.typepath.defs.isgen9:
-			body = {bios_property: property_value}
+            body = {bios_property: property_value}
         else:
-			body = {"Attributes": {bios_property: property_value}}
+            body = {"Attributes": {bios_property: property_value}}
 
         response = redfishobj.redfish_patch(instance["@odata.id"], body, \
                                             optionalpassword=bios_password)
@@ -45,7 +45,7 @@ if __name__ == "__main__":
     # iLO account name, and password to send https requests
     # iLO_https_url acceptable examples:
     # "https://10.0.0.100"
-    # "https://f250asha.americas.hpqcorp.net"
+    # "https://ilo.hostname"
     iLO_https_url = "https://10.0.0.100"
     iLO_account = "admin"
     iLO_password = "password"

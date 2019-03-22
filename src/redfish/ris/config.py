@@ -94,10 +94,10 @@ class AutoConfigParser(object):
 
         """
         fname = self.get_configfile()
-        if filename is not None and len(filename) > 0:
+        if filename:
             fname = filename
 
-        if fname is None or not os.path.isfile(fname):
+        if not fname or not os.path.isfile(fname):
             return
 
         try:
@@ -115,7 +115,7 @@ class AutoConfigParser(object):
                     except configparser.NoOptionError:
                         pass
 
-                if configval is not None and len(configval) > 0:
+                if configval:
                     ackey = '_ac__%s' % key
                     self.__dict__[ackey] = configval
         except configparser.NoOptionError:
@@ -133,10 +133,10 @@ class AutoConfigParser(object):
 
         """
         fname = self.get_configfile()
-        if filename is not None and len(filename) > 0:
+        if filename:
             fname = filename
 
-        if fname is None or len(fname) == 0:
+        if fname:
             return
 
         config = configparser.RawConfigParser()

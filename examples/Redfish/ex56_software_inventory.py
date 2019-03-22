@@ -1,4 +1,4 @@
-# Copyright 2016 Hewlett Packard Enterprise Development, LP.
+ # Copyright 2016 Hewlett Packard Enterprise Development, LP.
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -16,25 +16,29 @@ import sys
 from _redfishobject import RedfishObject
 from redfish.rest.v1 import ServerDownOrUnreachableError
 
-def ex39_test_ESKM_connection(redfishobj):
-    sys.stdout.write("\nEXAMPLE 39: Test ESKM connection\n")
-    instances = redfishobj.search_for_type("ESKM.")
-
+def ex56_get_firmware_inventory(redfishobj):
+    sys.stdout.write("\nEXAMPLE ##: Get Firmware Inventory\n")
+    instances = redfishobj.search_for_type("UpdateService")
+    #sys.stdout.write("\t" + str(instances) + "\n")
     for instance in instances:
-        tmp = redfishobj.redfish_get(instance["@odata.id"])
-
-        for action in tmp.dict["Actions"]:
-            if "TestESKMConnections" in action:
-                post_target = tmp.dict["Actions"][action]["target"]
-
-        body = dict()
-        if redfishobj.typepath.defs.isgen9:
-            body["Action"] = "TestESKMConnections"
-        else:
-            body["Action"] = "HpeESKM.TestESKMConnections"
-
-        response = redfishobj.redfish_post(post_target, body)
-        redfishobj.error_handler(response)
+        rsp = redfishobj.redfish_get(instance["@odata.id"])
+        #sys.stdout.write("\n\n"+"\t" + str(rsp) + "\n")
+        fwInventory = redfishobj.redfish_get(rsp.dict["FirmwareInventory"]["@odata.id"])
+        #sys.stdout.write("\t" + str(fwInventory) + "\n")
+        for entry in fwInventory.dict["Members"]:
+            response = redfishobj.redfish_get(entry["@odata.id"])
+            sys.stdout.write("\n\n\tId: " + str(response.dict["Id"]) + "\n")
+            sys.stdout.write("\tName: " + str(response.dict["Name"]) + "\n")
+            sys.stdout.write("\tVersion: " + str(response.dict["Version"]) + "\n")
+            sys.stdout.write("\tDescription: " + str(response.dict["Description"]) + "\n")
+            if "Status" in response.dict:
+                sys.stdout.write("\tStatus: Health " + str(response.dict["Status"]["Health"]) + "\n")
+                sys.stdout.write("\t        State " + str(response.dict["Status"]["State"]) + "\n")
+            else:
+                sys.stdout.write("\tHealth status and State information is not available on "\
+                                    "your system for this device.\n")
+            
+            
 
 if __name__ == "__main__":
     # When running on the server locally use the following commented values
@@ -50,7 +54,7 @@ if __name__ == "__main__":
     iLO_https_url = "https://10.0.0.100"
     iLO_account = "admin"
     iLO_password = "password"
-
+    
     # Create a REDFISH object
     try:
         REDFISH_OBJ = RedfishObject(iLO_https_url, iLO_account, iLO_password)
@@ -61,8 +65,5 @@ if __name__ == "__main__":
     except Exception as excp:
         raise excp
 
-    ex39_test_ESKM_connection(REDFISH_OBJ)
+    ex56_get_firmware_inventory(REDFISH_OBJ)
     REDFISH_OBJ.redfish_client.logout()
-
-
-

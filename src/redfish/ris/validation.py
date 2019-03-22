@@ -21,7 +21,6 @@
 
 import re
 import json
-import locale
 import logging
 import textwrap
 
@@ -40,8 +39,8 @@ LOGGER = logging.getLogger(__name__)
 # ---------End of debug logger---------
 
 
-class SchemaValidationError(Exception):
-    """Schema Validation Class Error"""
+class InvalidPathsError(Exception):
+    """Raised when requested path is not found"""
     pass
 
 class RegistryValidationError(Exception):
@@ -62,113 +61,33 @@ class ValidationManager(object):
     def __init__(self, monolith, defines=None):
         super(ValidationManager, self).__init__()
 
-        if monolith.is_redfish:
-            self._schemaid = ["/redfish/v1/schemas/?$expand=.", "Members"]
-            self._regid = ["/redfish/v1/registries/?$expand=.", "Members"]
-        else:
-            self._schemaid = ["/rest/v1/schemas", "Items"]
-            self._regid = ["/rest/v1/registries", "Items"]
+        self._schemaid = Typepathforval.typepath.schemapath
+        self._regid = Typepathforval.typepath.regpath
 
         self._classes = list()
+        self._classpaths = list()
         #type and path defines object
         self.defines = defines
         self.monolith = monolith
         # error
         self._errors = list()
         self._warnings = list()
-        self.new_load_file(monolith)
+        self.updatevalidationdata()
 
-    def new_load_file(self, monolith):
+    def updatevalidationdata(self):
         """Loads the types from monolith.
-
-        :param monolith: full data model retrieved from server.
-        :type monolith: dict.
-
         """
-        classesdataholders = []
-
+        monolith = self.monolith
         for instance in monolith.iter():
-            if instance.type.startswith(self.defines.defs.schemafilecollectiontype)\
-                or instance.type.startswith(self.defines.defs.regfilecollectiontype)\
-                                or instance.type.startswith("Collection."):
-                if self._schemaid[0] in instance.path.lower() \
-                                    or self._regid[0] in instance.path.lower():
-                    classesdataholders.append(instance.resp.dict)
+            if (x.lower() in instance.maj_type.lower() for x in (self.defines.defs.\
+                schemafilecollectiontype,\
+                "Collection.", self.defines.defs.regfilecollectiontype)) and any(x.lower() in \
+                    instance.path.lower() for x in (self._schemaid, self._regid))\
+                    and instance and instance.path not in self._classpaths:
+                self._classpaths.append(instance.path)
+                self._classes.append(instance.resp.dict)
 
-        try:
-            for classesdataholder in classesdataholders:
-                if monolith._typestring in classesdataholder and ('Collection.' in \
-                                        classesdataholder[monolith._typestring] or \
-                                        (self.defines.defs.schemafilecollectiontype\
-                                        in classesdataholder[monolith._typestring] \
-                                        and monolith.is_redfish)):
-                    newclass = RepoRegistryEntry.parse(classesdataholder)
-
-                    self._classes.append(newclass)
-        except BaseException:
-            pass
-
-    def validate(self, item, currdict=None, monolith=None, \
-                                regloc=None, attrreg=None, unique=None):
-        """Search for matching schemas and attribute registries and
-        ensure that item is valid.
-
-        :param item: the item to be validated.
-        :type item: str.
-        :param currdict: current selection dictionary.
-        :type currdict: dict.
-        :param monolith: full data model retrieved from server.
-        :type monolith: dict.
-        :param unique: flag to determine override for unique properties.
-        :type unique: str.
-        :param attrreg: Registry entry of the given attribute.
-        :type attrreg: RepoRegistryEntry.
-        :param regloc: path to registry location.
-        :type regloc: str.
-
-        """
-        if regloc and not attrreg:
-            attrreg = RepoRegistryEntry(regloc)
-        elif not attrreg:
-            attrreg = self.find_prop(item[monolith._typestring])
-
-        if attrreg:
-            try:
-                (self._errors, self._warnings) = attrreg.validate(item, self._errors,\
-                                        currdict=currdict, monolith=monolith, \
-                                        unique=unique, warnings=self._warnings)
-            except:
-                return attrreg
-
-    def bios_validate(self, item, regname, currdict=None, \
-                                                monolith=None, unique=None):
-        """BIOS Search for matching schemas and attribute registries and
-        ensure that item is valid
-
-        :param item: the item to be validated.
-        :type item: str.
-        :param regname: string containing the registry name.
-        :type regname: str.
-        :param unique: flag to determine override for unique properties.
-        :type unique: str.
-        :param currdict: current selection dictionary.
-        :type currdict: dict.
-        :param monolith: full data model retrieved from server.
-        :type monolith: dict.
-
-        """
-        attrreg = self.find_prop(regname)
-        try:
-            attrreg = RepoRegistryEntry(attrreg)
-        except:
-            pass
-        if attrreg:
-            (self._errors, self._warnings) = attrreg.validate_bios_version(item, \
-                                self._errors, currdict=currdict, unique=unique,\
-                                monolith=monolith, warnings=self._warnings)
-
-
-    def find_prop(self, propname):
+    def find_prop(self, propname, latestschema=False, proppath=None):
         """Searches through all locations and returns the first schema
         found for the provided type
 
@@ -176,8 +95,11 @@ class ValidationManager(object):
         :type propname: str.
 
         """
+        if proppath:
+            self.monolith.load(path=proppath, crawl=False, loadtype='ref')
+            return True
         for cls in self._classes:
-            found = cls.find_property(propname)
+            found = self.find_property(propname, cls=cls, latestschema=latestschema)
             if found:
                 return found
         return None
@@ -213,8 +135,7 @@ class ValidationManager(object):
         if not membername:
             membername = self.defines.defs.collectionstring
         for items in self._classes:
-            if items[self.monolith._typestring].startswith((\
-                self.defines.defs.regfilecollectiontype, 'Collection.1.0.0')):
+            if 'registr' in items["Name"].lower():#For Gen9 type/name issue
                 for item in items[membername]:
                     yield item
 
@@ -228,61 +149,73 @@ class ValidationManager(object):
         if not membername:
             membername = self.defines.defs.collectionstring
         for items in self._classes:
-            if items[self.monolith._typestring].startswith((\
-                self.defines.defs.schemafilecollectiontype, 'Collection.1.0.0')):
+            if 'schema' in items["Name"].lower():#For Gen9 type/name issue
                 for item in items[membername]:
                     yield item
 
-class RepoRegistryEntry(RisObject):
-    """Represents an entry in the registry"""
-    def __init__(self, d):
-        super(RepoRegistryEntry, self).__init__(d)
-
-    def find_property(self, propname):
+    def find_property(self, propname, cls=None, latestschema=False):
         """Returns iLO/BIOS registries/schemas
 
         :param propname: string containing the registry name.
         :type propname: str.
+        :param cls: self._classes list of dictionaries.
+        :type cls: list.
+        :param latestschema: flag to drop the versioning in the type string.
+        :type latestschema: bool.
+
         :returns: returns iLO/BIOS registries/schemas
 
         """
-        result = None
-        if checkattr(self, 'Items') and isinstance(self.Items, list):
-            for entry in self.Items:
-                #equal/in was changed to startswith for propname comparision.
-                if entry and 'Schema' in entry and \
-                        entry['Schema'].lower().startswith(propname.lower()):
-                    regentry = RepoRegistryEntry.parse(entry)
-                    result = regentry
-                    break
-        elif checkattr(self, 'Members') and isinstance(self.Members, list):
-            splitname = propname.split('.')[-1]
-            for entry in self.Members:
-                if 'Schema' in entry:
-                    if entry and 'Schema' in entry and \
-                            propname.lower() in entry['Schema'].lower():
-                        regentry = RepoRegistryEntry.parse(entry)
-                        result = regentry
-                        break
-                #This is only for registry.
-                elif 'Registry' in entry:
-                    if entry and 'Registry' in entry and entry['Registry'].lower()\
-                                            == propname.lower():
-                        regentry = RepoRegistryEntry.parse(entry)
-                        result = regentry
-                        break
-                else:
-                    if entry and '@odata.id' in entry:
-                        reglink = entry['@odata.id'].split('/')
-                        reglink = reglink[len(reglink)-2]
-                        if splitname.lower() == reglink.lower():
-                            result = entry
-                            break
+        result = []
+        dataloc = cls.get('Items', None)
+        dataloc = cls.get('Members', None) if not dataloc else dataloc
+        keyword = 'Schema'
+        if dataloc and isinstance(dataloc, list):
+            splitname = propname.split('.')[0].strip('#')
+            propname = propname.split('.')[0].strip('#') if latestschema else propname
+            for entry in dataloc:
+                if entry:
+                    if 'Schema' in entry:
+                        if propname.lower() in entry['Schema'].lower():
+                            result.append(entry)
+                    elif 'Registry' in entry:
+                        if propname.lower() in entry['Registry'].lower():
+                            result.append(entry)
+                            keyword = 'Registry'
+                    else:
+                        if '@odata.id' in entry:
+                            reglink = entry['@odata.id'].split('/')
+                            reglink = reglink[len(reglink)-2]
+                            if reglink.lower().startswith(splitname.lower()):
+                                self.monolith.load(path=entry['@odata.id'], crawl=False)
+                                result.append(self.monolith.paths[entry['@odata.id']].dict)
 
-        return result
+        if result:
+            result = max(result, key=lambda res: res[self.monolith._hrefstring] if res.\
+                        get(self.monolith._hrefstring, None) else res[keyword])
+            schemapath = self.geturidict(result['Location'][0])
+            self.monolith.load(path=schemapath, crawl=False, loadtype='ref')
+            return result
 
-    def validate(self, tdict, errlist=None, currdict=None, \
-                        warnings=None, monolith=None, reg=None, unique=None):
+    def geturidict(self, locationobj):
+        """Return the external reference link.
+
+        :param locationobj: location of the dict
+        :type locationobj: dict
+        """
+        if Typepathforval.typepath.defs.isgen10:
+            try:
+                return locationobj["Uri"]
+            except Exception:
+                raise InvalidPathsError("Error accessing Uri path!/n")
+        elif Typepathforval.typepath.defs.isgen9:
+            try:
+                return locationobj["Uri"]["extref"]
+            except Exception:
+                raise InvalidPathsError("Error accessing extref path!/n")
+
+    def validatedict(self, tdict, currtype=None, proppath=None, latestschema=False, \
+            searchtype=None, monolith=None, reg=None, unique=None):
         """Load the schema file and validate tdict against it
 
         :param tdict: the dictionary to test against.
@@ -291,28 +224,31 @@ class RepoRegistryEntry(RisObject):
         :type errlist: list.
         :param warnings: list containing found warnings.
         :type warnings: list.
-        :param currdict: current selection dictionary.
-        :type currdict: dict.
+        :param currtype: current selection dictionary type.
+        :type currtype: str.
+        :param searchtype: classifier for the current search.
+        :type searchtype: str.
         :param monolith: full data model retrieved from server.
         :type monolith: dict.
         :param unique: flag to determine override for unique properties.
-        :type unique: str.
+        :type unique: bool
         :param reg: Registry entry of the given attribute.
         :type reg: dict.
         :returns: returns an error list.
 
         """
         if not reg:
-            reg = self.get_registry_model(errlist=errlist, currdict=currdict, \
-                                                            monolith=monolith)
+            reg = self.get_registry_model(currtype=currtype, searchtype=searchtype, \
+                                    proppath=proppath, latestschema=latestschema)
 
         if reg:
-            list(map(lambda x: self.checkreadunique(tdict, x, reg=reg, \
-                                warnings=warnings, unique=unique), list(tdict.keys())))
+            list(map(lambda x: self.checkreadunique(tdict, x, reg=reg, searchtype=searchtype, \
+                            warnings=self._warnings, unique=unique), list(tdict.keys())))
             orireg = reg.copy()
-            ttdict = {ki:val for ki, val in list(tdict.items()) if not isinstance(val, (dict, list))}
+            ttdict = {ki:val for ki, val in list(tdict.items()) \
+                      if not isinstance(val, (dict, list))}
             results = reg.validate_attribute_values(ttdict)
-            errlist.extend(results)
+            self._errors.extend(results)
 
             for ki, val in list(tdict.items()):
                 if ki in ttdict:
@@ -325,24 +261,22 @@ class RepoRegistryEntry(RisObject):
                     #TODO: only validates if its a single dict within list
                     if len(val) == 1 and isinstance(val[0], dict):
                         treg = self.nestedreg(reg=reg, args=[ki])
-                        self.validate(val, errlist=errlist, unique=unique,\
-                              warnings=warnings, monolith=monolith, reg=treg)
+                        self.validatedict(val[0], unique=unique, monolith=monolith, reg=treg,\
+                              currtype=currtype, searchtype=searchtype)
                     else:
                         continue
                 elif val and isinstance(val, dict):
                     valexists = True
                     treg = self.nestedreg(reg=reg, args=[ki])
-                    self.validate(val, errlist=errlist, warnings=warnings,\
-                                  monolith=monolith, reg=treg, unique=unique)
+                    self.validatedict(val, monolith=monolith, reg=treg, unique=unique, \
+                                  searchtype=searchtype)
                 if not val and valexists:
                     del tdict[ki]
         else:
-            errlist.append(RegistryValidationError('Unable to locate ' \
-                                                            'registry model'))
+            self._errors.append(RegistryValidationError('Unable to locate registry model'))
 
-        return (errlist, warnings)
-
-    def checkreadunique(self, tdict, tkey, reg=None, warnings=None, unique=None):
+    def checkreadunique(self, tdict, tkey, searchtype=None, \
+                        reg=None, warnings=None, unique=None):
         """Check for and remove the readonly and unique attributes if required.
 
         :param tdict: the dictionary to test against.
@@ -358,66 +292,18 @@ class RepoRegistryEntry(RisObject):
         :returns: returns boolean.
 
         """
-        try:
-            if reg[tkey].readonly:
-                warnings.append("Property is read-only "   \
-                                    "skipping '%s'\n" % str(tkey))
-                del tdict[tkey]
-                return True
-        except:
-            pass
-        try:
-            if reg["ReadOnly"] is True:
-                warnings.append("Property is read-only "   \
-                                "skipping '%s'\n" % str(tkey))
-                del tdict[tkey]
-                return True
-        except:
-            pass
-        try:
-            if reg["IsSystemUniqueProperty"] is True and not unique:
-                warnings.append("Property is unique to " \
-                     "the system skipping '%s'\n" % str(tkey))
-                del tdict[tkey]
-                return True
-        except BaseException:
-            pass
+        if reg.get("ReadOnly", None) == False or (reg.get(tkey, None)\
+                             and reg[tkey].get("readonly", None) == False):
+            if unique or not reg.get("IsSystemUniqueProperty", None):
+                return
+        if not searchtype or (reg.get("ReadOnly", None) == True \
+                or (reg.get(tkey, None) and reg[tkey].get("readonly", None) == True)):
+            warnings.append("Property is read-only skipping '%s'\n" % str(tkey))
+            del tdict[tkey]
+            return True
 
-    def validate_bios_version(self, tdict, errlist=None,\
-                  currdict=None, monolith=None, unique=None, warnings=None):
-        """BIOS VERSION. Load the schema file and validate tdict against it
-
-        :param tdict: the dictionary to test against.
-        :type tdict: dict.
-        :param errlist: list containing found errors.
-        :type errlist: list.
-        :param currdict: current selection dictionary.
-        :type currdict: dict.
-        :param monolith: full data model retrieved from server.
-        :type monolith: dict.
-        :param warnings: list containing found warnings.
-        :type warnings: list.
-        :param unique: flag to determine override for unique properties.
-        :type unique: str.
-        :returns: returns an error list
-
-        """
-        reg = self.get_registry_model_bios_version(errlist=errlist, \
-                                           currdict=currdict, monolith=monolith)
-
-        if reg:
-            list(map(lambda x: self.checkreadunique(tdict, x, reg=reg, \
-                                warnings=warnings, unique=unique), list(tdict.keys())))
-            results = reg.validate_att_val_bios(tdict)
-            errlist.extend(results)
-        else:
-            errlist.append(RegistryValidationError('Unable to locate ' \
-                                                            'registry model'))
-
-        return (errlist, warnings)
-
-    def get_registry_model(self, currdict=None, monolith=None, errlist=None, \
-           skipcommit=False, searchtype=None, newarg=None, latestschema=None):
+    def get_registry_model(self, currtype=None, proppath=None, \
+           getmsg=False, searchtype=None, newarg=None, latestschema=False):
         """Load the schema file and find the registry model if available
 
         :param currdict: current selection dictionary.
@@ -426,8 +312,8 @@ class RepoRegistryEntry(RisObject):
         :type monolith: dict.
         :param errlist: list containing found errors.
         :type errlist: list.
-        :param skipcommit: flag to determine if commit should be skipped.
-        :type skipcommit: boolean.
+        :param getmsg: flag to determine if commit should be skipped.
+        :type getmsg: boolean.
         :param searchtype: classifier for the current search.
         :type searchtype: str.
         :param newargs: list of multi level properties to be modified.
@@ -437,233 +323,61 @@ class RepoRegistryEntry(RisObject):
         :returns: returns registry model
 
         """
-        if not errlist:
-            errlist = list()
-
-        if not checkattr(self, 'Location'):
-            errlist.append(RegistryValidationError(
-                'Location property does not exist'))
+        regdict = None
+        monolith = self.monolith
+        currtype = currtype.split('#')[-1].split('.')[0] +\
+                '.' if currtype and latestschema else currtype
+        if (not currtype or not self.find_prop(currtype, latestschema=latestschema, \
+               proppath=proppath if not searchtype else None)) and (not searchtype):
+            self._errors.append(RegistryValidationError('Location info is missing.'))
             return None
-
-        currloc = None
-        defloc = "en"
-        langcode = list(locale.getdefaultlocale())
-
-        if not langcode[0]:
-            langcode[0] = "en"
-
-        for loc in self.Location:
-            locationlanguage = loc["Language"].lower()
-            locationlanguage = locationlanguage.replace("-", "_")
-
-            if locationlanguage in langcode[0].lower():
-                currloc = loc
-                break
-
-        if not currloc:
-            # use default location if lang doesn't match
-            currloc = defloc
-
-        if not currloc:
-            errlist.append(RegistryValidationError('Unable to determine ' \
-                                                                    'location'))
-            return None
-
         if not searchtype:
             searchtype = "object"
 
-        location_file = None
-        if currdict and monolith:
-            itemtype = monolith.gettypename(searchtype.lower())
-            if itemtype:
-                for instance in monolith.itertype(itemtype):
-                    try:
-                        if monolith.is_redfish and 'title' in instance.\
-                                    resp.dict and not instance.resp.dict\
-                                                ["title"].startswith('#'):
-                            currtype = currdict[instance._typestring].\
-                                                            split('#')[-1]
-                            currtype = currtype.split('.')[0] + '.'
-                        else:
-                            currtype = currdict[instance._typestring]
+        try:
+            for instance in monolith.iter(searchtype):
+                if (searchtype == Typepathforval.typepath.defs.attributeregtype) or\
+                    (searchtype == "object" and any(currtype in \
+                       xtitle for xtitle in (instance.resp.dict.get("title", ""), \
+                                   instance.resp.dict.get("oldtitle", "")))) \
+                   or (searchtype != "object" and currtype.split('#')[-1].split('.')[0] \
+                            == instance.dict.get("RegistryPrefix", "")):
+                    regdict = instance.resp.dict
+                    break
+        except BaseException:
+            pass
 
-                        if latestschema:
-                            if monolith.is_redfish and 'title' in instance.\
-                                    resp.dict and not instance.resp.dict\
-                                                ["title"].startswith('#'):
-                                currtype = currdict[instance._typestring].\
-                                                            split('#')[-1]
-                                currtype = currtype.split('.')[0]
-                            else:
-                                currtype = currdict[instance._typestring].\
-                                                            split('.')[0]
-                            insttype = instance.resp.dict["title"].split('.')[0]
-
-                            if currtype == insttype or currtype == \
-                                                instance.resp.dict[\
-                                               "oldtitle"].split('.')[0]:
-                                location_file = instance.resp.dict
-                                break
-                        elif searchtype == "object" and instance.resp.dict[\
-                                   "title"].startswith(currtype) or \
-                                   "oldtitle" in list(instance.resp.dict.\
-                                   keys()) and currdict[instance._typestring\
-                                       ] == instance.resp.dict["oldtitle"]:
-                            location_file = instance.resp.dict
-                            break
-                        elif searchtype != "object":
-                            #added for smart storage differences in ids
-                            tname = currdict[instance._typestring].split('.')[0]
-                            if tname[0] == '#':
-                                tname = tname[1:]
-                            if tname == instance.resp.dict["RegistryPrefix"]:
-                                location_file = instance.resp.dict
-                                break
-                    except BaseException:
-                        pass
-                    else:
-                        pass
-
-                    if location_file:
-                        break
-
-        if not location_file:
-            errlist.append(RegistryValidationError('Location data is empty'))
-        else:
-            if currdict and monolith:
-                jsonreg = json.loads(json.dumps(location_file, indent=2, \
-                                                            cls=JSONEncoder))
-            else:
-                jsonreg = json.loads(location_file)
-
-            if skipcommit:
-                return {jsonreg['RegistryPrefix']:jsonreg["Messages"]}
-
-            if 'properties' in jsonreg:
-                regitem = jsonreg['properties']
-                if 'Properties' in regitem:
-                    regitem.update(regitem['Properties'])
-                    del regitem['Properties']
-                reg = HpPropertiesRegistry.parse(regitem)
-
-                if newarg:
-                    regcopy = reg
-                    for arg in newarg[:-1]:
-                        try:
-                            arg = next(key for key in list(regcopy.keys()) if \
-                                                    key.lower() == arg.lower())
-                            if 'properties' in six.iterkeys(regcopy[arg]) \
-                                                and ('patternProperties' in \
-                                                    six.iterkeys(regcopy[arg])):
-                                regcopy[arg]['properties'].update(\
-                                              regcopy[arg]['patternProperties'])
-                                regcopy = regcopy[arg]["properties"]
-
-                                for pattern in six.iterkeys(regcopy):
-                                    test = re.compile(pattern)
-                                    nextarg = newarg[newarg.index(arg)+1]
-                                    match = test.match(nextarg)
-
-                                    if match:
-                                        regcopy[nextarg] = regcopy.pop(pattern)
-                                        break
-                            elif 'oneOf' in regcopy[arg]:
-                                oneof = regcopy[arg]['oneOf']
-                                for item in oneof:
-                                    regcopy = item['properties']
-
-                                    if not arg == newarg[-1]:
-                                        try:
-                                            nextitem = newarg[newarg.index(arg)+1]
-                                            regcopy[nextitem]
-                                            break
-                                        except Exception:
-                                            continue
-                            else:
-                                regcopy = regcopy[arg]["properties"]
-                        except Exception:
-                            try:
-                                regcopy = regcopy[arg]['patternProperties']
-                                for pattern in six.iterkeys(regcopy):
-                                    test = re.compile(pattern)
-                                    nextarg = newarg[newarg.index(arg)+1]
-                                    match = test.match(nextarg)
-
-                                    if match:
-                                        patterninfo = regcopy.pop(pattern)
-                                        regcopy[nextarg] = patterninfo
-                            except BaseException:
-                                return None
-
-                    reg = regcopy
-
-            return reg
-        return None
-
-    def get_registry_model_bios_version(self, currdict=None, monolith=None, \
-                                                                errlist=None):
-        """BIOS VERSION Load the schema file and find the registry model
-        if available.
-
-        :param currdict: current selection dictionary.
-        :type currdict: dict.
-        :param monolith: full data model retrieved from server.
-        :type monolith: dict.
-        :param errlist: list containing found errors.
-        :type errlist: list.
-        :returns: returns the registry model
-
-        """
-        attregtype = Typepathforval.typepath.defs.attributeregtype
-        if not errlist:
-            errlist = list()
-
-        if not checkattr(self, 'Location'):
-            errlist.append(RegistryValidationError(
-                'Location property does not exist'))
+        if not regdict:
+            self._errors.append(RegistryValidationError('Location data is empty'))
             return None
 
-        currloc = None
-        defloc = "en"
-        langcode = list(locale.getdefaultlocale())
+        jsonreg = json.loads(json.dumps(regdict, indent=2, cls=JSONEncoder))
 
-        if not langcode[0]:
-            langcode[0] = "en"
+        if getmsg:
+            return {jsonreg['RegistryPrefix']:jsonreg["Messages"]}
 
-        for loc in self.Location:
-            locationlanguage = loc["Language"].lower()
-            locationlanguage = locationlanguage.replace("-", "_")
-            if locationlanguage in langcode[0].lower():
-                currloc = loc
-                break
-
-        if not currloc:
-            # use default location if lang doesn't match
-            currloc = defloc
-
-        location_file = None
-        if currdict and monolith:
-            itemtype = monolith.gettypename(attregtype)
-            if itemtype:
-                for instance in monolith.itertype(itemtype):
-                    location_file = instance.resp.dict
-                    break
-
-        if not location_file:
-            errlist.append(RegistryValidationError('Location data is empty'))
-        else:
-            if currdict and monolith:
-                jsonreg = json.loads(json.dumps(location_file, indent=2, \
-                                                            cls=JSONEncoder))
-            else:
-                jsonreg = json.loads(location_file)
-
-            if 'RegistryEntries' in jsonreg:
-                regitem = jsonreg['RegistryEntries']
+        #This was done for bios registry model compatibility
+        if 'RegistryEntries' in jsonreg:
+            regitem = jsonreg['RegistryEntries']
+            if 'Attributes' in regitem:
+                newitem = {item[Typepathforval.typepath.defs.\
+                            attributenametype]:item for item in regitem['Attributes']}
+                regitem['Attributes'] = newitem
+                if not Typepathforval.typepath.flagiften:
+                    del regitem['Attributes']
+                    newitem.update(regitem)
+                    regitem = newitem
                 reg = HpPropertiesRegistry.parse(regitem)
-                return reg
+            return self.nestedreg(reg=reg, args=newarg) if newarg else reg
 
-        return None
+        if 'properties' in jsonreg:
+            regitem = jsonreg['properties']
+            if 'Properties' in regitem:
+                regitem.update(regitem['Properties'])
+                del regitem['Properties']
+            reg = HpPropertiesRegistry.parse(regitem)
+
+            return self.nestedreg(reg=reg, args=newarg) if newarg else reg
 
     def nestedreg(self, reg=None, args=None):
         """Go through the registry entry to find the required nested attribute
@@ -677,13 +391,13 @@ class RepoRegistryEntry(RisObject):
         """
         for arg in args:
             try:
-                arg = next(key for key in list(reg.keys()) if \
-                                        key.lower() == arg.lower())
-                if 'properties' in six.iterkeys(reg[arg]) \
-                                    and ('patternProperties' in \
+                arg = next((key for key in list(reg.keys()) if \
+                                        key.lower() == arg.lower()), None)
+                if not arg:
+                    return None
+                if 'properties' in six.iterkeys(reg[arg]) and ('patternProperties' in \
                                         six.iterkeys(reg[arg])):
-                    reg[arg]['properties'].update(\
-                                  reg[arg]['patternProperties'])
+                    reg[arg]['properties'].update(reg[arg]['patternProperties'])
                     reg = reg[arg]["properties"]
                 elif 'oneOf' in reg[arg]:
                     oneof = reg[arg]['oneOf']
@@ -692,6 +406,9 @@ class RepoRegistryEntry(RisObject):
                 elif 'type' in reg[arg] and reg[arg]['type'] == 'array' and \
                     'items' in reg[arg] and "properties" in reg[arg]["items"]:
                     reg = reg[arg]["items"]["properties"]
+                elif not ('properties' in six.iterkeys(reg[arg]) \
+                    or 'patternProperties' in six.iterkeys(reg[arg])):
+                    reg = reg[arg]
                 else:
                     reg = reg[arg]["properties"]
             except:
@@ -717,56 +434,22 @@ class HpPropertiesRegistry(RisObject):
         result = list()
 
         for tkey in tdict:
-            try:
-                if self[tkey] and checkattr(self[tkey], "type"):
-                    keyval = list()
-                    keyval.append(tdict[tkey])
-                    temp = self.validate_attribute(self[tkey], keyval, tkey)
-                    tdict[tkey] = keyval[0]
+            if not tkey in self:
+                #Added for Gen 9 Bios properties not in registry
+                continue
+            elif self[tkey] and (checkattr(self[tkey], "type") or checkattr(self[tkey], "Type")):
+                keyval = list()
+                keyval.append(tdict[tkey])
+                temp = self.validate_attribute(self[tkey], keyval, tkey)
+                tdict[tkey] = keyval[0]
 
-                    for err in temp:
-                        if isinstance(err, RegistryValidationError):
-                            if err.reg:
-                                err.sel = tkey
+                for err in temp:
+                    if isinstance(err, RegistryValidationError):
+                        if err.reg:
+                            err.sel = tkey
 
-                    result.extend(temp)
-            except Exception:
-                pass
+                result.extend(temp)
 
-        return result
-
-    def validate_att_val_bios(self, tdict):
-        """Look for tdict in attribute list and attempt to validate its value
-
-        :param tdict: the dictionary to test against.
-        :type tdict: list.
-        :returns: returns a validated list
-
-        """
-        result = list()
-
-        attdict = tdict['Attributes'] if 'Attributes' in list(tdict.keys()) else tdict
-        for tkey in attdict:
-            for item in self.Attributes:
-                try:
-                    if item[Typepathforval.typepath.defs.attributenametype] \
-                            == tkey and checkattr(item, "Type"):
-                        keyval = list()
-                        keyval.append(attdict[tkey])
-                        temp = self.validate_attribute(item, keyval, tkey)
-                        attdict[tkey] = keyval[0]
-
-                        for err in temp:
-                            if isinstance(err, RegistryValidationError):
-                                if err.reg:
-                                    err.sel = tkey
-
-                        result.extend(temp)
-                        break
-                except Exception:
-                    pass
-
-        tdict = attdict if 'Attributes' not in list(tdict.keys()) else tdict['Attributes']
         return result
 
     def get_validator(self, attrname, newargs=None, oneof=None):
@@ -820,38 +503,6 @@ class HpPropertiesRegistry(RisObject):
                     break
         return validator
 
-    def get_validator_bios(self, attrname):
-        """Returns attribute validator type
-
-        :param attrname: attribute name to be used for validation.
-        :type attrname: str.
-        :returns: returns attribute validator type
-
-        """
-
-        for item in self.Attributes:
-            name = Typepathforval.typepath.defs.attributenametype
-            if name not in list(item.keys()):
-                return None
-            if item[name] == attrname:
-                validator = None
-                if EnumValidator.is_type(item):
-                    validator = EnumValidator.parse(item)
-                elif StringValidator.is_type(item):
-                    validator = StringValidator.parse(item)
-                elif IntegerValidator.is_type(item):
-                    validator = IntegerValidator.parse(item)
-                elif BoolValidator.is_type(item):
-                    validator = BoolValidator.parse(item)
-                elif ObjectValidator.is_type(item):
-                    validator = ObjectValidator.parse(item)
-                elif PasswordValidator.is_type(item):
-                    validator = PasswordValidator.parse(item)
-
-                return validator
-
-        return None
-
     def validate_attribute(self, attrentry, attrvallist, name):
         """Function to validate attribute against iLO schema
 
@@ -866,13 +517,11 @@ class HpPropertiesRegistry(RisObject):
         """
         result = list()
         validator = None
-        attrval = attrvallist[0]
-        if self.nulltypevalidationcheck(attrval=attrval, attrentry=attrentry):
+        if self.nulltypevalidationcheck(attrval=attrvallist[0], attrentry=attrentry):
             return result
 
         if EnumValidator.is_type(attrentry):
             validator = EnumValidator.parse(attrentry)
-            attrval = attrvallist
         elif StringValidator.is_type(attrentry):
             validator = StringValidator.parse(attrentry)
         elif IntegerValidator.is_type(attrentry):
@@ -887,7 +536,8 @@ class HpPropertiesRegistry(RisObject):
             raise UnknownValidatorError(attrentry)
 
         if validator:
-            result.extend(validator.validate(attrval, name))
+            result.extend(validator.is_array(attrentry, attrvallist, name))
+            result.extend(validator.validate(attrvallist, name))
         return result
 
     def nulltypevalidationcheck(self, attrval=None, attrentry=None):
@@ -913,8 +563,7 @@ class BaseValidator(RisObject):
 
     def validate(self):
         """Overridable function for validation """
-        raise RuntimeError('You must override this method in your derived ' \
-                                                                        'class')
+        raise RuntimeError('You must override this method in your derived class')
 
     def common_print_help(self, name):
         """Info command helper function for print outs
@@ -979,6 +628,36 @@ class BaseValidator(RisObject):
             outdata += '\n'
         return outdata
 
+    def is_arrtype(self, attrentry):
+        """Validate that the type is array
+
+        :param attrname: attribute name to be used for validation.
+        :type attrname: str.
+        :returns: returns a boolean based on whether type is array
+
+        """
+        if 'type' in attrentry and attrentry['type'] == "array":
+            return True
+        return False
+
+    def is_array(self, attrentry, arrval, name):
+        """Validate that the given value is an array type
+
+        :param arrval: attribute name to be used for validation.
+        :type arrval: unknown type.
+        :returns: returns a boolean based on whether type is array
+
+        """
+        result = []
+
+        if self.is_arrtype(attrentry):
+            if isinstance(arrval[0], (frozenset, list, set, tuple,)):
+                return []
+            else:
+                result.append(RegistryValidationError("'%s' is not a valid setting " \
+                      "for '%s', expecting an array" % (arrval[0], name), regentry=self))
+        return result
+
 class EnumValidator(BaseValidator):
     """Enum validator class"""
     def __init__(self, d):
@@ -1007,8 +686,7 @@ class EnumValidator(BaseValidator):
             else:
                 if attrentry['type'].lower() == 'enumeration':
                     return True
-                elif 'enum' in attrentry and attrentry['type'].lower() == \
-                                                                    'string':
+                elif 'enum' in attrentry and attrentry['type'].lower() == 'string':
                     return True
         elif 'Type' in attrentry:
             if attrentry['Type'].lower() == 'enumeration':
@@ -1020,7 +698,7 @@ class EnumValidator(BaseValidator):
         """Validate against iLO schema
 
         :param keyval: new value to be used for validation.
-        :type keyval: str.
+        :type keyval: list.
         :param name: clean name for outputting.
         :type name: str.
         :returns: returns an error if fails
@@ -1031,7 +709,10 @@ class EnumValidator(BaseValidator):
 
         try:
             for possibleval in self.enum:
-                if possibleval and possibleval.lower() == newval.lower():
+                if possibleval and isinstance(possibleval, type(newval)) or \
+                            (isinstance(possibleval, six.string_types) and \
+                             isinstance(newval, six.string_types)) and \
+                             possibleval.lower() == str(newval).lower():
                     keyval[0] = possibleval
                     return result
         except Exception:
@@ -1107,12 +788,12 @@ class BoolValidator(BaseValidator):
 
         """
         result = list()
-        if newval is False or newval is True:
+        if newval[0] is False or newval[0] is True:
             return result
 
         result.append(
             RegistryValidationError("'%s' is not a valid setting for '%s'" % \
-                                                (newval, name), regentry=self))
+                                                (newval[0], name), regentry=self))
 
         return result
 
@@ -1162,16 +843,20 @@ class StringValidator(BaseValidator):
 
         return False
 
-    def validate(self, newval, _):
+    def validate(self, newvallist, _):
         """Validate against iLO schema
 
-        :param newval: new value to be used for validation.
-        :type newval: str.
+        :param newvallist: new value to be used for validation.
+        :type newvallist: list.
         :returns: returns an error if validation fails criteria
 
         """
+        newval = newvallist[0]
         result = list()
         namestr = Typepathforval.typepath.defs.attributenametype
+        if not isinstance(newval, basestring):
+            result.append(RegistryValidationError("Given value must be a string"))
+            return result
         if 'MinLength' in self:
             if len(newval) < int(self['MinLength']):
                 result.append(RegistryValidationError(
@@ -1239,8 +924,7 @@ class IntegerValidator(BaseValidator):
             elif attrentry['type'] == "array":
                 for key, value in six.iteritems(attrentry['items']):
                     if key.lower() == "type":
-                        if value.lower() == 'interger' or value.lower() == \
-                                                                    'number':
+                        if value.lower() == 'interger' or value.lower() == 'number':
                             return True
             else:
                 if attrentry['type'].lower() == 'integer' or \
@@ -1252,25 +936,26 @@ class IntegerValidator(BaseValidator):
 
         return False
 
-    def validate(self, newval, _):
+    def validate(self, newvallist, _):
         """Validate against iLO schema
 
-        :param newval: new value to be used for validation.
-        :type newval: str.
+        :param newvallist: new value to be used for validation.
+        :type newvallist: str.
         :returns: list.
 
         """
         result = list()
-        intval = int(newval)
+        try:
+            intval = int(newvallist[0])
+            newvallist[0] = intval
+        except:
+            result.append(RegistryValidationError("'%(Name)s' must "\
+                "be an integer value'" % (self), regentry=self))
+            return result
 
-        pat = re.compile(r'0-9+')
-        if newval and not pat.match(intval):
-            result.append(
-                RegistryValidationError(
-                    "'%(Name)s' must be an integer value'" % (self),
-                    regentry=self
-                )
-            )
+        if newvallist[0] and not str(intval).isdigit():
+            result.append(RegistryValidationError("'%(Name)s' must "\
+                "be an integer value'" % (self), regentry=self))
             return result
 
         if 'LowerBound' in self:
@@ -1336,16 +1021,20 @@ class ObjectValidator(BaseValidator):
 
         return False
 
-    def validate(self, _, __):
+    def validate(self, newval, name):
         """Validate against iLO schema
 
         :param newval: new value to be used for validation.
-        :type newval: str.
+        :type newval: list.
         :returns: list.
 
         """
-        #TODO need to add so logic for objects class?
+        #TODO: need to add logic for true postive and false negatives.
         result = list()
+        if isinstance(newval[0], (dict, six.string_types, int)):
+            result.append(\
+                    RegistryValidationError("'%s' is not a valid setting for '%s'" % \
+                                                                (newval[0], name), regentry=self))
         return result
 
     def print_help(self, name):
@@ -1356,7 +1045,21 @@ class ObjectValidator(BaseValidator):
         :returns: str.
 
         """
+        wrapper = textwrap.TextWrapper()
+        wrapper.initial_indent = ' ' * 4
+        wrapper.subsequent_indent = ' ' * 4
         outdata = self.common_print_help(name)
+        if 'properties' in self:
+            outdata += '\nSUB-PROPERTIES\n'
+            propdata = ', '.join(list(six.iterkeys(self.properties)))
+            outdata += '%s' % wrapper.fill('%s' % propdata)
+            outdata += '\n'
+        elif 'items' in self:
+            outdata += '\nSUB-PROPERTIES\n'
+            propdata = ', '.join(list(six.iterkeys(self['items'].properties)))
+            outdata += '%s' % wrapper.fill('%s' % propdata)
+            outdata += '\n'
+
         return outdata
 
 class PasswordValidator(BaseValidator):
@@ -1391,19 +1094,22 @@ class PasswordValidator(BaseValidator):
 
         return False
 
-    def validate(self, newval, _):
+    def validate(self, newvallist, _):
         """Validate against iLO schema
 
-        :param newval: new value to be used for validation.
-        :type newval: str.
+        :param newvallist: new value to be used for validation.
+        :type newvallist: list.
         :returns: returns an validation error if criteria not met
 
         """
         result = list()
+        newval = newvallist[0]
 
         if newval is None:
             return result
 
+        if not isinstance(newval, basestring):
+            result.append(RegistryValidationError("Given value must be a string"))
         if 'MinLength' in self:
             if len(newval) < int(self['MinLength']):
                 result.append(RegistryValidationError("'%s' must be at least" \

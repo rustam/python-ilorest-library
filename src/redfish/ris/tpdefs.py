@@ -19,8 +19,8 @@
 #---------Imports---------
 import logging
 
-from redfish.rest.v1 import SecurityStateError, InvalidCredentialsError
 from redfish import redfish_client, rest_client
+from redfish.rest.v1 import ServerDownOrUnreachableError
 from redfish.ris.rmc_helper import UnableToObtainIloVersionError
 #---------End of imports---------
 
@@ -32,10 +32,12 @@ class Typesandpathdefines(object):
         self.url = None
         self.defs = None
         self.ilogen = None
+        self.iloversion = None
         self.flagiften = False
         self.adminpriv = True
 
-    def getgen(self, gen=None, url=None, username=None, password=None, logger=None):
+    def getgen(self, gen=None, url=None, username=None, password=None, logger=None,\
+                                                    proxy=None, isredfish=True):
         """Function designed to verify the servers platform
 
         :param url: The URL to perform the request on.
@@ -46,58 +48,89 @@ class Typesandpathdefines(object):
         """
 
         self.url = url
+        self.is_redfish = isredfish
+        self.gencompany = self.rootresp = False
+        self.ilogen = 5 # If no iLO or Anonymous data , default to iLO 5 types
+        logger = logger if not logger else LOGGER
+        client = None
+        self.noschemas = False
+        self.schemapath = self.regpath = ''
+
         if not gen:
-            try:
-                redfishclient = redfish_client(base_url=self.url, \
+            getclient = lambda func: func(base_url=self.url, \
                                    username=username, password=password, \
-                                   default_prefix="/redfish/v1/", is_redfish=True,\
-                                   cache=False)
-                rootresp = redfishclient.root
-                redfishclient.logout()
-            except SecurityStateError as excp:
-                raise excp
-            except InvalidCredentialsError:
-                raise
-            except Exception:
-                excep = None
-                try:
-                    restclient = rest_client(base_url=self.url, username=username, \
-                                     password=password, default_prefix="/rest/v1")
-                    rootresp = restclient.root
-                    restclient.logout()
-                except Exception as excep:
-                    logger = logger if not logger else LOGGER
-                    logger.info("Gen get rest error:"+str(excep)+"\n")
-                if excep:
-                    raise
-
-            self.ilogen = None
-
+                                   cache=False, proxy=proxy)
             try:
-                self.ilogen = rootresp["Oem"]["Hp"]["Manager"][0]["ManagerType"]
-            except KeyError:
-                if 'Hpe' in list(rootresp["Oem"].keys()):
-                    self.ilogen = rootresp["Oem"]["Hpe"]["Manager"][0]["ManagerType"]
+                client = getclient(redfish_client)
+            except ServerDownOrUnreachableError as excp:
+                if self.is_redfish:
+                    raise excp
+            if not self.is_redfish:
+                try:
+                    restclient = getclient(rest_client)
+                    self.is_redfish = False
+                    client = restclient
+                except Exception as excep:
+                    if not client:
+                        logger.info("Gen get rest error:"+str(excep)+"\n")
+                        raise excep
+                    else:
+                        self.is_redfish = True
+
+            rootresp = client.root
+            self.rootresp = rootresp
+            client.logout()
+
+            self.gencompany = next(iter(self.rootresp["Oem"].keys()), None) in ('Hpe', 'Hp')
+            comp = 'Hp' if self.gencompany else None
+            comp = 'Hpe' if rootresp["Oem"].get('Hpe', None) else comp
+            if comp and rootresp["Oem"][comp]["Manager"][0].get('ManagerType', None):
+                self.ilogen = rootresp["Oem"][comp]["Manager"][0]["ManagerType"]
+                self.ilover = rootresp["Oem"][comp]["Manager"][0]["ManagerFirmwareVersion"]
+                if self.ilogen.split(' ')[-1] == "CM":
+                    # Assume iLO 4 types in Moonshot
+                    self.ilogen = 4
+                    self.iloversion = None
                 else:
-                    # If we can't find iLO, go with redfish iLO 5 types
-                    self.ilogen = 5
+                    self.iloversion = float(self.ilogen.split(' ')[-1] + '.' + \
+                                                    ''.join(self.ilover.split('.')))
         else:
             self.ilogen = int(gen)
+
         try:
             if not isinstance(self.ilogen, int):
-                self.ilogen = self.ilogen.split(' ')[-1]
-                self.flagiften = False
-                if self.ilogen == 'CM':
-                    self.ilogen = 4
-            if int(self.ilogen) >= 5:
-                self.flagiften = True
+                self.ilogen = int(self.ilogen.split(' ')[-1])
+            self.flagiften = True if int(self.ilogen) >= 5 else False
         except:
-            raise UnableToObtainIloVersionError("Unable to find the iloversion")
+            raise UnableToObtainIloVersionError("Unable to find the iLO generation.")
+
+        self.noschemas = True if self.rootresp and "JsonSchemas" in self.rootresp and not \
+                                        self.rootresp.get("JsonSchemas", None) else False
+        if self.noschemas:
+            self.ilogen = self.ilover = self.iloversion = None
+        if self.rootresp and not self.noschemas:
+            self.defineregschemapath(self.rootresp)
 
         if self.flagiften:
             self.defs = Definevalstenplus()
         else:
             self.defs = DefinevalsNine()
+
+    def defineregschemapath(self, rootobj):
+        """Define the schema and registry paths using data in root path
+        :param rootobj: The root path data.
+        :type rootobj: dict.
+
+        """
+        self.gencompany = next(iter(rootobj["Oem"].keys()), None) in ('Hpe', 'Hp')
+        self.schemapath = rootobj["JsonSchemas"]["@odata.id"] if rootobj.\
+            get("JsonSchemas", None) else rootobj["links"]["Schemas"]["href"]
+        self.schemapath = self.schemapath.rstrip('/')+"/?$expand=." if \
+                self.is_redfish and self.flagiften and self.gencompany else self.schemapath
+        self.regpath = rootobj["Registries"]["@odata.id"] if rootobj.get\
+            ("Registries", None) else rootobj["links"]["Registries"]["href"]
+        self.regpath = self.regpath.rstrip('/')+"/?$expand=." if \
+                self.is_redfish and self.flagiften and self.gencompany else self.regpath
 
 class Definevals(object):
     """Class for setting platform dependent variables"""
@@ -107,7 +140,7 @@ class Definevals(object):
 class Definevalstenplus(Definevals):
     """Platform dependent variables"""
     # pylint: disable=too-many-instance-attributes
-    # As a defines classt this will need all the attributes
+    # As a defines class this will need all the attributes
     def __init__(self):
         self.oemhp = "Hpe"
 
@@ -119,6 +152,7 @@ class Definevalstenplus(Definevals):
         self.addlicensepath = "/redfish/v1/Managers/1/LicenseService/"
         self.accountspath = "/redfish/v1/AccountService/Accounts/"
         self.federationpath = "/redfish/v1/Managers/1/FederationGroups/"
+        self.resourcedirpath = "/redfish/v1/ResourceDirectory/"
 
         self.biostype = "Bios."
         self.hpeskmtype = "HpeESKM."
@@ -179,6 +213,7 @@ class DefinevalsNine(Definevals):
         self.addlicensepath = "/rest/v1/Managers/1/LicenseService"
         self.accountspath = "/rest/v1/AccountService/Accounts"
         self.federationpath = "/rest/v1/Managers/1/FederationGroups"
+        self.resourcedirpath = "/rest/v1/ResourceDirectory"
 
         self.biostype = "HpBios."
         self.hpeskmtype = "HpESKM."
@@ -226,6 +261,7 @@ class DefinevalsNine(Definevals):
         self.managerpath = "/redfish/v1/Managers/1/"
         self.biospath = "/redfish/v1/systems/1/bios/"
         self.addlicensepath = "/redfish/v1/Managers/1/LicenseService/"
+        self.resourcedirpath = "/redfish/v1/ResourceDirectory/"
 
         self.typestring = "@odata.type"
         self.hrefstring = "@odata.id"
