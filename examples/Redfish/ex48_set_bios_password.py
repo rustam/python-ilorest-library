@@ -19,17 +19,26 @@ from redfish.rest.v1 import ServerDownOrUnreachableError
 def ex48_set_bios_password(redfishobj, new_password, bios_password=None):
     sys.stdout.write("\nEXAMPLE 48: Set Bios Password\n")
     instances = redfishobj.search_for_type("Bios.")
+
     if not len(instances) and redfishobj.typepath.defs.isgen9:
         sys.stderr.write("\nNOTE: This example requires the Redfish schema "\
-                 "version TBD in the managed iLO. It will fail against iLOs"\
-                 " with the 2.50 firmware or earlier. \n")
+                         "version TBD in the managed iLO. It will fail against iLO's"\
+                         " with the 2.50 firmware or earlier. \n")
+    else:
+        for instance in instances:
+            response = redfishobj.redfish_get(instance["@odata.id"])
+            body = dict()
+            try:
+                body["PasswordName"] = "Administrator"
+                body["OldPassword"] = bios_password
+                body["NewPassword"] = new_password
+                response = redfishobj.redfish_post(response.dict["Actions"]\
+                                                   ["#Bios.ChangePassword"]\
+                                                   ["target"], body)
+            except KeyError:
+                pass
 
-    for instance in instances:
-        body = {"AdminPassword": new_password, \
-                "OldAdminPassword": bios_password}
-        response = redfishobj.redfish_patch(instance["@odata.id"], body, \
-                                            optionalpassword=bios_password)
-        redfishobj.error_handler(response)
+            redfishobj.error_handler(response)
 
 if __name__ == "__main__":
     # When running on the server locally use the following commented values

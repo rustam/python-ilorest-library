@@ -464,8 +464,8 @@ class RestClientBase(object):
         """
 
         self.__url = url if url else self.__url
-        http = ProxyManager(self.get_proxy()) if self.get_proxy()\
-                         and proxy else urllib3.PoolManager()
+        http = ProxyManager(self.get_proxy(), cert_reqs='CERT_NONE') if self.get_proxy()\
+                         and proxy else urllib3.PoolManager(cert_reqs='CERT_NONE')
         self._conn = http.request
 
     def __destroy_connection(self):
