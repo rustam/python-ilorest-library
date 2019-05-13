@@ -49,13 +49,18 @@ Remote communication
 No special requirements.
 
 Inband communication
-~~~~~~~~~~~~~~~~~~~~
-To enable support for inband communications, you must download the DLL/SO for
-your system from: windows_ / linux_. It must be placed in your working
-environment path.
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
- .. _windows: https://downloads.hpe.com/pub/softlib2/software1/pubsw-windows/p1463761240/v145660/ilorest_chif.dll
- .. _linux: https://downloads.hpe.com/pub/softlib2/software1/pubsw-linux/p1093353304/v145585/ilorest_chif.so
+ To enable support for inband communications, you must download the DLL/SO for your system. By downloading, you agree to the terms and conditions of the `Hewlett Packard Enterprise Software License Agreement`_. 
+It must be placed in your working environment path.
+ 
+ Windows Download: ilorest_chif.dll_
+ 
+ Linux Download: ilorest_chif.so_
+ 
+ .. _`Hewlett Packard Enterprise Software License Agreement` : https://www.hpe.com/us/en/software/licensing.html
+ .. _ilorest_chif.dll: https://downloads.hpe.com/pub/softlib2/software1/pubsw-windows/p1463761240/v120479/hprest_chif.dll
+ .. _ilorest_chif.so: https://downloads.hpe.com/pub/softlib2/software1/pubsw-linux/p1093353304/v120481/hprest_chif.so
 
 Usage
 -----
