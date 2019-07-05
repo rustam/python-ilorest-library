@@ -34,12 +34,25 @@ Installing
  pip install python-ilorest-library
 
 Building from zip file source
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. code-block:: console
 
- python setup.py sdist --formats=zip (this will produce a .zip file)
- cd dist
- pip install python-ilorest-library-x.x.x.zip
+	python setup.py sdist --formats=zip (this will produce a .zip file)
+	cd dist
+	pip install python-ilorest-library-x.x.x.zip
+	
+Including socks support
+~~~~~~~~~~~~~~~~~~~~~~~~~
+.. code-block:: console
+
+	pip install python-ilorest-library[socks]
+
+.. code-block:: console
+
+	python setup.py sdist --formats=zip (this will produce a .zip file)
+	cd dist
+	pip install python-ilorest-library-x.x.x.zip[socks]
 
 Requirements
 ------------
@@ -59,8 +72,8 @@ It must be placed in your working environment path.
  Linux Download: ilorest_chif.so_
  
  .. _`Hewlett Packard Enterprise Software License Agreement` : https://www.hpe.com/us/en/software/licensing.html
- .. _ilorest_chif.dll: https://downloads.hpe.com/pub/softlib2/software1/pubsw-windows/p1463761240/v120479/hprest_chif.dll
- .. _ilorest_chif.so: https://downloads.hpe.com/pub/softlib2/software1/pubsw-linux/p1093353304/v120481/hprest_chif.so
+ .. _ilorest_chif.dll: https://downloads.hpe.com/pub/softlib2/software1/pubsw-windows/p1463761240/v150722/ilorest_chif.dll
+ .. _ilorest_chif.so: https://downloads.hpe.com/pub/softlib2/software1/pubsw-linux/p1093353304/v150716/ilorest_chif.so
 
 Usage
 -----

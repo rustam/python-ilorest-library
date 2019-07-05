@@ -32,7 +32,15 @@ from functools import partial
 from collections import (OrderedDict)
 
 import urllib3
+
 from urllib3 import ProxyManager
+
+try:
+    urllib3.disable_warnings()
+    from urllib3.contrib.socks import SOCKSProxyManager
+except ImportError:
+    pass
+
 #Added for py3 compatibility
 import six
 
@@ -443,7 +451,6 @@ class RestClientBase(object):
         self.__init_connection(proxy=proxy)
         if not cache:
             self.get_root_object()
-        self.__destroy_connection()
         if not cache:
             if self.is_redfish:
                 self.login_url = self.root.Links.Sessions['@odata.id']
@@ -464,8 +471,17 @@ class RestClientBase(object):
         """
 
         self.__url = url if url else self.__url
-        http = ProxyManager(self.get_proxy(), cert_reqs='CERT_NONE') if self.get_proxy()\
-                         and proxy else urllib3.PoolManager(cert_reqs='CERT_NONE')
+        if self.get_proxy() and proxy:
+            if self.get_proxy().startswith('socks'):
+                LOGGER.info("Initializing a SOCKS proxy.")
+                http = SOCKSProxyManager(self.get_proxy(), cert_reqs='CERT_NONE')
+            else:
+                LOGGER.info("Initializing a HTTP proxy.")
+                http = ProxyManager(self.get_proxy(), cert_reqs='CERT_NONE')
+        else:
+            LOGGER.info("Initializing no proxy.")
+            http = urllib3.PoolManager(cert_reqs='CERT_NONE')
+
         self._conn = http.request
 
     def __destroy_connection(self):
@@ -689,10 +705,10 @@ class RestClientBase(object):
         """
         files = None
         request_args = {}
-        proxy = True if 'redfish.dmtf.org' in path else False
-        headers = {} if proxy else self._get_req_headers(headers, providerheader, \
+        external_uri = True if 'redfish.dmtf.org' in path else False
+        headers = {} if external_uri else self._get_req_headers(headers, providerheader, \
                                     optionalpassword)
-        reqpath = path.replace('//', '/') if not proxy else path
+        reqpath = path.replace('//', '/') if not external_uri else path
 
         if body is not None:
             if body and isinstance(body, list) and isinstance(body[0], tuple):
@@ -767,12 +783,11 @@ class RestClientBase(object):
 
             try:
                 while True:
-                    if self._conn is None or proxy:
-                        self.__init_connection(proxy=proxy)
+                    if self._conn is None or external_uri:
+                        self.__init_connection(proxy=external_uri)
 
                     inittime = time.time()
-                    reqfullpath = self.base_url+reqpath if not proxy else reqpath
-                    urllib3.disable_warnings()
+                    reqfullpath = self.base_url+reqpath if not external_uri else reqpath
                     request_args['headers'] = headers
                     if files:
                         request_args['fields'] = files
@@ -792,7 +807,7 @@ class RestClientBase(object):
                     newurl = urlparse(newloc)
 
                     reqpath = newurl.path
-                    self.__init_connection(newurl, proxy=proxy)
+                    self.__init_connection(newurl, proxy=external_uri)
 
                 restresp = RestResponse(restreq, resp)
 
@@ -801,7 +816,7 @@ class RestClientBase(object):
                 LOGGER.info('Retrying %s [%s]', path, excp)
                 time.sleep(1)
 
-                self.__init_connection(proxy=proxy)
+                self.__init_connection(proxy=external_uri)
                 continue
             else:
                 break
@@ -874,7 +889,7 @@ class RestClientBase(object):
             resp = self._rest_request(self.login_url, method="POST", \
                                                     body=data, headers=headers)
             try:
-                LOGGER.info(json.loads('%s'% resp.read))
+                LOGGER.info(json.loads('%s', resp.read))
             except ValueError:
                 pass
             LOGGER.info('Login returned code %s: %s', resp.status, resp.read)
@@ -1078,6 +1093,7 @@ class Blobstore2RestClient(RestClientBase):
 
         if not isinstance(str1, bytearray):
             str1 = str1.encode("ASCII")
+
         if LOGGER.isEnabledFor(logging.DEBUG):
             try:
                 logbody = None

@@ -109,7 +109,7 @@ class RedfishObject(object):
             if "@odata.type" in item and type.lower() in \
                                                     item["@odata.type"].lower():
                 for entry in self.SYSTEMS_RESOURCES["resources"]:
-                    if (item["@odata.id"] + "/settings/").lower() == \
+                    if (item["@odata.id"] + "settings/").lower() == \
                                                 (entry["@odata.id"]).lower():
                         foundsettings = True
 
