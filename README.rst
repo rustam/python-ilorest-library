@@ -42,7 +42,7 @@ Building from zip file source
 	cd dist
 	pip install python-ilorest-library-x.x.x.zip
 	
-Including socks support
+Including socks support (Version 2.5 or greater)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 .. code-block:: console
 
