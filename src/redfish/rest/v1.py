@@ -889,7 +889,7 @@ class RestClientBase(object):
             resp = self._rest_request(self.login_url, method="POST", \
                                                     body=data, headers=headers)
             try:
-                LOGGER.info(json.loads('%s', resp.read))
+                LOGGER.info(json.loads('%s'% resp.read))
             except ValueError:
                 pass
             LOGGER.info('Login returned code %s: %s', resp.status, resp.read)
