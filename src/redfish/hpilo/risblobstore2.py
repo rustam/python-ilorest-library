@@ -893,7 +893,7 @@ class BlobStore2(object):
             libpath = os.path.join(os.path.split(sys.executable)[0], libpath)
         elif os.path.isfile(os.path.join(os.getcwd(), libpath)):
             libpath = os.path.join(os.getcwd(), libpath)
-        elif os.environ.has_key("LD_LIBRARY_PATH"):
+        elif os.environ.get("LD_LIBRARY_PATH"):
             paths = os.getenv("LD_LIBRARY_PATH", libpath).split(';')
             libpath = [os.path.join(pat, libname) for pat in paths if \
                                                         os.path.isfile(os.path.join(pat, libname))]

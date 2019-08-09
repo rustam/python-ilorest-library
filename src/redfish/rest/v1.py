@@ -191,9 +191,12 @@ class RestResponse(object):
     @property
     def read(self):
         """Wrapper around httpresponse.content"""
-        if self._read and not isinstance(self._read, six.text_type):
-            self._read = self._read.decode("utf-8", "ignore")
-        return self._read
+        try:
+            return self._read.decode("utf-8", "ignore")
+        except AttributeError:
+            return self._read
+        except TypeError:
+            return " "
 
     @read.setter
     def read(self, read):
@@ -221,8 +224,23 @@ class RestResponse(object):
         :returns: returns a header from HTTP response
 
         """
-        return self._http_response.headers.get(name) if self._http_response\
-                                        is not None else self._headers.get(name)
+        def search_dict(key, dict):
+            """Searches a dictionary for key and returns the value associated
+            :param key: key of dictionary 
+            :type key: dict key
+            :param dict: dictionary to be searched
+            :type dict: dictionary
+            :returns: value at the key requested for search
+            """
+            for k, v in dict.items():
+                if k.lower() == key:
+                    return v
+            return None
+
+        if self._http_response:
+            return search_dict(name, self._http_response.headers)
+        else:
+            return search_dict(name, self._headers)
 
     def loaddict(self, newdict):
         """Property for setting JSON data
