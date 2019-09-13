@@ -233,7 +233,7 @@ class RestResponse(object):
             :returns: value at the key requested for search
             """
             for k, v in dict.items():
-                if k.lower() == key:
+                if k.lower() == key.lower():
                     return v
             return None
 

@@ -292,13 +292,22 @@ class ValidationManager(object):
         :returns: returns boolean.
 
         """
-        if reg.get("ReadOnly", None) == False or (reg.get(tkey, None)\
-                             and reg[tkey].get("readonly", None) == False):
-            if unique or not reg.get("IsSystemUniqueProperty", None):
+        if reg.get("ReadOnly", None) == False \
+            or (reg.get(tkey, None) and reg[tkey].get("readonly", None) == False)\
+            or (reg.get(tkey, None) and reg[tkey].get("ReadOnly", None) == False):
+            if unique or (not reg.get("IsSystemUniqueProperty", None)\
+                and (reg.get(tkey, None) and not reg[tkey].get("IsSystemUniqueProperty", None))):
                 return
+
         if not searchtype or (reg.get("ReadOnly", None) == True \
-                or (reg.get(tkey, None) and reg[tkey].get("readonly", None) == True)):
+            or (reg.get(tkey, None) and reg[tkey].get("readonly", None) == True)
+            or (reg.get(tkey, None) and reg[tkey].get("ReadOnly", None) == True)):
             warnings.append("Property is read-only skipping '%s'\n" % str(tkey))
+            del tdict[tkey]
+            return True
+        elif not searchtype or (reg.get("IsSystemUniqueProperty", None))\
+            or (reg.get(tkey, None) and reg[tkey].get("IsSystemUniqueProperty", None) == True):
+            warnings.append("Property is unique to the system skipping '%s'\n" % str(tkey))
             del tdict[tkey]
             return True
 
