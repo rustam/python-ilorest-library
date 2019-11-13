@@ -1,5 +1,5 @@
 ###
-# Copyright 2016 Hewlett Packard Enterprise, Inc. All rights reserved.
+# Copyright 2019 Hewlett Packard Enterprise, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,8 +26,7 @@ import random
 import string
 import logging
 
-from ctypes import c_char_p, c_ubyte, c_uint, cdll, POINTER, \
-                    create_string_buffer, c_ushort
+from ctypes import c_char_p, c_ubyte, c_uint, cdll, POINTER, create_string_buffer, c_ushort
 
 from redfish.hpilo.rishpilo import HpIlo, HpIloInitialError
 from redfish.hpilo.rishpilo import BlobReturnCodes as hpiloreturncodes
@@ -159,8 +158,7 @@ class BlobStore2(object):
         resp = self._send_receive_raw(data)
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
-        if not (errorcode == BlobReturnCodes.SUCCESS or \
-                                    errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -192,15 +190,13 @@ class BlobStore2(object):
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
         if errorcode == BlobReturnCodes.BADPARAMETER:
             if retries < self.max_retries:
-                self.get_info(key=key, namespace=namespace, retries=\
-                                                        retries+1)
+                self.get_info(key=key, namespace=namespace, retries=retries+1)
             else:
                 raise Blob2OverrideError(errorcode)
         elif errorcode == BlobReturnCodes.NOTFOUND:
             raise BlobNotFoundError(key, namespace)
 
-        if not (errorcode == BlobReturnCodes.SUCCESS or \
-                                    errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
             raise HpIloError(errorcode)
 
         response = resp[lib.size_of_responseHeaderBlob():]
@@ -241,13 +237,11 @@ class BlobStore2(object):
             recvpkt = self.read_fragment(key, namespace, read_block_size, count)
 
             newreadsize = readhead + 4
-            bytesread = struct.unpack("<I", bytes(recvpkt[readhead:\
-                                                            (newreadsize)]))[0]
+            bytesread = struct.unpack("<I", bytes(recvpkt[readhead:(newreadsize)]))[0]
 
             if bytesread == 0:
                 if retries < self.max_retries:
-                    data = self.read(key=key, namespace=namespace, retries=\
-                                                        retries+1)
+                    data = self.read(key=key, namespace=namespace, retries=retries+1)
                     return data
                 else:
                     raise BlobRetriesExhaustedError()
@@ -355,8 +349,7 @@ class BlobStore2(object):
         resp = self._send_receive_raw(dataarr)
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
-        if not (errorcode == BlobReturnCodes.SUCCESS or\
-                                    errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -392,8 +385,7 @@ class BlobStore2(object):
                                                     retries+1)
             else:
                 raise Blob2OverrideError(errorcode)
-        elif not (errorcode == BlobReturnCodes.SUCCESS or\
-                                    errorcode == BlobReturnCodes.NOTMODIFIED):
+        elif not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -420,8 +412,7 @@ class BlobStore2(object):
         resp = self._send_receive_raw(data)
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
-        if not (errorcode == BlobReturnCodes.SUCCESS or\
-                                    errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
             raise HpIloError(errorcode)
 
         resp = resp + "\0" * (lib.size_of_listResponse() - len(resp))
@@ -453,8 +444,7 @@ class BlobStore2(object):
         resp = self._send_receive_raw(data)
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
-        if not (errorcode == BlobReturnCodes.SUCCESS or\
-                                    errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -475,15 +465,12 @@ class BlobStore2(object):
         :type rsp_namespace: str.
 
         """
-        rqt_key = ''.join(random.choice(string.ascii_letters + \
-                                            string.digits) for _ in range(10))
-        rsp_key = ''.join(random.choice(string.ascii_letters + \
-                                            string.digits) for _ in range(10))
+        rqt_key = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(10))
+        rsp_key = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(10))
 
         lib = self.gethprestchifhandle()
 
-        if len(req_data) < (lib.size_of_restImmediateRequest() + \
-                                                        lib.max_write_size()):
+        if len(req_data) < (lib.size_of_restImmediateRequest() + lib.max_write_size()):
             lib.rest_immediate.argtypes = [c_uint, c_char_p, c_char_p]
             lib.rest_immediate.restype = POINTER(c_ubyte)
 
@@ -497,8 +484,7 @@ class BlobStore2(object):
             self.create(rqt_key, rsp_namespace)
             self.write(rqt_key, rsp_namespace, req_data)
 
-            lib.rest_immediate_blobdesc.argtypes = [c_char_p, c_char_p, \
-                                                                    c_char_p]
+            lib.rest_immediate_blobdesc.argtypes = [c_char_p, c_char_p, c_char_p]
             lib.rest_immediate_blobdesc.restype = POINTER(c_ubyte)
 
             name = create_string_buffer(rqt_key.encode('utf-8'))
@@ -523,8 +509,7 @@ class BlobStore2(object):
         recvmode = struct.unpack("<I", bytes(resp[12:16]))[0]
 
         fixdlen = lib.size_of_restResponseFixed()
-        response = resp[fixdlen:struct.unpack("<I", bytes(resp[16:20]))[0] + \
-                                                                        fixdlen]
+        response = resp[fixdlen:struct.unpack("<I", bytes(resp[16:20]))[0] + fixdlen]
 
         tmpresponse = None
         if errorcode == BlobReturnCodes.SUCCESS and not mode:
@@ -571,8 +556,7 @@ class BlobStore2(object):
         resp = self._send_receive_raw(data)
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
-        if not (errorcode == BlobReturnCodes.SUCCESS or \
-                                    errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
             raise HpIloError(errorcode)
 
         try:
@@ -597,8 +581,7 @@ class BlobStore2(object):
         resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
-        if not (errorcode == BlobReturnCodes.SUCCESS or\
-                                    errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -618,8 +601,7 @@ class BlobStore2(object):
         resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
-        if not (errorcode == BlobReturnCodes.SUCCESS or\
-                                    errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -639,8 +621,7 @@ class BlobStore2(object):
         resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
-        if not (errorcode == BlobReturnCodes.SUCCESS or\
-                                    errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -660,8 +641,7 @@ class BlobStore2(object):
         resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
-        if not (errorcode == BlobReturnCodes.SUCCESS or\
-                                    errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -681,8 +661,7 @@ class BlobStore2(object):
         resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
-        if not (errorcode == BlobReturnCodes.SUCCESS or\
-                                    errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -702,8 +681,7 @@ class BlobStore2(object):
         resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
-        if not (errorcode == BlobReturnCodes.SUCCESS or\
-                                    errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -723,8 +701,7 @@ class BlobStore2(object):
         resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
-        if not (errorcode == BlobReturnCodes.SUCCESS or\
-                                    errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -744,8 +721,7 @@ class BlobStore2(object):
         resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
-        if not (errorcode == BlobReturnCodes.SUCCESS or\
-                                    errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -765,8 +741,7 @@ class BlobStore2(object):
         resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
-        if not (errorcode == BlobReturnCodes.SUCCESS or\
-                                    errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -786,8 +761,7 @@ class BlobStore2(object):
         resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
-        if not (errorcode == BlobReturnCodes.SUCCESS or\
-                                    errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -889,6 +863,7 @@ class BlobStore2(object):
         :param libname: The name of the library to search for.
         :type libname: str."""
         libpath = libname
+
         if os.path.isfile(os.path.join(os.path.split(sys.executable)[0], libpath)):
             libpath = os.path.join(os.path.split(sys.executable)[0], libpath)
         elif os.path.isfile(os.path.join(os.getcwd(), libpath)):

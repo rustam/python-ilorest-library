@@ -1,1 +1,1 @@
-""" Utilities to simplify interaction with Redfish data """
+""" Utilities to simplify interaction with LegacyRest/Redfish data """

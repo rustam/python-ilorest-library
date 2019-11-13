@@ -1,5 +1,5 @@
 ###
-# Copyright 2016 Hewlett Packard Enterprise, Inc. All rights reserved.
+# Copyright 2019 Hewlett Packard Enterprise, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -90,19 +90,19 @@ class HpIlo(object):
 
             self.fhandle = fhandle
 
-            status = self.dll.ChifPing(self.fhandle)
-            if status != BlobReturnCodes.SUCCESS:
-                errmsg = "Error {0} occurred while trying to open a "\
+            if not "skip_ping" in os.environ:
+                status = self.dll.ChifPing(self.fhandle)
+                if status != BlobReturnCodes.SUCCESS:
+                    errmsg = "Error {0} occurred while trying to open a "\
                                         "channel to iLO".format(status)
-                if status == BlobReturnCodes.CHIFERR_NoDriver:
-                    errmsg = "chif"
-                elif status == BlobReturnCodes.CHIFERR_AccessDenied:
-                    errmsg = "You must be root/Administrator to use this program."
-                raise HpIloInitialError(errmsg)
+                    if status == BlobReturnCodes.CHIFERR_NoDriver:
+                        errmsg = "chif"
+                    elif status == BlobReturnCodes.CHIFERR_AccessDenied:
+                        errmsg = "You must be root/Administrator to use this program."
+                    raise HpIloInitialError(errmsg)
 
-            self.dll.ChifSetRecvTimeout(self.fhandle, 60000)
+                self.dll.ChifSetRecvTimeout(self.fhandle, 60000)
         except:
-            self.unload()
             raise
 
     def chif_packet_exchange(self, data):
@@ -117,8 +117,7 @@ class HpIlo(object):
 
         recbuff = create_string_buffer(datarecv)
 
-        error = self.dll.ChifPacketExchange(self.fhandle, byref(buff),\
-                                             byref(recbuff), datarecv)
+        error = self.dll.ChifPacketExchange(self.fhandle, byref(buff), byref(recbuff), datarecv)
         if error != BlobReturnCodes.SUCCESS:
             raise HpIloChifPacketExchangeError("Error %s occurred while "\
                                                "exchange chif packet" % error)
@@ -150,7 +149,7 @@ class HpIlo(object):
 
                 if sequence != struct.unpack("<H", bytes(resp[2:4]))[0]:
                     if LOGGER.isEnabledFor(logging.DEBUG):
-                        LOGGER.debug('Attempt %s has a bad sequence number.\n' % (tries+1))
+                        LOGGER.debug('Attempt %s has a bad sequence number.\n', tries+1)
                     continue
 
                 return resp
@@ -159,10 +158,9 @@ class HpIlo(object):
 
                 if tries == (retries - 1):
                     self.close()
-                    self.unload()
 
                     if LOGGER.isEnabledFor(logging.DEBUG) and excp:
-                        LOGGER.debug('Error while reading iLO: %s' % str(excp))
+                        LOGGER.debug('Error while reading iLO: %s', str(excp))
                     raise excp
 
             tries += 1
@@ -172,19 +170,12 @@ class HpIlo(object):
     def close(self):
         """Chif close function"""
         try:
-            self.dll.ChifClose(self.fhandle)
-        except Exception:
-            pass
-
-    def unload(self):
-        """ Windows only
-            Chif unload function """
-        try:
-            del self.dll
+            if self.fhandle is not None:
+                self.dll.ChifClose(self.fhandle)
+                self.fhandle = None
         except Exception:
             pass
 
     def __del__(self):
         """Chif delete function"""
         self.close()
-        self.unload()

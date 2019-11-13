@@ -1,5 +1,5 @@
 ###
-# Copyright 2016 Hewlett Packard Enterprise, Inc. All rights reserved.
+# Copyright 2019 Hewlett Packard Enterprise, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import textwrap
 
 import six
 
-from redfish.rest.v1 import (RisObject)
+from redfish.rest.containers import (RisObject)
 from .sharedtypes import JSONEncoder
 
 # ---------End of imports---------
@@ -59,6 +59,7 @@ class ValidationManager(object):
     """Keep track of all the schemas and registries and provides helpers
     to simplify validation """
     def __init__(self, monolith, defines=None):
+        """init of ValidationManager"""
         super(ValidationManager, self).__init__()
 
         self._schemaid = Typepathforval.typepath.schemapath
@@ -73,6 +74,19 @@ class ValidationManager(object):
         self._errors = list()
         self._warnings = list()
         self.updatevalidationdata()
+    @property
+    def errors(self):
+        """errors property"""
+        return self._errors
+    @property
+    def warnings(self):
+        """warnings property"""
+        return self._warnings
+
+    def reset_errors_warnings(self):
+        """Function to reset warnings and errors"""
+        self._errors = list()
+        self._warnings = list()
 
     def updatevalidationdata(self):
         """Loads the types from monolith.
@@ -103,14 +117,6 @@ class ValidationManager(object):
             if found:
                 return found
         return None
-
-    def get_errors(self):
-        """Return a list of errors encountered"""
-        return self._errors
-
-    def get_warnings(self):
-        """Return a list of warnings encountered"""
-        return self._warnings
 
     def itermems(self, membername=None):
         """Searches through all locations and yields each entry
@@ -191,8 +197,8 @@ class ValidationManager(object):
                                 result.append(self.monolith.paths[entry['@odata.id']].dict)
 
         if result:
-            result = max(result, key=lambda res: res[self.monolith._hrefstring] if res.\
-                        get(self.monolith._hrefstring, None) else res[keyword])
+            result = max(result, key=lambda res: res[Typepathforval.typepath.defs.hrefstring] \
+                        if res.get(Typepathforval.typepath.defs.hrefstring, None) else res[keyword])
             schemapath = self.geturidict(result['Location'][0])
             self.monolith.load(path=schemapath, crawl=False, loadtype='ref')
             return result
@@ -245,14 +251,14 @@ class ValidationManager(object):
             list(map(lambda x: self.checkreadunique(tdict, x, reg=reg, searchtype=searchtype, \
                             warnings=self._warnings, unique=unique), list(tdict.keys())))
             orireg = reg.copy()
-            ttdict = {ki:val for ki, val in list(tdict.items()) \
+            ttdict = {key:val for key, val in list(tdict.items()) \
                       if not isinstance(val, (dict, list))}
             results = reg.validate_attribute_values(ttdict)
             self._errors.extend(results)
 
-            for ki, val in list(tdict.items()):
-                if ki in ttdict:
-                    tdict[ki] = ttdict[ki]
+            for key, val in list(tdict.items()):
+                if key in ttdict:
+                    tdict[key] = ttdict[key]
                     continue
                 reg = orireg.copy()
                 valexists = False
@@ -260,18 +266,18 @@ class ValidationManager(object):
                     valexists = True
                     #TODO: only validates if its a single dict within list
                     if len(val) == 1 and isinstance(val[0], dict):
-                        treg = self.nestedreg(reg=reg, args=[ki])
+                        treg = self.nestedreg(reg=reg, args=[key])
                         self.validatedict(val[0], unique=unique, monolith=monolith, reg=treg,\
                               currtype=currtype, searchtype=searchtype)
                     else:
                         continue
                 elif val and isinstance(val, dict):
                     valexists = True
-                    treg = self.nestedreg(reg=reg, args=[ki])
+                    treg = self.nestedreg(reg=reg, args=[key])
                     self.validatedict(val, monolith=monolith, reg=treg, unique=unique, \
                                   searchtype=searchtype)
                 if not val and valexists:
-                    del tdict[ki]
+                    del tdict[key]
         else:
             self._errors.append(RegistryValidationError('Unable to locate registry model'))
 
@@ -292,21 +298,21 @@ class ValidationManager(object):
         :returns: returns boolean.
 
         """
-        if reg.get("ReadOnly", None) == False \
-            or (reg.get(tkey, None) and reg[tkey].get("readonly", None) == False)\
-            or (reg.get(tkey, None) and reg[tkey].get("ReadOnly", None) == False):
+        if reg.get("ReadOnly", None) is False \
+            or (reg.get(tkey, None) and reg[tkey].get("readonly", None) is False)\
+            or (reg.get(tkey, None) and reg[tkey].get("ReadOnly", None) is False):
             if unique or (not reg.get("IsSystemUniqueProperty", None)\
                 and (reg.get(tkey, None) and not reg[tkey].get("IsSystemUniqueProperty", None))):
                 return
 
         if not searchtype or (reg.get("ReadOnly", None) == True \
-            or (reg.get(tkey, None) and reg[tkey].get("readonly", None) == True)
-            or (reg.get(tkey, None) and reg[tkey].get("ReadOnly", None) == True)):
+            or (reg.get(tkey, None) and reg[tkey].get("readonly", None) is True)\
+            or (reg.get(tkey, None) and reg[tkey].get("ReadOnly", None) is True)):
             warnings.append("Property is read-only skipping '%s'\n" % str(tkey))
             del tdict[tkey]
             return True
         elif not searchtype or (reg.get("IsSystemUniqueProperty", None))\
-            or (reg.get(tkey, None) and reg[tkey].get("IsSystemUniqueProperty", None) == True):
+            or (reg.get(tkey, None) and reg[tkey].get("IsSystemUniqueProperty", None) is True):
             warnings.append("Property is unique to the system skipping '%s'\n" % str(tkey))
             del tdict[tkey]
             return True
@@ -400,8 +406,7 @@ class ValidationManager(object):
         """
         for arg in args:
             try:
-                arg = next((key for key in list(reg.keys()) if \
-                                        key.lower() == arg.lower()), None)
+                arg = next((key for key in list(reg.keys()) if key.lower() == arg.lower()), None)
                 if not arg:
                     return None
                 if 'properties' in six.iterkeys(reg[arg]) and ('patternProperties' in \
@@ -882,9 +887,8 @@ class StringValidator(BaseValidator):
             if self['ValueExpression']:
                 pat = re.compile(self['ValueExpression'])
                 if newval and not pat.match(newval):
-                    result.append(RegistryValidationError(
-                        "'%(Name)s' must match the regular expression "
-                        "'%(ValueExpression)s'" % (self), regentry=self))
+                    result.append(RegistryValidationError("'%s' must match the regular expression "\
+                        "'%s'" % (self[namestr], self['ValueExpression']), regentry=self))
 
         return result
 

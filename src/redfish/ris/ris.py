@@ -1,5 +1,5 @@
 ###
-# Copyright 2016 Hewlett Packard Enterprise, Inc. All rights reserved.
+# Copyright 2019 Hewlett Packard Enterprise, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 
 import re
 import sys
+import weakref
 import logging
 
 from collections import (OrderedDict, defaultdict)
@@ -34,10 +35,8 @@ import jsonpointer
 
 from jsonpointer import set_pointer
 
-import redfish.rest.v1
-
 from redfish.ris.sharedtypes import Dictable
-
+from redfish.rest.containers import RestRequest, StaticRestResponse
 #---------End of imports---------
 
 #---------Debug logger---------
@@ -79,11 +78,14 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
     @property
     def type(self):
         """Return type from monolith"""
-        if self and self._typestring in self._resp.dict:
-            return self._resp.dict[self._typestring]
-        #Added for object type
-        elif self and 'type' in self._resp.dict:
-            return self._resp.dict['type']
+        try:
+            if self and self._typestring in self._resp.dict:
+                return self._resp.dict[self._typestring]
+            #Added for object type
+            elif self and 'type' in self._resp.dict:
+                return self._resp.dict['type']
+        except ValueError:
+            return None
         return None
 
     @property
@@ -173,9 +175,9 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
         if 'Type' in src:
             self._type = src['Type']
             if 'Content' in src:
-                restreq = redfish.rest.v1.RestRequest(method='GET', path=src['OriginalUri'])
+                restreq = RestRequest(method='GET', path=src['OriginalUri'])
                 src['restreq'] = restreq
-                self._resp = redfish.rest.v1.StaticRestResponse(**src)
+                self._resp = StaticRestResponse(**src)
             self.deftype = src['MajType']
             self.defpath = src['OriginalUri']
             self.defetag = src['ETag']
@@ -184,36 +186,35 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
 
 class RisMonolith(Dictable):
     """Monolithic cache of RIS data"""
-    def __init__(self, client):
+    def __init__(self, client, typepath):
         """Initialize RisMonolith
 
         :param client: client to utilize
         :type client: RmcClient object
+        Client is saved as a weakref, using it requires brackets and will not survive if the client
+        used in init is removed
 
         """
-        self._client = client
+        self._client = weakref.ref(client)
         self.name = "Monolithic output of RIS Service"
         self._visited_urls = list()
         self._current_location = '/'
         self._type = None
         self._name = None
         self.progress = 0
-        self.is_redfish = client._rest_client.is_redfish
+        self.is_redfish = self._client().is_redfish
         self.typesadded = defaultdict(set)
         self.paths = dict()
         self.ctree = defaultdict(set)
         self.colltypes = defaultdict(set)
 
-        self.collstr = self._client.typepath.defs.collectionstring
+        self.typepath = typepath
+        self.collstr = self.typepath.defs.collectionstring
         self.etagstr = 'ETag'
         if self.is_redfish:
             self._resourcedir = '/redfish/v1/ResourceDirectory/'
-            self._typestring = '@odata.type'
-            self._hrefstring = '@odata.id'
         else:
             self._resourcedir = '/rest/v1/ResourceDirectory'
-            self._typestring = 'Type'
-            self._hrefstring = 'href'
 
     @property
     def type(self):
@@ -269,7 +270,7 @@ class RisMonolith(Dictable):
             sys.stdout.write('.')
 
     def load(self, path=None, includelogs=False, init=False, \
-            crawl=True, loadtype='href', loadcomplete=False, reload=False):
+            crawl=True, loadtype='href', loadcomplete=False, rel=False):
         """Walk entire RIS model and cache all responses in self.
 
         :param path: path to start load from.
@@ -284,6 +285,8 @@ class RisMonolith(Dictable):
         :type loadtype: str.
         :param loadcomplete: flag to download the entire monolith
         :type loadcomplete: boolean
+        :param rel: flag to reload the path specified
+        :type rel: boolean
 
         """
         if init:
@@ -291,15 +294,14 @@ class RisMonolith(Dictable):
                 sys.stdout.write("Discovering data...")
             else:
                 LOGGER.info("Discovering data...")
-            self.name = self.name + ' at %s' % self._client.get_base_url()
+            self.name = self.name + ' at %s' % self._client().base_url
 
         selectivepath = path
         if not selectivepath:
-            selectivepath = self._client._rest_client.default_prefix
+            selectivepath = self._client().default_prefix
 
         self._load(selectivepath, crawl=crawl, includelogs=includelogs,\
-             init=init, loadtype=loadtype, loadcomplete=loadcomplete, \
-             reload=reload)
+             init=init, loadtype=loadtype, loadcomplete=loadcomplete, rel=rel)
 
         if init:
             if LOGGER.getEffectiveLevel() == 40:
@@ -309,7 +311,7 @@ class RisMonolith(Dictable):
 
     def _load(self, path, crawl=True, originaluri=None, includelogs=False,\
                         init=True, loadtype='href', loadcomplete=False, \
-                                                reload=False, prevpath=None):
+                                                rel=False, prevpath=None):
         """Helper function to main load function.
 
         :param path: path to start load from.
@@ -345,14 +347,14 @@ class RisMonolith(Dictable):
 
         if prevpath and prevpath != path:
             self.ctree[prevpath].update([path])
-        if not reload:
+        if not rel:
             if path.lower() in self.visited_urls:
                 return
         LOGGER.debug('_loading %s', path)
 
-        resp = self._client.get(path)
+        resp = self._client().get(path)
 
-        if resp.status != 200 and path.lower() == self._client.typepath.defs.biospath:
+        if resp.status != 200 and path.lower() == self.typepath.defs.biospath:
             raise BiosUnregisteredError()
         elif resp.status == 401:
             raise SessionExpired("Invalid session. Please logout and "\
@@ -371,7 +373,7 @@ class RisMonolith(Dictable):
 
         self.update_member(resp=resp, path=path, init=init)
 
-        fpath = lambda pa, path: path if pa.endswith(self._hrefstring) and \
+        fpath = lambda pa, path: path if pa.endswith(self.typepath.defs.hrefstring) and \
             pa.startswith((self.collstr, 'Entries')) else None
 
         if loadtype == 'href':
@@ -447,7 +449,7 @@ class RisMonolith(Dictable):
 
         """
         #pylint: disable=maybe-no-member
-        if not self._client.typepath.gencompany:
+        if not self.typepath.gencompany:
             return self.parse_schema_gen(resp)
         jsonpath_expr = jsonpath_rw.parse('$.."$ref"')
         matches = jsonpath_expr.find(resp.dict)
@@ -868,16 +870,28 @@ class RisMonolith(Dictable):
         colls = []
         for item in self.paths[self._resourcedir].dict["Instances"]:
             #Fix for incorrect RDir instances.
-            if not self._typestring in item or item[self._hrefstring] in self.paths:
+            if not self.typepath.defs.typestring in item or item[self.typepath.defs.hrefstring] \
+                                                                                    in self.paths:
                 continue
-            typename = ".".join(item[self._typestring].split(".", 2)[:2]).split('#')[-1]
+            typename = ".".join(item[self.typepath.defs.typestring].split(".", 2)[:2])\
+                                                                                    .split('#')[-1]
             _ = [alltypes.append(typename) if not 'Collection' in typename else None]
             _ = [colls.append(typename) if 'Collection' in typename else None]
             member = RisMonolithMemberv100(None, self.is_redfish)
-            member.popdefs(typename, item[self._hrefstring], item[self.etagstr])
+            member.popdefs(typename, item[self.typepath.defs.hrefstring], item[self.etagstr])
             self.update_member(member=member, init=False)
         for coll in colls:
             collname = coll.split('Collection')[0].split('#')[-1]
             typename = next((name for name in alltypes if name.startswith(collname)), None)
             colltype = ".".join(coll.split(".", 2)[:2]).split('#')[-1]
             self.colltypes[typename].add(colltype)
+
+    def capture(self, redmono=False):
+        """Build and return the entire monolith
+
+        :param redmono: Flag to return reduced monolith or not
+        :type redmono: bool.
+        """
+        self.load(includelogs=True, crawl=True, loadcomplete=True, rel=True, init=True)
+        return self.to_dict() if not redmono else {x:{"Headers":v.resp.getheaders(), \
+                "Response":v.resp.dict} for x, v in list(self.paths.items()) if v}

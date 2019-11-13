@@ -10,6 +10,12 @@
 API Overview
 =============
 
+REST API Documentation
+======================
+
+For complete documentation of the iLO 4 and iLO 5 REST APIs see the `documentation <https://hewlettpackard.github.io/ilo-rest-api-docs/>`_.
+
+
 Why iLO RESTful API?
 ====================
 
@@ -30,6 +36,22 @@ projected server architectures. The same data model works for traditional rack-m
 blades, as well as newer types of systems like Moonshot. This advantage comes because the data
 model is designed to self-describe the service’s capabilities to the client and has room for flexibility
 designed in from the start.
+
+For full documentation on the iLO 4 and iLO 5 implementations of the API click `here <https://hewlettpackard.github.io/ilo-rest-api-docs/>`_.
+
+Redfish
+===================
+
+Redfish is an open, industry-standard specification and schema, designed to provide simple and secure management of modern scalable
+hardware. Redfish is based on the tools and scripting environments most users already have, enabling feature-rich remote management
+compatible with existing toolsets. Redfish was built from the ground up to scale to the modern, multiple-server environments common in
+today’s enterprise, hyperscale, and cloud infrastructures. Redfish defines the industry standard for the software-defined data center (SDDC),
+and the effort to modernize heterogeneous data centers.
+
+HPE ProLiant servers provide iLO RESTful API extensions to Redfish, allowing you to take advantage of the full range of value-added API
+features. You can now benefit from adopting the Redfish standard into HPE ProLiant Gen8, Gen9, and Gen10 servers, as well as on other non-HPE server products that implement to the standard. 
+
+More information on Redfish can be found on the `DMTF Redfish Website <https://www.dmtf.org/standards/redfish>`_.
 
 Resource operations
 ===================

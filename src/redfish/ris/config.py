@@ -1,5 +1,5 @@
 ###
-# Copyright 2016 Hewlett Packard Enterprise, Inc. All rights reserved.
+# Copyright 2019 Hewlett Packard Enterprise, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -110,8 +110,7 @@ class AutoConfigParser(object):
                 except configparser.NoOptionError:
                     # also try with - instead of _
                     try:
-                        configval = config.get(self._sectionname, \
-                                                        key.replace('_', '-'))
+                        configval = config.get(self._sectionname, key.replace('_', '-'))
                     except configparser.NoOptionError:
                         pass
 

@@ -1,5 +1,5 @@
 ###
-# Copyright 2016 Hewlett Packard Enterprise, Inc. All rights reserved.
+# Copyright 2019 Hewlett Packard Enterprise, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 
 import logging
 import jsonpatch
-from redfish.rest.v1 import JSONEncoder
+from redfish.rest.containers import JSONEncoder
 
 #---------End of imports---------
 
@@ -52,5 +52,4 @@ class Dictable(object):
     """A base class which adds the to_dict method used during json encoding"""
     def to_dict(self):
         """Overridable funciton"""
-        raise RuntimeError("You must override this method in your derived" \
-                                                                    " class")
+        raise RuntimeError("You must override this method in your derived class")

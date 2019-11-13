@@ -6,20 +6,18 @@
 .. image:: /images/hpe_logo2.png
    :width: 150pt
 
-Python iLO RESTful Library
+Python iLO Redfish Library
 ==========================
 
-The Python iLO RESTful library is the platform on which the HPE RESTful tool
-was built on. It's main purpose is to simplify the inband and outband
-communication to the HPE RESTful API. The HPE RESTful API for iLO is a RESTful
-application programming interface for the management of iLO and iLO Chassis
-Manager based HPE servers. REST (Representational State Transfer) is a web
-based software architectural style consisting a set of constraints that focus
-on a system's resource. HPE REST library performs the basic HTTP operations
-GET, POST, PUT, PATCH and DELETE on resources using the HATEOS (Hypermedia as
-the Engine of Application) REST architecture. The API allows the clients to
-manage and interact with iLO through a fixed URL and several URIs. Go to the
-`API overview <API-Overview.html>`_ section for more details.
+The iLO Redfish Library is a python library built for interacting with systems that implement the **Redfish API**, which includes the HPE iLO RESTful API.
+The library is the platform on which the `RESTful Interface tool <https://github.com/HewlettPackard/python-redfish-utility>`_ was built on.
+
+The library can connect **remotely** to any BMC that implements a Redfish API via HTTPS or **locally** to an HPE server using the HPE CHIF interface and implements Redfish or Legacy Rest APIs.
+On top of this functionality, the library also offers remote and local support for the Legacy HPE iLO RESTful API that was the starting point for the DMTF Redfish standard.
+
+For more information on the HPE iLO RESTful API and Redfish see the `API overview <API-Overview.html>`_.
+
+.. note::  HPE's Legacy Rest API is available starting in **iLO 4 2.00**. iLO 4 is Redfish conformant starting with **iLO 4 2.30**. In iLO 5 and above the iLO RESTful API is Redfish only.
 
 Documentation
 -------------
@@ -27,34 +25,26 @@ Documentation
 .. toctree::
    :maxdepth: 1
 
-   Overview
    API-Overview
    Installation-Guide
-   Downloading-the-Code
    Quick-Start
-   Quick-Start-Local
+   Advanced-Usage
    Examples
    Frequently-Asked-Questions
-
-Mailing list
--------------
-
-| Join the <Google groups link> to discuss and get support from the community and team.
-|
+   Reference
 
 Get in touch with the team
 --------------------------
 
 If you have further questions, please contact the team:
 
-* `Jack Garcia <http://github.com/LumbaJack>`_
-* `Matthew Kocurek <http://github.com/Yergidy>`_
-* `Prithvi Subrahmanya <http://github.com/PrithviBS>`_
-* `Tony Wang <http://github.com/injan0913>`_
-* `Willy Chen <http://github.com/catsass19>`_
-* `Kevin Chang <http://github.com/kckaiwei>`_
+* `Matthew Kocurek <https://github.com/Yergidy>`_
+* `Tony Wang <https://github.com/injan0913>`_
+* `Grant O'Connor <https://github.com/airsoftsoldrecn9>`_
+* `Matthew Whiteside <https://github.com/mwside>`_
 
 Contributors
-------------
+-------------
 
-Contributors are listed `here <../../python-ilorest-library/graphs/contributors>`_.
+Contributors are listed `here <https://github.com/HewlettPackard/python-ilorest-library/graphs/contributors>`_.
+

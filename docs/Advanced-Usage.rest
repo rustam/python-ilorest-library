@@ -1,0 +1,156 @@
+.. image:: /images/hpe_logo2.png
+   :width: 150pt
+   
+|
+
+.. toctree::
+   :maxdepth: 1
+
+==============
+Advanced Usage
+==============
+
+The following sections describe advanced usage of the python-ilorest-library.
+
+A deeper dive into the Client Classes
+=====================================
+
+The **RedfishClient** and **LegacyRestClient** are both based on the **RestClient** class.
+The only difference between the two are one is configured for *Legacy Rest* and one for *Redfish*.
+So it's possible to directly use the **RestClient** class instead if you wish.
+For other REST APIs it's even possible to use the **RestClientBase** class as a client.
+
+Modifying Remote Connection Settings
+------------------------------------
+
+A remote connection eventually turns into a *urllib3* **PoolManager** class. Because of this, 
+any extra arguments we pass to our Client class that **PoolManager** takes (And any urllib3 adds in the future) will be added to the *urllib3* connection.
+
+Useful arguments include:
+
+* **timeout** (in seconds)
+* **retries**
+* **ca_certs**
+
+For a full list of arguments possible, see urllib3's `documentation <https://urllib3.readthedocs.io/en/latest/reference/index.html?highlight=PoolManager#urllib3.PoolManager>`_.
+
+The following example sets a **RedfishClient** with a timeout of 30 seconds and 5 retries.
+
+>>> REST_OBJ = redfish.RedfishClient(base_url=iLO_host, username=login_account, password=login_password, timeout=30, retries=5)
+
+Proxy Support
+-------------
+
+The python-ilorest-library **version 2.5.0 and greater** supports both HTTP and SOCKS proxies. If you are using a socks proxy you need to `install the [socks] add-on <Installation-Guide.html#with-socks-proxy-support>`_.
+
+>>> REST_OBJ = redfish.RedfishClient(base_url="https://10.0.0.100", username="username", password="password", proxy='http://proxy.proxy.com:8080')
+
+SOCKS proxies must start with `socks`
+
+>>> REST_OBJ = redfish.RedfishClient(base_url="https://10.0.0.100", username="username", password="password", proxy='socks5://proxy.proxy.com:8080')
+
+HTTPS verification
+------------------
+
+By default the python-ilorest-library creates an unverified context for HTTPS connections.
+In order to verify the HTTPS certificate we need to pass an optional argument to urllib3 through a Client object, **ca_certs**.
+
+>>> REST_OBJ = redfish.RedfishClient(base_url="https://hostname", username="username", password="password", ca_certs='C:\<pathto>\CA.crt')
+
+For a full description on what is possible arguments are in ca_certs see `urllib3's documentation on the subject <https://urllib3.readthedocs.io/en/latest/user-guide.html#certificate-verification>`_.
+
+A deeper dive into the Response Class
+=====================================
+
+The **Response** class was already mentioned briefly in the `Quick Start <Quick-Start.html#response-object>`_ section, but we will describe some more useful properties here.
+
+You can use the **getheader()** function to search for a specific header in a response. *getheader is case insensitive*
+
+>>> response.getheader('link')
+'</redfish/v1/SchemaStore/en/ComputerSystem.json>; rel=describedby'
+
+The **ori** property will return the response body in its original form. Useful for binary responses.
+
+>>> response.ori
+
+The **obj** property will return the response body in a dot notation usable form
+
+>>> resp_obj = response.obj
+>>> resp_obj.AssetTag
+u'assettag'
+
+For keys with special characters the dictionary notation still works
+
+>>> resp_obj.Bios['@odata.id']
+u'/redfish/v1/systems/1/bios'
+
+Request Object
+--------------
+
+The **response** property of the Response object returns a **Request** object which describes the request that generated the response.
+
+>>> response.request
+<redfish.rest.containers.RestRequest object at 0x00000000070C7E80>
+
+The **url** property shows the actual system the call was made against
+
+>>> response.request.url
+'https://10.0.0.100'
+
+The **method** property shows the method applied
+
+>>> response.request.method
+'PATCH'
+
+The **path** property shows what path the method was made against
+
+>>> response.request.path
+'/redfish/v1/systems/1'
+
+The **body** property shows what body (if any) was passed along with the request
+
+>>> response.request.body
+'{"AssetTag": "new tag"}'
+
+Multi-part Form Data
+====================
+
+.. note::  Multi-part Form data is only supported on iLO with a **Remote Object**.
+
+Multi-part form data is sent as a list of tuples.
+
+Standard fields are a tuple of `(field, value)`
+
+>>> ('field1': 'value')
+
+Json data is just another value
+
+>>> ('jsondata', {'key1': 'value1', 'key2': 'value2'})
+
+Files & binary data are similar to the standard fields, except instead of a value we have another tuple.
+
+This value tuple has 2 or 3 items `(filename, filedata)` or optionally include the MIME type explicitly `(filename, filedata , MIME type)`
+
+>>> ('filedata', ('filename.data', '<binary data>', 'application/octet-stream'))
+
+So putting it all together in a single form data request:
+
+>>> [('field1': 'value'), ('jsondata', {'key1': 'value1', 'key2': 'value2'}), ('filedata', ('filename.data', '<binary data>', 'application/octet-stream'))]
+
+For an example of Multi-part form data in action, see the `example for uploading firmware to the iLO repository <https://github.com/HewlettPackard/python-ilorest-library/tree/master/examples/Redfish/upload_firmware_ilo_repository.py>`_.
+
+Logging
+=======
+
+Logging of all request and responses is available through the redfish_logger function. First, import the logging and redfish_logger functions.
+
+>>> import logging
+>>> from redfish import redfish_logger
+
+Then specify the logger file name, format of the logger, and the logging level. See the `logging` python documentation for more information on these arguments.
+
+>>> LOGGERFILE = "RedfishApiExamples.log"
+>>> LOGGERFORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+>>> LOGGER = redfish_logger(LOGGERFILE, LOGGERFORMAT, logging.DEBUG)
+
+After running some commands your log file should be populated in the file specified at creation.

@@ -26,7 +26,6 @@ from .rmc_helper import (
     IdTokenError,
     ValidationError,
     ValueChangedError,
-    RmcClient,
     RmcConfig,
     RmcCacheManager,
     RmcFileCacheManager,

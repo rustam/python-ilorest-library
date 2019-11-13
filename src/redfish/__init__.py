@@ -1,11 +1,10 @@
 """ Redfish restful library """
 
 __all__ = ['rest', 'ris', 'hpilo']
-__version__ = "2.4.2"
+__version__ = "3.0.0"
 
 import logging
-from redfish.rest.v1 import AuthMethod
-from redfish.rest.v1 import redfish_client, rest_client
+from redfish.rest.v1 import AuthMethod, LegacyRestClient, RedfishClient
 
 def redfish_logger(file_name, log_format, log_level=logging.ERROR):
     """ redfish logger """
