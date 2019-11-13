@@ -1,0 +1,17 @@
+.. image:: /images/hpe_logo2.png
+   :width: 150pt
+
+|
+
+.. toctree::
+   :maxdepth: 1
+
+========
+Examples
+========
+
+The `Redfish <https://github.com/HewlettPackard/python-ilorest-library/tree/master/examples/Redfish>`_ and
+`Legacy_Rest <https://github.com/HewlettPackard/python-ilorest-library/tree/master/examples/Legacy_Rest>`_ folders
+contain many examples for performing different iLO tasks using the Redfish API and Legacy RESTful API respectively.
+
+Examples showcasing Redfish standard properties and Actions will work for any BMC implementing Redfish. Any HPE OEM extensions are labeled in the examples as such.

@@ -1,0 +1,328 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>API Overview &mdash; python-ilorest-library 3.0.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="python-ilorest-library 3.0.0 documentation" href="index.html"/>
+        <link rel="next" title="Installation Guide" href="Installation-Guide.html"/>
+        <link rel="prev" title="Python iLO Redfish Library" href="index.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> python-ilorest-library
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                3.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#rest-api-documentation">REST API Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#why-ilo-restful-api">Why iLO RESTful API?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#redfish">Redfish</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#resource-operations">Resource operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#return-codes">Return codes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Installation-Guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Quick-Start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Advanced-Usage.html">Advanced Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Frequently-Asked-Questions.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Reference.html">Reference Documentation</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">python-ilorest-library</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>API Overview</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="_sources/API-Overview.rest.txt" rel="nofollow"></a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <a class="reference internal image-reference" href="_images/hpe_logo2.png"><img alt="_images/hpe_logo2.png" src="_images/hpe_logo2.png" style="width: 150pt;" /></a>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<div class="toctree-wrapper compound">
+</div>
+<div class="section" id="api-overview">
+<h1>API Overview<a class="headerlink" href="#api-overview" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="rest-api-documentation">
+<h2>REST API Documentation<a class="headerlink" href="#rest-api-documentation" title="Permalink to this headline">¶</a></h2>
+<p>For complete documentation of the iLO 4 and iLO 5 REST APIs see the <a class="reference external" href="https://hewlettpackard.github.io/ilo-rest-api-docs/">documentation</a>.</p>
+</div>
+<div class="section" id="why-ilo-restful-api">
+<h2>Why iLO RESTful API?<a class="headerlink" href="#why-ilo-restful-api" title="Permalink to this headline">¶</a></h2>
+<p>This HPE RESTful API for iLO will become the main management API for iLO and iLO Chassis Manager
+based HPE servers. Its feature set will become larger than the existing iLO XML API (RIBCL) and IPMI
+interfaces. Using this API, you can take full inventory of the server, control power and reset, configure
+BIOS and iLO settings, fetch event logs, as well as many other functions.</p>
+<p>This API follows the trend of the Internet in moving to a common pattern for new software interfaces.
+Many web services in a variety of industries use REST APIs because they are easy to implement,
+easy to consume, and offer scalability advantages over previous technologies. HPE OneView,
+OpenStack, and many other server management APIs are now REST APIs. Most HPE Management
+software offerings, as well as the entire Software Defined Data Center architecture, are built upon
+REST APIs.</p>
+<p>The HPE RESTful API for iLO has the additional advantage of consistency across all present and
+projected server architectures. The same data model works for traditional rack-mount servers,
+blades, as well as newer types of systems like Moonshot. This advantage comes because the data
+model is designed to self-describe the service’s capabilities to the client and has room for flexibility
+designed in from the start.</p>
+<p>For full documentation on the iLO 4 and iLO 5 implementations of the API click <a class="reference external" href="https://hewlettpackard.github.io/ilo-rest-api-docs/">here</a>.</p>
+</div>
+<div class="section" id="redfish">
+<h2>Redfish<a class="headerlink" href="#redfish" title="Permalink to this headline">¶</a></h2>
+<p>Redfish is an open, industry-standard specification and schema, designed to provide simple and secure management of modern scalable
+hardware. Redfish is based on the tools and scripting environments most users already have, enabling feature-rich remote management
+compatible with existing toolsets. Redfish was built from the ground up to scale to the modern, multiple-server environments common in
+today’s enterprise, hyperscale, and cloud infrastructures. Redfish defines the industry standard for the software-defined data center (SDDC),
+and the effort to modernize heterogeneous data centers.</p>
+<p>HPE ProLiant servers provide iLO RESTful API extensions to Redfish, allowing you to take advantage of the full range of value-added API
+features. You can now benefit from adopting the Redfish standard into HPE ProLiant Gen8, Gen9, and Gen10 servers, as well as on other non-HPE server products that implement to the standard.</p>
+<p>More information on Redfish can be found on the <a class="reference external" href="https://www.dmtf.org/standards/redfish">DMTF Redfish Website</a>.</p>
+</div>
+<div class="section" id="resource-operations">
+<h2>Resource operations<a class="headerlink" href="#resource-operations" title="Permalink to this headline">¶</a></h2>
+<p>RESTful APIs are stateless. The resource manager maintains the resource state that is reported as
+the resource representation. The client maintains the application state and the client might manipulate
+the resource locally, but until a PATCH or POST is made, the resource, as known by the resource
+manager, is not changed.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="21%" />
+<col width="28%" />
+<col width="51%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Operation</th>
+<th class="head">HTTP Verb</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Create</td>
+<td>POST resource URI (payload =
+resource data)</td>
+<td>Create new resources. A synchronous POST returns the newly
+created resource.</td>
+</tr>
+<tr class="row-odd"><td>Read</td>
+<td>GET resource URI</td>
+<td>Returns the requested resource representations.</td>
+</tr>
+<tr class="row-even"><td>Update</td>
+<td>PATCH resource URI (payload =
+update data)</td>
+<td>Updates an existing resource. You can only PATCH
+properties that are marked readonly = false in the schema.</td>
+</tr>
+<tr class="row-odd"><td>Delete</td>
+<td>DELETE resource URI</td>
+<td>Deletes the specified resource.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="return-codes">
+<h2>Return codes<a class="headerlink" href="#return-codes" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="21%" />
+<col width="28%" />
+<col width="51%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Return code</th>
+<th class="head" colspan="2">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>2xx</td>
+<td colspan="2">Successful operation.</td>
+</tr>
+<tr class="row-odd"><td>4xx</td>
+<td colspan="2">Client-side error with error message returned.</td>
+</tr>
+<tr class="row-even"><td>5xx</td>
+<td colspan="2">iLO error with error message returned.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="Installation-Guide.html" class="btn btn-neutral float-right" title="Installation Guide" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Python iLO Redfish Library" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright Copyright 2019 Hewlett Packard Enterprise Development LP.
+
+    </p>
+  </div>
+   
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'3.0.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="_static/language_data.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

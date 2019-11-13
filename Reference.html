@@ -1,0 +1,833 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Reference Documentation &mdash; python-ilorest-library 3.0.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="python-ilorest-library 3.0.0 documentation" href="index.html"/>
+        <link rel="prev" title="Frequently Asked Questions" href="Frequently-Asked-Questions.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> python-ilorest-library
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                3.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="API-Overview.html">API Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installation-Guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Quick-Start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Advanced-Usage.html">Advanced Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Frequently-Asked-Questions.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Reference Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-redfish.rest.v1">redfish.rest.v1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-redfish.rest.connections">redfish.rest.connections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-redfish.rest.containers">redfish.rest.containers</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">python-ilorest-library</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Reference Documentation</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="_sources/Reference.rest.txt" rel="nofollow"></a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="reference-documentation">
+<h1>Reference Documentation<a class="headerlink" href="#reference-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-redfish.rest.v1">
+<span id="redfish-rest-v1"></span><h2>redfish.rest.v1<a class="headerlink" href="#module-redfish.rest.v1" title="Permalink to this headline">¶</a></h2>
+<p>Direct module for working with Redfish/REST technology.</p>
+<dl class="class">
+<dt id="redfish.rest.v1.AuthMethod">
+<em class="property">class </em><code class="descclassname">redfish.rest.v1.</code><code class="descname">AuthMethod</code><a class="headerlink" href="#redfish.rest.v1.AuthMethod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>AUTH Method class</p>
+<p><strong>BASIC</strong>, <strong>SESSION</strong>, <strong>CERTIFICATE</strong> variables translate to their string counterparts
+<cite>basic</cite>, <cite>session</cite>, <cite>certificate</cite>.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="redfish.rest.v1.JsonDecodingError">
+<em class="property">exception </em><code class="descclassname">redfish.rest.v1.</code><code class="descname">JsonDecodingError</code><a class="headerlink" href="#redfish.rest.v1.JsonDecodingError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">exceptions.Exception</span></code></p>
+<p>Raised when there is an error in json data.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="redfish.rest.v1.LegacyRestClient">
+<em class="property">class </em><code class="descclassname">redfish.rest.v1.</code><code class="descname">LegacyRestClient</code><span class="sig-paren">(</span><em>**client_kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.v1.LegacyRestClient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#redfish.rest.v1.RestClient" title="redfish.rest.v1.RestClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">redfish.rest.v1.RestClient</span></code></a></p>
+<p>Class for a <strong>Legacy REST</strong> client instance.
+Instantiates appropriate Rest object based on existing configuration.
+Use this to retrieve a pre-configured Legacy Rest Class.</p>
+<p>Basic arguments include (These can be omitted for most local connections):</p>
+<ul class="simple">
+<li><strong>base_url</strong>: The IP or Hostname of the server to perform operations on.</li>
+<li><strong>username</strong>: The username of the account to login with.</li>
+<li><strong>password</strong>: The username of the account to login with.</li>
+</ul>
+<p>For full description of the arguments allowed see <a class="reference internal" href="#redfish.rest.v1.RestClient" title="redfish.rest.v1.RestClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">RestClient</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="redfish.rest.v1.RedfishClient">
+<em class="property">class </em><code class="descclassname">redfish.rest.v1.</code><code class="descname">RedfishClient</code><span class="sig-paren">(</span><em>**client_kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.v1.RedfishClient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#redfish.rest.v1.RestClient" title="redfish.rest.v1.RestClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">redfish.rest.v1.RestClient</span></code></a></p>
+<p>Class for a <strong>Redfish</strong> client instance.
+Instantiates appropriate Redfish object based on existing configuration.
+Use this to retrieve a pre-configured Redfish Class.</p>
+<p>Basic arguments include (These can be omitted for most local connections):</p>
+<ul class="simple">
+<li><strong>base_url</strong>: The IP or Hostname of the server to perform operations on. None for local.</li>
+<li><strong>username</strong>: The username of the account to login with.</li>
+<li><strong>password</strong>: The username of the account to login with.</li>
+</ul>
+<p>For full description of the arguments allowed see <a class="reference internal" href="#redfish.rest.v1.RestClient" title="redfish.rest.v1.RestClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">RestClient</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="redfish.rest.v1.RestClient">
+<em class="property">class </em><code class="descclassname">redfish.rest.v1.</code><code class="descname">RestClient</code><span class="sig-paren">(</span><em>default_prefix='/redfish/v1/'</em>, <em>is_redfish=True</em>, <em>username=None</em>, <em>password=None</em>, <em>auth=None</em>, <em>**client_kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.v1.RestClient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#redfish.rest.v1.RestClientBase" title="redfish.rest.v1.RestClientBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">redfish.rest.v1.RestClientBase</span></code></a></p>
+<p>REST client with Redfish and LegacyRest support built on top.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>default_prefix</strong> (<em>str</em>) – The root of the REST API, either /redfish/v1/ or /rest/v1.</li>
+<li><strong>is_redfish</strong> (<em>bool</em>) – Flag to force redfish conformance, even on LegacyRest clients.</li>
+<li><strong>username</strong> (<em>str</em>) – The username of the account to login with.</li>
+<li><strong>password</strong> (<em>str</em>) – The password of the account to login with.</li>
+<li><strong>auth</strong> (str or <a class="reference internal" href="#redfish.rest.v1.AuthMethod" title="redfish.rest.v1.AuthMethod"><code class="xref py py-class docutils literal notranslate"><span class="pre">AuthMethod</span></code></a> class variable.) – The authentication type to force.</li>
+<li><strong>**client_kwargs</strong> – Arguments to create a <a class="reference internal" href="#redfish.rest.v1.RestClientBase" title="redfish.rest.v1.RestClientBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">RestClientBase</span></code></a> instance.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="redfish.rest.v1.RestClient.base_url">
+<code class="descname">base_url</code><a class="headerlink" href="#redfish.rest.v1.RestClient.base_url" title="Permalink to this definition">¶</a></dt>
+<dd><p>The connection’s URL to make calls against</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="redfish.rest.v1.RestClient.basic_auth">
+<code class="descname">basic_auth</code><a class="headerlink" href="#redfish.rest.v1.RestClient.basic_auth" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Client’s basic auth header, if any.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="redfish.rest.v1.RestClient.login">
+<code class="descname">login</code><span class="sig-paren">(</span><em>auth='session'</em><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.v1.RestClient.login" title="Permalink to this definition">¶</a></dt>
+<dd><p>Login to a Redfish or LegacyRest server.
+If auth is not supplied login will intelligently
+choose the authentication mode based on the arguments passed.
+Basic authentication MUST be specified with <cite>auth</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>auth</strong> (str or <a class="reference internal" href="#redfish.rest.v1.AuthMethod" title="redfish.rest.v1.AuthMethod"><code class="xref py py-class docutils literal notranslate"><span class="pre">AuthMethod</span></code></a> class variable) – The auth type to login with.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="redfish.rest.v1.RestClient.login_url">
+<code class="descname">login_url</code><a class="headerlink" href="#redfish.rest.v1.RestClient.login_url" title="Permalink to this definition">¶</a></dt>
+<dd><p>The login URI from the root response. This is where we post the
+credentials for a login.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="redfish.rest.v1.RestClient.logout">
+<code class="descname">logout</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.v1.RestClient.logout" title="Permalink to this definition">¶</a></dt>
+<dd><p>Logout of session.</p>
+<p>YOU MUST CALL THIS WHEN YOU ARE DONE TO FREE UP SESSIONS</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="redfish.rest.v1.RestClient.password">
+<code class="descname">password</code><a class="headerlink" href="#redfish.rest.v1.RestClient.password" title="Permalink to this definition">¶</a></dt>
+<dd><p>The password, if any. Once a login function has been called the credentials are removed
+from memory for security and this will return None.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="redfish.rest.v1.RestClient.proxy">
+<code class="descname">proxy</code><a class="headerlink" href="#redfish.rest.v1.RestClient.proxy" title="Permalink to this definition">¶</a></dt>
+<dd><p>The connection’s proxy, if any.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="redfish.rest.v1.RestClient.session_key">
+<code class="descname">session_key</code><a class="headerlink" href="#redfish.rest.v1.RestClient.session_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Client’s session key, if any.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="redfish.rest.v1.RestClient.session_location">
+<code class="descname">session_location</code><a class="headerlink" href="#redfish.rest.v1.RestClient.session_location" title="Permalink to this definition">¶</a></dt>
+<dd><p>The session URI. Used for deleting the session when we logout.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="redfish.rest.v1.RestClient.username">
+<code class="descname">username</code><a class="headerlink" href="#redfish.rest.v1.RestClient.username" title="Permalink to this definition">¶</a></dt>
+<dd><p>The username, if any. Once a login function has been called the credentials are removed
+from memory for security and this will return None.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="redfish.rest.v1.RestClientBase">
+<em class="property">class </em><code class="descclassname">redfish.rest.v1.</code><code class="descname">RestClientBase</code><span class="sig-paren">(</span><em>biospassword=None</em>, <em>**client_kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.v1.RestClientBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Base REST client. Each RestClientBase has a connection object built by parsing the
+client_kwargs. This connection is used for communicating remotely or locally.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>biospassword</strong> (<em>str</em>) – The iLO Gen9 bios password. See <a class="reference internal" href="#redfish.rest.v1.RestClientBase.bios_password" title="redfish.rest.v1.RestClientBase.bios_password"><code class="xref py py-func docutils literal notranslate"><span class="pre">bios_password()</span></code></a></li>
+<li><strong>**client_kwargs</strong> – Arguments to pass to the client argument. For possible values see <a class="reference internal" href="#redfish.rest.connections.Blobstore2Connection" title="redfish.rest.connections.Blobstore2Connection"><code class="xref py py-mod docutils literal notranslate"><span class="pre">redfish.rest.connections.Blobstore2Connection</span></code></a> for a local connection or <a class="reference internal" href="#redfish.rest.connections.HttpConnection" title="redfish.rest.connections.HttpConnection"><code class="xref py py-mod docutils literal notranslate"><span class="pre">redfish.rest.connections.HttpConnection</span></code></a> for remote connection.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="redfish.rest.v1.RestClientBase.bios_password">
+<code class="descname">bios_password</code><a class="headerlink" href="#redfish.rest.v1.RestClientBase.bios_password" title="Permalink to this definition">¶</a></dt>
+<dd><p>Property for the biospassword. Only required on Gen9 iLO 4 when RBSU bios password is set
+and modifying bios settings</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="redfish.rest.v1.RestClientBase.delete">
+<code class="descname">delete</code><span class="sig-paren">(</span><em>path</em>, <em>headers=None</em><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.v1.RestClientBase.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform a DELETE request</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<em>str</em>) – The URI path.</li>
+<li><strong>args</strong> (<em>dict</em>) – Any query to add to the URI. (Can also be directly added to the URI)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A <a class="reference internal" href="#redfish.rest.containers.RestResponse" title="redfish.rest.containers.RestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">redfish.rest.containers.RestResponse</span></code></a> object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="redfish.rest.v1.RestClientBase.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>path</em>, <em>args=None</em>, <em>headers=None</em><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.v1.RestClientBase.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform a GET request</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<em>str</em>) – The URI path.</li>
+<li><strong>args</strong> (<em>dict</em>) – Any query to add to the URI. (Can also be directly added to the URI)</li>
+<li><strong>headers</strong> (<em>dict</em>) – Any extra headers to add to the request.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A <a class="reference internal" href="#redfish.rest.containers.RestResponse" title="redfish.rest.containers.RestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">redfish.rest.containers.RestResponse</span></code></a> object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="redfish.rest.v1.RestClientBase.head">
+<code class="descname">head</code><span class="sig-paren">(</span><em>path</em>, <em>headers=None</em><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.v1.RestClientBase.head" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform a HEAD request</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<em>str</em>) – The URI path.</li>
+<li><strong>headers</strong> (<em>dict</em>) – Any extra headers to add to the request.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A <a class="reference internal" href="#redfish.rest.containers.RestResponse" title="redfish.rest.containers.RestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">redfish.rest.containers.RestResponse</span></code></a> object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="redfish.rest.v1.RestClientBase.patch">
+<code class="descname">patch</code><span class="sig-paren">(</span><em>path</em>, <em>body</em>, <em>args=None</em>, <em>headers=None</em><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.v1.RestClientBase.patch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform a PATCH request</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<em>str</em>) – The URI path.</li>
+<li><strong>body</strong> (<em>dict</em>) – The body to pass with the request.</li>
+<li><strong>args</strong> (<em>dict</em>) – Any query to add to the URI. (Can also be directly added to the URI)</li>
+<li><strong>headers</strong> (<em>dict</em>) – Any extra headers to add to the request.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A <a class="reference internal" href="#redfish.rest.containers.RestResponse" title="redfish.rest.containers.RestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">redfish.rest.containers.RestResponse</span></code></a> object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="redfish.rest.v1.RestClientBase.post">
+<code class="descname">post</code><span class="sig-paren">(</span><em>path</em>, <em>body</em>, <em>args=None</em>, <em>headers=None</em><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.v1.RestClientBase.post" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform a POST request</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<em>str</em>) – The URI path.</li>
+<li><strong>body</strong> (<em>dict</em>) – The body to pass with the request.</li>
+<li><strong>args</strong> (<em>dict</em>) – Any query to add to the URI. (Can also be directly added to the URI)</li>
+<li><strong>headers</strong> (<em>dict</em>) – Any extra headers to add to the request.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A <a class="reference internal" href="#redfish.rest.containers.RestResponse" title="redfish.rest.containers.RestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">redfish.rest.containers.RestResponse</span></code></a> object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="redfish.rest.v1.RestClientBase.put">
+<code class="descname">put</code><span class="sig-paren">(</span><em>path</em>, <em>body</em>, <em>args=None</em>, <em>headers=None</em><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.v1.RestClientBase.put" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform a PUT request</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<em>str</em>) – The URI path.</li>
+<li><strong>body</strong> (<em>dict</em>) – The body to pass with the request.</li>
+<li><strong>args</strong> (<em>dict</em>) – Any query to add to the URI. (Can also be directly added to the URI)</li>
+<li><strong>headers</strong> (<em>dict</em>) – Any extra headers to add to the request.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A <a class="reference internal" href="#redfish.rest.containers.RestResponse" title="redfish.rest.containers.RestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">redfish.rest.containers.RestResponse</span></code></a> object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="redfish.rest.v1.ServerDownOrUnreachableError">
+<em class="property">exception </em><code class="descclassname">redfish.rest.v1.</code><code class="descname">ServerDownOrUnreachableError</code><a class="headerlink" href="#redfish.rest.v1.ServerDownOrUnreachableError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">exceptions.Exception</span></code></p>
+<p>Raised when server is unreachable.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-redfish.rest.connections">
+<span id="redfish-rest-connections"></span><h2>redfish.rest.connections<a class="headerlink" href="#module-redfish.rest.connections" title="Permalink to this headline">¶</a></h2>
+<p>All Connections for interacting with REST.</p>
+<dl class="class">
+<dt id="redfish.rest.connections.Blobstore2Connection">
+<em class="property">class </em><code class="descclassname">redfish.rest.connections.</code><code class="descname">Blobstore2Connection</code><span class="sig-paren">(</span><em>**conn_kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.connections.Blobstore2Connection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A connection for communicating locally with HPE servers</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>**conn_kwargs</strong> – Arguments to pass to the connection initialization.</td>
+</tr>
+</tbody>
+</table>
+<p>Possible arguments for <em>**conn_kwargs</em> include:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Username:</th><td class="field-body">The username to login with</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Password:</th><td class="field-body">The password to login with</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="redfish.rest.connections.Blobstore2Connection.cert_login">
+<code class="descname">cert_login</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.connections.Blobstore2Connection.cert_login" title="Permalink to this definition">¶</a></dt>
+<dd><p>Login using a certificate <strong>NOT IMPLEMENTED</strong></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="redfish.rest.connections.Blobstore2Connection.rest_request">
+<code class="descname">rest_request</code><span class="sig-paren">(</span><em>path=''</em>, <em>method='GET'</em>, <em>args=None</em>, <em>body=None</em>, <em>headers=None</em><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.connections.Blobstore2Connection.rest_request" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rest request for blobstore client</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<em>str</em>) – The URI path to perform the operation on.</li>
+<li><strong>method</strong> (<em>str</em>) – method to perform on the path.</li>
+<li><strong>args</strong> (<em>dict</em>) – Any query to add to the URI. (Can also be directly added to the URI)</li>
+<li><strong>body</strong> (<em>dict</em>) – body payload to include in the request if needed.</li>
+<li><strong>headers</strong> (<em>dict</em>) – Any extra headers to add to the request.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A <a class="reference internal" href="#redfish.rest.containers.RestResponse" title="redfish.rest.containers.RestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">redfish.rest.containers.RestResponse</span></code></a> object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="redfish.rest.connections.ChifDriverMissingOrNotFound">
+<em class="property">exception </em><code class="descclassname">redfish.rest.connections.</code><code class="descname">ChifDriverMissingOrNotFound</code><a class="headerlink" href="#redfish.rest.connections.ChifDriverMissingOrNotFound" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">exceptions.Exception</span></code></p>
+<p>Raised when CHIF driver is missing or not found.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="redfish.rest.connections.DecompressResponseError">
+<em class="property">exception </em><code class="descclassname">redfish.rest.connections.</code><code class="descname">DecompressResponseError</code><a class="headerlink" href="#redfish.rest.connections.DecompressResponseError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">exceptions.Exception</span></code></p>
+<p>Raised when decompressing the response failed.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="redfish.rest.connections.HttpConnection">
+<em class="property">class </em><code class="descclassname">redfish.rest.connections.</code><code class="descname">HttpConnection</code><span class="sig-paren">(</span><em>base_url</em>, <em>**client_kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.connections.HttpConnection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>HTTP connection capable of authenticating with HTTPS and Http/Socks Proxies</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>base_url</strong> (<em>str</em>) – The URL to make HTTP calls against</li>
+<li><strong>**client_kwargs</strong> – Arguments to pass to the connection initialization. These are passed to a urllib3 <a class="reference external" href="https://urllib3.readthedocs.io/en/latest/reference/index.html?highlight=PoolManager#urllib3.PoolManager">PoolManager</a>. All arguments that can be passed to a PoolManager are valid arguments.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="redfish.rest.connections.HttpConnection.cert_login">
+<code class="descname">cert_login</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.connections.HttpConnection.cert_login" title="Permalink to this definition">¶</a></dt>
+<dd><p>Login using a certificate <strong>NOT IMPLEMENTED</strong></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="redfish.rest.connections.HttpConnection.proxy">
+<code class="descname">proxy</code><a class="headerlink" href="#redfish.rest.connections.HttpConnection.proxy" title="Permalink to this definition">¶</a></dt>
+<dd><p>The proxy, if any.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="redfish.rest.connections.HttpConnection.rest_request">
+<code class="descname">rest_request</code><span class="sig-paren">(</span><em>path</em>, <em>method='GET'</em>, <em>args=None</em>, <em>body=None</em>, <em>headers=None</em><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.connections.HttpConnection.rest_request" title="Permalink to this definition">¶</a></dt>
+<dd><p>Format and do HTTP Rest request</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<em>str</em>) – The URI path to perform the operation on.</li>
+<li><strong>method</strong> (<em>str</em>) – method to perform on the path.</li>
+<li><strong>args</strong> (<em>dict</em>) – Any query to add to the URI. (Can also be directly added to the URI)</li>
+<li><strong>body</strong> (<em>dict</em>) – body payload to include in the request if needed.</li>
+<li><strong>headers</strong> (<em>dict</em>) – Any extra headers to add to the request.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A <a class="reference internal" href="#redfish.rest.containers.RestResponse" title="redfish.rest.containers.RestResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">redfish.rest.containers.RestResponse</span></code></a> object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="redfish.rest.connections.InvalidCredentialsError">
+<em class="property">exception </em><code class="descclassname">redfish.rest.connections.</code><code class="descname">InvalidCredentialsError</code><a class="headerlink" href="#redfish.rest.connections.InvalidCredentialsError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">exceptions.Exception</span></code></p>
+<p>Raised when invalid credentials have been provided.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="redfish.rest.connections.RetriesExhaustedError">
+<em class="property">exception </em><code class="descclassname">redfish.rest.connections.</code><code class="descname">RetriesExhaustedError</code><a class="headerlink" href="#redfish.rest.connections.RetriesExhaustedError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">exceptions.Exception</span></code></p>
+<p>Raised when retry attempts have been exhausted.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="redfish.rest.connections.SecurityStateError">
+<em class="property">exception </em><code class="descclassname">redfish.rest.connections.</code><code class="descname">SecurityStateError</code><a class="headerlink" href="#redfish.rest.connections.SecurityStateError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">exceptions.Exception</span></code></p>
+<p>Raised when there is a strict security state without authentication.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-redfish.rest.containers">
+<span id="redfish-rest-containers"></span><h2>redfish.rest.containers<a class="headerlink" href="#module-redfish.rest.containers" title="Permalink to this headline">¶</a></h2>
+<p>Containers used for REST requests and responses.</p>
+<dl class="class">
+<dt id="redfish.rest.containers.RestRequest">
+<em class="property">class </em><code class="descclassname">redfish.rest.containers.</code><code class="descname">RestRequest</code><span class="sig-paren">(</span><em>path</em>, <em>method='GET'</em>, <em>data=''</em>, <em>url=None</em><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.containers.RestRequest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Holder for Request information</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>path</strong> (<em>str</em>) – The URI path.</li>
+<li><strong>method</strong> (<em>str</em>) – method to be implemented</li>
+<li><strong>data</strong> (<em>dict</em>) – body payload for the rest call</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="redfish.rest.containers.RestRequest.body">
+<code class="descname">body</code><a class="headerlink" href="#redfish.rest.containers.RestRequest.body" title="Permalink to this definition">¶</a></dt>
+<dd><p>The body to pass along with the request, if any.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="redfish.rest.containers.RestRequest.method">
+<code class="descname">method</code><a class="headerlink" href="#redfish.rest.containers.RestRequest.method" title="Permalink to this definition">¶</a></dt>
+<dd><p>The method to implement.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="redfish.rest.containers.RestRequest.path">
+<code class="descname">path</code><a class="headerlink" href="#redfish.rest.containers.RestRequest.path" title="Permalink to this definition">¶</a></dt>
+<dd><p>The path the request is made against.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="redfish.rest.containers.RestResponse">
+<em class="property">class </em><code class="descclassname">redfish.rest.containers.</code><code class="descname">RestResponse</code><span class="sig-paren">(</span><em>rest_request</em>, <em>http_response</em><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.containers.RestResponse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Returned by Rest requests</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>rest_request</strong> (<a class="reference internal" href="#redfish.rest.containers.RestRequest" title="redfish.rest.containers.RestRequest"><code class="xref py py-class docutils literal notranslate"><span class="pre">RestRequest</span></code></a> object) – Holder for request information</li>
+<li><strong>http_response</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">HTTPResponse</span></code> object) – Response from HTTP</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="redfish.rest.containers.RestResponse.dict">
+<code class="descname">dict</code><a class="headerlink" href="#redfish.rest.containers.RestResponse.dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>The response body data as an dict</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="redfish.rest.containers.RestResponse.getheader">
+<code class="descname">getheader</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.containers.RestResponse.getheader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Case-insensitive search for an individual header</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>name</strong> (<em>str</em>) – The header name to retrieve.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">returns a header from HTTP response or None if not found.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="redfish.rest.containers.RestResponse.getheaders">
+<code class="descname">getheaders</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.containers.RestResponse.getheaders" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all headers included in the response.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="redfish.rest.containers.RestResponse.loaddict">
+<code class="descname">loaddict</code><span class="sig-paren">(</span><em>newdict</em><span class="sig-paren">)</span><a class="headerlink" href="#redfish.rest.containers.RestResponse.loaddict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Property for setting JSON data. Used during initialization.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>newdict</strong> (<em>str</em>) – The string data to set as JSON data.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="redfish.rest.containers.RestResponse.obj">
+<code class="descname">obj</code><a class="headerlink" href="#redfish.rest.containers.RestResponse.obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>The response body data as an object</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="redfish.rest.containers.RestResponse.ori">
+<code class="descname">ori</code><a class="headerlink" href="#redfish.rest.containers.RestResponse.ori" title="Permalink to this definition">¶</a></dt>
+<dd><p>The original response body data</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="redfish.rest.containers.RestResponse.path">
+<code class="descname">path</code><a class="headerlink" href="#redfish.rest.containers.RestResponse.path" title="Permalink to this definition">¶</a></dt>
+<dd><p>The path the request was made against.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="redfish.rest.containers.RestResponse.read">
+<code class="descname">read</code><a class="headerlink" href="#redfish.rest.containers.RestResponse.read" title="Permalink to this definition">¶</a></dt>
+<dd><p>The response body, attempted to be translated into json, else is a string.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="redfish.rest.containers.RestResponse.request">
+<code class="descname">request</code><a class="headerlink" href="#redfish.rest.containers.RestResponse.request" title="Permalink to this definition">¶</a></dt>
+<dd><p>The saved http request the response was generated by.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="redfish.rest.containers.RestResponse.session_key">
+<code class="descname">session_key</code><a class="headerlink" href="#redfish.rest.containers.RestResponse.session_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>The saved session key for the connection.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="redfish.rest.containers.RestResponse.session_location">
+<code class="descname">session_location</code><a class="headerlink" href="#redfish.rest.containers.RestResponse.session_location" title="Permalink to this definition">¶</a></dt>
+<dd><p>The saved session location, used for logging out.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="redfish.rest.containers.RestResponse.status">
+<code class="descname">status</code><a class="headerlink" href="#redfish.rest.containers.RestResponse.status" title="Permalink to this definition">¶</a></dt>
+<dd><p>The status code of the request.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="Frequently-Asked-Questions.html" class="btn btn-neutral" title="Frequently Asked Questions" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright Copyright 2019 Hewlett Packard Enterprise Development LP.
+
+    </p>
+  </div>
+   
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'3.0.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="_static/language_data.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
