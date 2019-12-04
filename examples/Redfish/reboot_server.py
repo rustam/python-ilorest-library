@@ -41,7 +41,7 @@ def reboot_server(_redfishobj):
             #Use Resource directory to find the relevant URI
             if '#ComputerSystem.' in instance['@odata.type']:
                 systems_members_uri = instance['@odata.id']
-                systems_members_response = _redfishobj.get(systems_uri)
+                systems_members_response = _redfishobj.get(systems_members_uri)
 
     if systems_members_response:
         system_reboot_uri = systems_members_response.obj['Actions']['#ComputerSystem.Reset']\
