@@ -53,7 +53,7 @@ def set_ESKM_PrimaryKeyServer(_redfishobj, primary_key_server_address, primary_k
         body["PrimaryKeyServerAddress"] = primary_key_server_address
         body["PrimaryKeyServerPort"] = int(primary_key_server_port)
 
-        resp = _redfishobj.post(eskm_uri, body)
+        resp = _redfishobj.patch(eskm_uri, body)
         #If iLO responds with soemthing outside of 200 or 201 then lets check the iLO extended info
         #error message to see what went wrong
         if resp.status == 400:
