@@ -80,7 +80,7 @@ if __name__ == "__main__":
     FIRMWARE_URL = "http://<url_to_binary_file>"
     # If a TPM module (Trusted Platform Module/ Cryptographic Co-processor) is installed/present
     # onboard then be sure to include this.
-    TPM_FLAG = True
+    TPM_FLAG = False
     # flag to force disable resource directory. Resource directory and associated operations are
     # intended for HPE servers.
     DISABLE_RESOURCE_DIR = True
