@@ -14,7 +14,7 @@
 
 # -*- coding: utf-8 -*-
 """
-An example of getting the resource directory for HPE iLO systems
+An example of getting the ilo information like ilo generation, version and resource directory for HPE iLO systems
 """
 
 import sys
@@ -39,38 +39,26 @@ def get_resource_directory(redfishobj):
         sys.stderr.write("\tResource directory missing at /redfish/v1/resourcedirectory" + "\n")
 
     return resources
-
-if __name__ == "__main__":
-    # When running on the server locally use the following commented values
-    #SYSTEM_URL = None
-    #LOGIN_ACCOUNT = None
-    #LOGIN_PASSWORD = None
-
-    # When running remotely connect using the secured (https://) address,
-    # account name, and password to send https requests
-    # SYSTEM_URL acceptable examples:
-    # "https://10.0.0.100"
-    # "https://ilo.hostname"
-    SYSTEM_URL = "https://10.0.0.100"
-    LOGIN_ACCOUNT = "admin"
-    LOGIN_PASSWORD = "password"
-
-    # Create a REDFISH object
-    try:
-        REDFISH_OBJ = RedfishClient(base_url=SYSTEM_URL, username=LOGIN_ACCOUNT, \
-                          password=LOGIN_PASSWORD)
-        REDFISH_OBJ.login()
-    except ServerDownOrUnreachableError:
-        sys.stderr.write("ERROR: server not reachable or doesn't support Redfish.\n")
-        sys.exit()
-
-    resources = get_resource_directory(REDFISH_OBJ)
-
-    for resource in resources:
-        try:
-            sys.stdout.write("\t" + str(resource["@odata.type"]) + \
-                             "\n\t\t" + str(resource["@odata.id"]) + "\n")
-        except KeyError:
-            pass
-
-    REDFISH_OBJ.logout()
+	
+def get_gen(_redfishobj):
+	rootresp = _redfishobj.root.obj
+	#Default iLO 5
+	ilogen = 5
+	gencompany = next(iter(rootresp.get("Oem", {}).keys()), None) in ('Hpe', 'Hp')
+	comp = 'Hp' if gencompany else None
+	comp = 'Hpe' if rootresp.get("Oem", {}).get('Hpe', None) else comp
+	if comp and next(iter(rootresp.get("Oem", {}).get(comp, {}).get("Manager", {}))).\
+																get('ManagerType', None):
+		ilogen = next(iter(rootresp.get("Oem", {}).get(comp, {}).get("Manager", {})))\
+																		.get("ManagerType")
+		ilover = next(iter(rootresp.get("Oem", {}).get(comp, {}).get("Manager", {}))).\
+															  get("ManagerFirmwareVersion")
+		if ilogen.split(' ')[-1] == "CM":
+			# Assume iLO 4 types in Moonshot
+			ilogen = 4
+			iloversion = None
+		else:
+			ilogen = ilogen.split(' ')[1]
+			iloversion = float(ilogen.split(' ')[-1] + '.' + \
+											''.join(ilover.split('.')))
+	return (ilogen, iloversion)
