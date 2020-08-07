@@ -99,7 +99,7 @@ if __name__ == "__main__":
     #SYSTEM_URL = "https://15.146.46.45"
     #LOGIN_ACCOUNT = "admin"
     #LOGIN_PASSWORD = "admin123"
-	SYSTEM_URL = sys.argv[1]
+    SYSTEM_URL = sys.argv[1]
     LOGIN_ACCOUNT = sys.argv[2]
     LOGIN_PASSWORD = sys.argv[3]
 
