@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -21,8 +21,10 @@ import sys
 import json
 from redfish import RedfishClient
 from redfish.rest.v1 import ServerDownOrUnreachableError
+global DISABLE_RESOURCE_DIR
 
-from get_resource_directory import get_resource_directory
+from ilorest_util import get_resource_directory
+from ilorest_util import get_gen
 
 def add_ilo_user_account(_redfishobj, new_loginname, new_username, new_password, role_id, \
                          privilege_dict):
@@ -69,7 +71,19 @@ def add_ilo_user_account(_redfishobj, new_loginname, new_username, new_password,
         print("Success!\n")
         print(json.dumps(resp.dict, indent=4, sort_keys=True))
 
+def add_ilo_user_account_gen9(_redfishobj, new_loginname, new_username, new_password):
+	
+	account_collection_uri = "/redfish/v1/AccountService/Accounts/"
+	#Add via gen9 priv dic
+	body = {'Oem': {'Hp': {'Privileges': {"LoginPriv": True, "RemoteConsolePriv": True,
+        "UserConfigPriv": True, "VirtualMediaPriv": True, "VirtualPowerAndResetPriv": True,
+        "iLOConfigPriv": True}, 'LoginName': new_loginname}},'UserName': new_username, 'Password': new_password}
+	#We pass the URI and the dictionary as a POST command (part of the redfish object)
+	resp = _redfishobj.post(account_collection_uri, body)
+	print(json.dumps(resp.dict, indent=4, sort_keys=True))
+
 if __name__ == "__main__":
+
     # When running on the server locally use the following commented values
     #SYSTEM_URL = None
     #LOGIN_ACCOUNT = None
@@ -80,9 +94,16 @@ if __name__ == "__main__":
     # SYSTEM_URL acceptable examples:
     # "https://10.0.0.0"
     # "https://ilo.hostname"
-    SYSTEM_URL = "https://10.0.0.100"
-    LOGIN_ACCOUNT = "admin"
-    LOGIN_PASSWORD = "password"
+    if len(sys.argv) == 4:
+        # Remote mode
+        SYSTEM_URL = sys.argv[1]
+        LOGIN_ACCOUNT = sys.argv[2]
+        LOGIN_PASSWORD = sys.argv[3]
+    else:
+        # Local mode
+        SYSTEM_URL = None
+        LOGIN_ACCOUNT = None
+        LOGIN_PASSWORD = None
 
     #account login name (iLO GUI actually considers this to be 'UserName', but
     #this is the redfish standard username)
@@ -127,7 +148,10 @@ if __name__ == "__main__":
 
     #if account_collection_uri and accounts:
     #add specified account
-    add_ilo_user_account(REDFISHOBJ, ACCOUNT_LOGIN_NAME, ACCOUNT_USER_NAME, \
-                                     ACCOUNT_PASSWORD, ROLE_ID, PRIVILEGE_DICT)
-
+    (ilogen,_) = get_gen(REDFISHOBJ)
+    print ("Generation is ", ilogen)
+    if int(ilogen) == 5:
+        add_ilo_user_account(REDFISHOBJ,ACCOUNT_LOGIN_NAME,ACCOUNT_USER_NAME,ACCOUNT_PASSWORD,ROLE_ID,PRIVILEGE_DICT)
+    else:
+        add_ilo_user_account_gen9(REDFISHOBJ,ACCOUNT_LOGIN_NAME,ACCOUNT_USER_NAME,ACCOUNT_PASSWORD)
     REDFISHOBJ.logout()
