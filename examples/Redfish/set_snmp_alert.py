@@ -14,7 +14,7 @@
 
 # -*- coding: utf-8 -*-
 """
-An example of configuring SNMP for HPE iLO systems
+An example of configuring SNMP alert for HPE iLO systems
 """
 
 import sys
@@ -22,10 +22,10 @@ import json
 from redfish import RedfishClient
 from redfish.rest.v1 import ServerDownOrUnreachableError
 
-from get_resource_directory import get_resource_directory
-from get_resource_directory import get_gen
+from ilorest_util import get_resource_directory
+from ilorest_util import get_gen
 
-def configure_snmp(_redfishobj, read_communities, snmp_alerts, DISABLE_RESOURCE_DIR):
+def configure_snmp(_redfishobj, read_communities, snmp_alertdestinations, DISABLE_RESOURCE_DIR):
     snmp_service_uri = None    
     resource_instances = get_resource_directory(_redfishobj)
     if DISABLE_RESOURCE_DIR or not resource_instances:
@@ -43,7 +43,8 @@ def configure_snmp(_redfishobj, read_communities, snmp_alerts, DISABLE_RESOURCE_
                 snmp_service_uri = instance['@odata.id']
 
     if snmp_service_uri:
-        body = {"AlertsEnabled": snmp_alerts, "ReadCommunities": read_communities}
+        #body = {"AlertsEnabled": snmp_alerts, "ReadCommunities": read_communities}
+        body = {"AlertDestinations": snmp_alertdestinations}
         resp = _redfishobj.patch(snmp_service_uri, body)
 
         #If iLO responds with soemthing outside of 200 or 201 then lets check the iLO extended info
@@ -82,7 +83,7 @@ def set_snmp_alert_destination(_redfishobj, snmp_service_uri, alert_destination_
         snmp_service_response = _redfishobj.get(snmp_service_uri).dict.get('AlertDestinations')
         print("\n\nPrinting updated SNMP alert destination:\n")
         print(json.dumps(snmp_service_response, indent=4, sort_keys=True))
-		
+
 
 if __name__ == "__main__":
     # When running on the server locally use the following commented values
@@ -95,22 +96,27 @@ if __name__ == "__main__":
     # SYSTEM_URL acceptable examples:
     # "https://10.0.0.100"
     # "https://ilo.hostname"
-    SYSTEM_URL = "https://15.146.46.51"
-    LOGIN_ACCOUNT = "admin"
-    LOGIN_PASSWORD = "admin123"
+    #SYSTEM_URL = "https://15.146.46.45"
+    #LOGIN_ACCOUNT = "admin"
+    #LOGIN_PASSWORD = "admin123"
+	SYSTEM_URL = sys.argv[1]
+    LOGIN_ACCOUNT = sys.argv[2]
+    LOGIN_PASSWORD = sys.argv[3]
 
     #Properties:
     #read communities array
     READ_COMMUNITIES = ["public", "", ""]
     #alerts_enabled primitive (boolean)
-    ALERTS_ENABLED = True
+    #ALERTS_ENABLED = True
+    #Alert Destination
+    ALERTS_DESTINATION = ["1.1.1.1","2.2.2.2"]
     # flag to force disable resource directory. Resource directory and associated operations are
     # intended for HPE servers.
     DISABLE_RESOURCE_DIR = False
     snmp_service_uri = "/redfish/v1/Managers/1/SNMPService/"	
 
     # Number of max alert destination supported on iLO4 and iLO5 is different
-    alert_destination_list = ["ILOCN771702NJ", "15.146.46.57" , "15.146.46.58"]
+    alert_destination_list = ["ILOCN771702NJ", "15.146.46.55" , "15.146.46.58"]
 
     try:
         # Create a Redfish client object
@@ -124,7 +130,7 @@ if __name__ == "__main__":
     (ilogen,_) = get_gen(REDFISHOBJ)
     print ("Generation is ", ilogen)
     if int(ilogen) == 5:
-        configure_snmp(REDFISHOBJ, READ_COMMUNITIES, ALERTS_ENABLED, DISABLE_RESOURCE_DIR)
+        configure_snmp(REDFISHOBJ, READ_COMMUNITIES, ALERTS_DESTINATION, DISABLE_RESOURCE_DIR)
     else:
         set_snmp_alert_destination(REDFISHOBJ, snmp_service_uri, alert_destination_list)
     REDFISHOBJ.logout()
