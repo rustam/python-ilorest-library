@@ -5,71 +5,71 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>Installation Guide &mdash; python-ilorest-library 3.0.0 documentation</title>
-  
 
-  
-  
+  <title>Installation Guide &mdash; python-ilorest-library 3.1.0 documentation</title>
 
-  
 
-  
-  
-    
 
-  
 
-  
-  
+
+
+
+
+
+
+
+
+
+
+
     <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
 
-  
 
-  
+
+
+
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="python-ilorest-library 3.0.0 documentation" href="index.html"/>
-        <link rel="next" title="Quick Start" href="Quick-Start.html"/>
-        <link rel="prev" title="API Overview" href="API-Overview.html"/> 
+    <link rel="top" title="python-ilorest-library 3.1.0 documentation" href="index.html"/>
+        <link rel="next" title="Client Quick Start" href="Client-Quick-Start.html"/>
+        <link rel="prev" title="API Overview" href="API-Overview.html"/>
 
-  
+
   <script src="_static/js/modernizr.min.js"></script>
 
 </head>
 
 <body class="wy-body-for-nav" role="document">
 
-   
+
   <div class="wy-grid-for-nav">
 
-    
+
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search">
-          
 
-          
+
+
             <a href="index.html" class="icon icon-home"> python-ilorest-library
-          
 
-          
+
+
           </a>
 
-          
-            
-            
-              <div class="version">
-                3.0
-              </div>
-            
-          
 
-          
+
+
+              <div class="version">
+                3.1
+              </div>
+
+
+
+
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -78,13 +78,13 @@
   </form>
 </div>
 
-          
+
         </div>
 
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
+
+
+
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="API-Overview.html">API Overview</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation Guide</a><ul>
@@ -102,62 +102,64 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="Quick-Start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Client-Quick-Start.html">Client Quick Start</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Advanced-Usage.html">Advanced Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Monolith.html">The Monolith</a></li>
+<li class="toctree-l1"><a class="reference internal" href="System-Compatibility.html">System Compatibility</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Frequently-Asked-Questions.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Reference.html">Reference Documentation</a></li>
 </ul>
 
-            
-          
+
+
         </div>
       </div>
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
-      
+
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
         <a href="index.html">python-ilorest-library</a>
       </nav>
 
 
-      
+
       <div class="wy-nav-content">
         <div class="rst-content">
-          
 
- 
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
-      
+
     <li>Installation Guide</li>
     <li class="wy-breadcrumbs-aside">
-      
-        
+
+
           <a href="_sources/Installation-Guide.rest.txt" rel="nofollow"></a>
-        
-      
+
+
     </li>
   </ul>
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+
   <a class="reference internal image-reference" href="_images/hpe_logo2.png"><img alt="_images/hpe_logo2.png" src="_images/hpe_logo2.png" style="width: 150pt;" /></a>
 <div class="line-block">
 <div class="line"><br /></div>
 </div>
 <div class="section" id="installation-guide">
 <h1>Installation Guide<a class="headerlink" href="#installation-guide" title="Permalink to this headline">¶</a></h1>
-<p>The python-ilorest-library supports both Python 2.7 and Python 3.</p>
+<p>The python-ilorest-library supports <strong>Python 2</strong> (Up to 2.7.15, which is the EOL version) and <strong>Python 3</strong> (At present, 3.8).</p>
 <div class="section" id="pip-install">
 <h2>Pip install<a class="headerlink" href="#pip-install" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="standard-install">
@@ -168,7 +170,7 @@
 </div>
 <div class="section" id="with-socks-proxy-support">
 <h3>With SOCKS proxy support<a class="headerlink" href="#with-socks-proxy-support" title="Permalink to this headline">¶</a></h3>
-<p>Starting with <strong>version 2.5.0</strong> of the python-ilorest-library you can include the SOCKS proxy add-on if you need that support.</p>
+<p>Starting with <strong>version 2.5.0</strong> of the python-ilorest-library, you can include the SOCKS proxy add-on if you need that support.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">python</span><span class="o">-</span><span class="n">ilorest</span><span class="o">-</span><span class="n">library</span><span class="p">[</span><span class="n">socks</span><span class="p">]</span>
 </pre></div>
 </div>
@@ -178,15 +180,15 @@
 <h2>Building from Source<a class="headerlink" href="#building-from-source" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="checkout-using-svn-subversion">
 <h3>Checkout using SVN (Subversion)<a class="headerlink" href="#checkout-using-svn-subversion" title="Permalink to this headline">¶</a></h3>
-<p>Assuming that SVN is already installed in your system and it is already in System Path, execute the following command from the directory where you want to copy the source.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">svn</span> <span class="n">checkout</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">HewlettPackard</span><span class="o">/</span><span class="n">python</span><span class="o">-</span><span class="n">ilorest</span><span class="o">-</span><span class="n">library</span><span class="o">.</span><span class="n">git</span>
+<p>Assuming that SVN is already installed in your system and it is already in the system path, run the following command from the directory where you want to copy the source.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">svn</span> <span class="n">checkout</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">hpe</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">intelligent</span><span class="o">-</span><span class="n">provisioning</span><span class="o">/</span><span class="n">python</span><span class="o">-</span><span class="n">redfish</span><span class="o">-</span><span class="n">library</span><span class="o">.</span><span class="n">git</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="clone-using-git">
 <h3>Clone using GIT<a class="headerlink" href="#clone-using-git" title="Permalink to this headline">¶</a></h3>
-<p>Execute the following command from the directory where you want to copy the source.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">HewlettPackard</span><span class="o">/</span><span class="n">python</span><span class="o">-</span><span class="n">ilorest</span><span class="o">-</span><span class="n">library</span><span class="o">.</span><span class="n">git</span>
+<p>Run the following command from the directory where you want to copy the source.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">hpe</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">intelligent</span><span class="o">-</span><span class="n">provisioning</span><span class="o">/</span><span class="n">python</span><span class="o">-</span><span class="n">redfish</span><span class="o">-</span><span class="n">library</span><span class="o">.</span><span class="n">git</span>
 </pre></div>
 </div>
 </div>
@@ -217,26 +219,26 @@
            </div>
           </div>
           <footer>
-  
+
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="Quick-Start.html" class="btn btn-neutral float-right" title="Quick Start" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
+
+        <a href="Client-Quick-Start.html" class="btn btn-neutral float-right" title="Client Quick Start" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+
+
         <a href="API-Overview.html" class="btn btn-neutral" title="API Overview" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+
     </div>
-  
+
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright Copyright 2019 Hewlett Packard Enterprise Development LP.
+        &copy; Copyright Copyright 2020 Hewlett Packard Enterprise Development LP.
 
     </p>
   </div>
-   
+
 
 </footer>
 
@@ -246,15 +248,31 @@
     </section>
 
   </div>
-  
 
 
-  
+  <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      <span class="fa fa-book"> Other Versions</span>
+      <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+      <dl>
+        <dt>Versions</dt>
+          <dd><a href="https://pages.github.hpe.com/intelligent-provisioning/python-redfish-library/">latest</dd>
+          <dd><a href="https://pages.github.hpe.com/intelligent-provisioning/python-redfish-library/3.0/">3.0</dd>
+      </dl>
+
+    </div>
+  </div>
+
+
+
+
 
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'3.0.0',
+            VERSION:'3.1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
@@ -265,21 +283,21 @@
       <script type="text/javascript" src="_static/doctools.js"></script>
       <script type="text/javascript" src="_static/language_data.js"></script>
 
-  
 
-  
-  
+
+
+
     <script type="text/javascript" src="_static/js/theme.js"></script>
-  
 
-  
-  
+
+
+
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.StickyNav.enable();
       });
   </script>
-   
+
 
 </body>
 </html>

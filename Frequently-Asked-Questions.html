@@ -5,71 +5,71 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>Frequently Asked Questions &mdash; python-ilorest-library 3.0.0 documentation</title>
-  
 
-  
-  
+  <title>Frequently Asked Questions &mdash; python-ilorest-library 3.1.0 documentation</title>
 
-  
 
-  
-  
-    
 
-  
 
-  
-  
+
+
+
+
+
+
+
+
+
+
+
     <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
 
-  
 
-  
+
+
+
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="python-ilorest-library 3.0.0 documentation" href="index.html"/>
+    <link rel="top" title="python-ilorest-library 3.1.0 documentation" href="index.html"/>
         <link rel="next" title="Reference Documentation" href="Reference.html"/>
-        <link rel="prev" title="Examples" href="Examples.html"/> 
+        <link rel="prev" title="Examples" href="Examples.html"/>
 
-  
+
   <script src="_static/js/modernizr.min.js"></script>
 
 </head>
 
 <body class="wy-body-for-nav" role="document">
 
-   
+
   <div class="wy-grid-for-nav">
 
-    
+
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search">
-          
 
-          
+
+
             <a href="index.html" class="icon icon-home"> python-ilorest-library
-          
 
-          
+
+
           </a>
 
-          
-            
-            
-              <div class="version">
-                3.0
-              </div>
-            
-          
 
-          
+
+
+              <div class="version">
+                3.1
+              </div>
+
+
+
+
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -78,18 +78,20 @@
   </form>
 </div>
 
-          
+
         </div>
 
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
+
+
+
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="API-Overview.html">API Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Installation-Guide.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Quick-Start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Client-Quick-Start.html">Client Quick Start</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Advanced-Usage.html">Advanced Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Monolith.html">The Monolith</a></li>
+<li class="toctree-l1"><a class="reference internal" href="System-Compatibility.html">System Compatibility</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Examples.html">Examples</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Frequently Asked Questions</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#q1-what-is-the-difference-between-rest-and-redfish-api">Q1: What is the difference between REST and Redfish API?</a></li>
@@ -98,58 +100,60 @@
 <li class="toctree-l1"><a class="reference internal" href="Reference.html">Reference Documentation</a></li>
 </ul>
 
-            
-          
+
+
         </div>
       </div>
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
-      
+
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
         <a href="index.html">python-ilorest-library</a>
       </nav>
 
 
-      
+
       <div class="wy-nav-content">
         <div class="rst-content">
-          
 
- 
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
-      
+
     <li>Frequently Asked Questions</li>
     <li class="wy-breadcrumbs-aside">
-      
-        
+
+
           <a href="_sources/Frequently-Asked-Questions.rest.txt" rel="nofollow"></a>
-        
-      
+
+
     </li>
   </ul>
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+
   <a class="reference internal image-reference" href="_images/hpe_logo2.png"><img alt="_images/hpe_logo2.png" src="_images/hpe_logo2.png" style="width: 150pt;" /></a>
 <div class="line-block">
 <div class="line"><br /></div>
+</div>
+<div class="toctree-wrapper compound">
 </div>
 <div class="section" id="frequently-asked-questions">
 <h1>Frequently Asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="q1-what-is-the-difference-between-rest-and-redfish-api">
 <h2>Q1: What is the difference between REST and Redfish API?<a class="headerlink" href="#q1-what-is-the-difference-between-rest-and-redfish-api" title="Permalink to this headline">¶</a></h2>
-<p>Representational State Transfer(REST) is a web based software architectural style consisting a set of constraints that focus on a system’s resource. HPE REST library performs the basic HTTP operations GET, POST, PUT, PATCH and DELETE on resources using the HATEOS (Hypermedia as the Engine of Application) REST architecture. RESTful  typically  refers to web services implementing REST architecture.</p>
-<p>Redfish API uses a hypermedia data model OData(Open Data Protocol) v4 represented within a RESTful interface. OData is a specific implementation of REST architecture which allows resources identified using URIs and defined in an abstract data model. Since it is based on OData v4, Redfish implementation requires the starting metadata OData header to be version 4. Redfish changes the linking between resources. Where the HPE Restful URIs places all link as “href” inside a “links” sub-object, Redfish changes “<strong>href</strong>” to “<strong>&#64;odata.id</strong>”, “<strong>links</strong>” sub-objects to “<strong>Links</strong>”. For more information on iLO’s implementation of Redfish click <a class="reference external" href="https://h20195.www2.hpe.com/V2/getpdf.aspx/4AA6-1727ENW.pdf?">here</a>.</p>
+<p>Representational State Transfer(REST) is a web-based software architectural style consisting of a set of constraints that focus on a system’s resource. The HPE REST library performs the basic HTTP operations GET, POST, PUT, PATCH and DELETE on resources using the HATEOS (Hypermedia as the Engine of Application) REST architecture. RESTful typically refers to web services implementing REST architecture.</p>
+<p>Redfish API uses a hypermedia data model OData(Open Data Protocol) v4 represented within a RESTful interface. OData is a specific implementation of REST architecture that allows resources identified using URIs and defined in an abstract data model. Since the Redfish implementation is based on OData v4, it requires the starting metadata OData header to be version 4. Redfish changes the linking between resources. Where the HPE Restful URIs places all link as “href” inside a “links” sub-object, Redfish changes “<strong>href</strong>” to “<strong>&#64;odata.id</strong>”, “<strong>links</strong>” sub-objects to “<strong>Links</strong>”. For more information on iLO’s implementation of Redfish, click <a class="reference external" href="https://h20195.www2.hpe.com/V2/getpdf.aspx/4AA6-1727ENW.pdf?">here</a>.</p>
 <p>More information on Redfish can be found on the <a class="reference external" href="https://www.dmtf.org/standards/redfish">DMTF Redfish Website</a>.</p>
 </div>
 </div>
@@ -158,26 +162,26 @@
            </div>
           </div>
           <footer>
-  
+
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
+
         <a href="Reference.html" class="btn btn-neutral float-right" title="Reference Documentation" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
+
+
         <a href="Examples.html" class="btn btn-neutral" title="Examples" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+
     </div>
-  
+
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright Copyright 2019 Hewlett Packard Enterprise Development LP.
+        &copy; Copyright Copyright 2020 Hewlett Packard Enterprise Development LP.
 
     </p>
   </div>
-   
+
 
 </footer>
 
@@ -187,15 +191,31 @@
     </section>
 
   </div>
-  
 
 
-  
+  <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      <span class="fa fa-book"> Other Versions</span>
+      <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+      <dl>
+        <dt>Versions</dt>
+          <dd><a href="https://pages.github.hpe.com/intelligent-provisioning/python-redfish-library/">latest</dd>
+          <dd><a href="https://pages.github.hpe.com/intelligent-provisioning/python-redfish-library/3.0/">3.0</dd>
+      </dl>
+
+    </div>
+  </div>
+
+
+
+
 
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'3.0.0',
+            VERSION:'3.1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
@@ -206,21 +226,21 @@
       <script type="text/javascript" src="_static/doctools.js"></script>
       <script type="text/javascript" src="_static/language_data.js"></script>
 
-  
 
-  
-  
+
+
+
     <script type="text/javascript" src="_static/js/theme.js"></script>
-  
 
-  
-  
+
+
+
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.StickyNav.enable();
       });
   </script>
-   
+
 
 </body>
 </html>

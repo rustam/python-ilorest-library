@@ -1,0 +1,451 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Client Quick Start &mdash; python-ilorest-library 3.1.0 documentation</title>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+
+
+
+
+
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="python-ilorest-library 3.1.0 documentation" href="index.html"/>
+        <link rel="next" title="Advanced Usage" href="Advanced-Usage.html"/>
+        <link rel="prev" title="Installation Guide" href="Installation-Guide.html"/>
+
+
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+
+  <div class="wy-grid-for-nav">
+
+
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+
+
+
+            <a href="index.html" class="icon icon-home"> python-ilorest-library
+
+
+
+          </a>
+
+
+
+
+              <div class="version">
+                3.1
+              </div>
+
+
+
+
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+
+
+
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="API-Overview.html">API Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installation-Guide.html">Installation Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Client Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#importing-the-redfish-library">Importing the Redfish Library</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#creating-a-remote-object">Creating a Remote Object</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#create-a-redfish-object">Create a Redfish Object</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#create-a-legacyrest-object">Create a LegacyRest Object</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#creating-a-local-object">Creating a Local Object</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#requirements">Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#create-a-redfish-or-legacyrest-object">Create a Redfish or LegacyRest Object</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#create-a-login-session">Create a login session</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#perform-your-first-restful-api-get-operation">Perform your first RESTful API GET operation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#response-object">Response Object</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#other-http-requests">Other HTTP Requests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#close-the-login-session">Close the login session</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#continued-reading">Continued Reading</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Advanced-Usage.html">Advanced Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Monolith.html">The Monolith</a></li>
+<li class="toctree-l1"><a class="reference internal" href="System-Compatibility.html">System Compatibility</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Frequently-Asked-Questions.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Reference.html">Reference Documentation</a></li>
+</ul>
+
+
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">python-ilorest-library</a>
+      </nav>
+
+
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+
+    <li>Client Quick Start</li>
+    <li class="wy-breadcrumbs-aside">
+
+
+          <a href="_sources/Client-Quick-Start.rest.txt" rel="nofollow"></a>
+
+
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <a class="reference internal image-reference" href="_images/hpe_logo2.png"><img alt="_images/hpe_logo2.png" src="_images/hpe_logo2.png" style="width: 150pt;" /></a>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<div class="toctree-wrapper compound">
+</div>
+<div class="section" id="client-quick-start">
+<h1>Client Quick Start<a class="headerlink" href="#client-quick-start" title="Permalink to this headline">¶</a></h1>
+<p>This section describes the basic functionality of the library for users, who only need a basic client configured for a LegacyRest or Redfish host. For a convenient class for performing higher level functionality or for users unfamiliar with Redfish implementations, see <a class="reference external" href="Monolith.html#rmcapp-usage">RmcApp Usage</a>.</p>
+<p>This Quick Start covers client object creation, a simple call to the API, and a response object.</p>
+<p>Scripts of the information provided below are available at: <a class="reference external" href="https://github.com/HewlettPackard/python-ilorest-library/blob/master/examples/quickstart_redfish.py">quickstart_redfish.py</a>
+and <a class="reference external" href="https://github.com/HewlettPackard/python-ilorest-library/blob/master/examples/quickstart_legacy_rest.py">quickstart_legacy_rest.py</a>.</p>
+<p>For more elaborate examples that use the Redfish API and the python-ilorest-library, see the <a class="reference external" href="Examples.html">Examples</a> section.</p>
+<p>The python-ilorest-library provides support for communication using both remote using HTTPS and local in-band using CHIF.</p>
+<div class="section" id="importing-the-redfish-library">
+<h2>Importing the Redfish Library<a class="headerlink" href="#importing-the-redfish-library" title="Permalink to this headline">¶</a></h2>
+<p>Import the Redfish library.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">redfish</span>
+</pre></div>
+</div>
+<p>The very first thing that needs to be done for a RESTful request is to create a <strong>LegacyRestClient</strong> or <strong>RedfishClient</strong> object.</p>
+<p>A <strong>RedfishClient</strong> is for interacting with a Redfish API, and a <strong>LegacyRestClient</strong> is for interacting with HPE Legacy Rest API.</p>
+<p>For maximum compatibility between iLOs and other vendor hardware that implements Redfish, it is recommended to use the Redfish API whenever possible.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>HPE’s Legacy Rest API is available starting in <strong>iLO 4 2.00</strong>. iLO 4 is Redfish conformant starting with <strong>iLO 4 2.30</strong>. In iLO 5 and above the iLO RESTful API is Redfish only.</p>
+</div>
+</div>
+<div class="section" id="creating-a-remote-object">
+<h2>Creating a Remote Object<a class="headerlink" href="#creating-a-remote-object" title="Permalink to this headline">¶</a></h2>
+<p>Creating a remote client requires including the iLO hostname or IP address and credentials.</p>
+<div class="section" id="create-a-redfish-object">
+<h3>Create a Redfish Object<a class="headerlink" href="#create-a-redfish-object" title="Permalink to this headline">¶</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><em>New in version 3.0.0</em></p>
+<p>Creation of a Redfish object instance is done using the <strong>RedfishClient</strong> class instead of the <strong>redfish_client</strong> function.</p>
+</div>
+<p><strong>RedfishClient</strong> takes as parameters iLO hostname/IP address, username, password, and other optional arguments.
+For a full list of optional arguments see <a class="reference external" href="Reference.html#redfish.rest.v1.RedfishClient">here</a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">REST_OBJ</span> <span class="o">=</span> <span class="n">redfish</span><span class="o">.</span><span class="n">RedfishClient</span><span class="p">(</span><span class="n">base_url</span><span class="o">=</span><span class="n">iLO_host</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="n">login_account</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="n">login_password</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="create-a-legacyrest-object">
+<h3>Create a LegacyRest Object<a class="headerlink" href="#create-a-legacyrest-object" title="Permalink to this headline">¶</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><em>New in version 3.0.0</em></p>
+<p>Creation of a Legacy Rest object instance is done using the <strong>LegacyRestClient</strong> class instead of the <strong>rest_client</strong> function.</p>
+</div>
+<p><strong>LegacyRestClient</strong> takes as parameters iLO hostname/IP address, username, password, and other optional arguments.
+For a full list of optional arguments see <a class="reference external" href="Reference.html#redfish.rest.v1.LegacyRestClient">here</a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">REST_OBJ</span> <span class="o">=</span> <span class="n">redfish</span><span class="o">.</span><span class="n">LegacyRestClient</span><span class="p">(</span><span class="n">base_url</span><span class="o">=</span><span class="n">iLO_host</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="n">login_account</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="n">login_password</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="creating-a-local-object">
+<h2>Creating a Local Object<a class="headerlink" href="#creating-a-local-object" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="requirements">
+<h3>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>You must be running on a server with iLO and the latest iLO drivers from the SPP.</p></li>
+<li><p>You will need to download the iLOrest Chif DLL/SO for your corresponding operating system and place it in your working environment path.</p></li>
+</ul>
+<p>By downloading, you agree to the terms and conditions of the <a class="reference external" href="https://www.hpe.com/us/en/software/licensing.html">Hewlett Packard Enterprise Software License Agreement</a>.</p>
+<blockquote>
+<div><p>Windows Download: <a class="reference external" href="https://downloads.hpe.com/pub/softlib2/software1/pubsw-windows/p1463761240/v167985/ilorest_chif.dll">ilorest_chif.dll</a></p>
+<p>Linux Download: <a class="reference external" href="https://downloads.hpe.com/pub/softlib2/software1/pubsw-linux/p1093353304/v168967/ilorest_chif.so">ilorest_chif.so</a></p>
+</div></blockquote>
+</div>
+<div class="section" id="create-a-redfish-or-legacyrest-object">
+<h3>Create a Redfish or LegacyRest Object<a class="headerlink" href="#create-a-redfish-or-legacyrest-object" title="Permalink to this headline">¶</a></h3>
+<p>If you create a <strong>LegacyRest</strong> or <strong>Redfish</strong> object without a base_url argument it will automatically create an object configured for a local CHIF connection.</p>
+<p>A username and password may be included in object creation if they are required.
+For <strong>most</strong> operations in <strong>Production</strong> security mode no credentials are required locally.</p>
+<p>Some reasons credentials may be required locally:</p>
+<ul class="simple">
+<li><p>iLO is operating in a higher security mode (Such as HighSecurity).</p></li>
+<li><p>Some operations require the credentials of an account with a specific privilege to complete (Even in Production security mode).</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">REST_OBJ</span> <span class="o">=</span> <span class="n">redfish</span><span class="o">.</span><span class="n">RedfishClient</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="create-a-login-session">
+<h2>Create a login session<a class="headerlink" href="#create-a-login-session" title="Permalink to this headline">¶</a></h2>
+<p>Next the rest object’s <strong>login</strong> method is called to initiate a rest session. The login method takes the credentials specified in the REST object we created.
+Login also takes an authentication type optional parameter, if the argument is not included the Client will choose an authentication type for you based on the arguments given with <cite>session</cite> being the default.</p>
+<p>For <cite>session</cite> authentication, a session key is generated through a rest request, the default for username and password arguments.</p>
+<p>For <cite>basic</cite> authentication, the username and password is base64 encoded and sent in a header for each request. For security, session authentication is preferred.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">REST_OBJ</span><span class="o">.</span><span class="n">login</span><span class="p">(</span><span class="n">auth</span><span class="o">=</span><span class="s2">&quot;session&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Remember to call  <strong>logout</strong> method once the session is completed to free up sessions.</p>
+</div>
+<div class="section" id="perform-your-first-restful-api-get-operation">
+<h2>Perform your first RESTful API GET operation<a class="headerlink" href="#perform-your-first-restful-api-get-operation" title="Permalink to this headline">¶</a></h2>
+<p>The following example performs a GET operation on the systems resource (/redfish/v1/systems/1) using the HPE RESTful API for iLO.
+It does an HTTP GET request on the iLO SSL(HTTPS) port (typically 443 but the iLO can be configured to use another port as well).
+The interface is not available over open HTTP (port 80), so SSL handshake must be used.</p>
+<p>Perform a HTTP <strong>GET</strong> request by using the <strong>get</strong> method.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">response</span> <span class="o">=</span> <span class="n">REST_OBJ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;/redfish/v1/systems/1&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="response-object">
+<h2>Response Object<a class="headerlink" href="#response-object" title="Permalink to this headline">¶</a></h2>
+<p>A <strong>Response</strong> object called <em>response</em> is now available for us to inspect.</p>
+<p>The <strong>status</strong> property returns the HTTP response to our request:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">response</span><span class="o">.</span><span class="n">status</span>
+<span class="go">200</span>
+</pre></div>
+</div>
+<p>The <strong>dict</strong> property returns the response json body as a Python dictionary:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">response</span><span class="o">.</span><span class="n">dict</span>
+</pre></div>
+</div>
+<p>The <strong>getheaders()</strong> method returns a dictionary of all http response headers:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">response</span><span class="o">.</span><span class="n">getheaders</span><span class="p">()</span>
+<span class="go">{&#39;Transfer-Encoding&#39;: &#39;chunked&#39;, &#39;X_HP-CHRP-Service-Version&#39;: &#39;1.0.3&#39;, &#39;ETag&#39;: &#39;W/&quot;0129EA9F&quot;&#39;,</span>
+<span class="go">&#39;Link&#39;: &#39;&lt;/redfish/v1/SchemaStore/en/ComputerSystem.json&gt;;</span>
+<span class="go">rel=describedby&#39;, &#39;Allow&#39;: &#39;GET, HEAD, POST, PATCH&#39;,</span>
+<span class="go">&#39;Cache-Control&#39;: &#39;no-cache&#39;, &#39;Date&#39;: &#39;Tue, 06 Aug 2019 19:42:26 GMT&#39;,</span>
+<span class="go">&#39;OData-Version&#39;: &#39;4.0&#39;, &#39;X-Frame-Options&#39;: &#39;sameorigin&#39;, &#39;Content-type&#39;: &#39;application/json; charset=utf-8&#39;}</span>
+</pre></div>
+</div>
+<p>You can also print the Response object directly:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">response</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Response status:</p>
+<blockquote>
+<div><p>200</p>
+</div></blockquote>
+<p>Response header:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Transfer-Encoding chunked</div>
+<div class="line">X_HP-CHRP-Service-Version 1.0.3</div>
+<div class="line">ETag W/”E4BDA463”</div>
+<div class="line">Link &lt;/redfish/v1/SchemaStore/en/ComputerSystem.json&gt;; rel=describedby</div>
+<div class="line">Allow GET, HEAD, POST, PATCH</div>
+<div class="line">Cache-Control no-cache</div>
+<div class="line">Date Thu, 01 Aug 2019 19:13:17 GMT</div>
+<div class="line">OData-Version 4.0</div>
+<div class="line">X-Frame-Options sameorigin</div>
+<div class="line">Content-type application/json; charset=utf-8</div>
+</div>
+</div></blockquote>
+<p>The formated Response body (Truncated for size):</p>
+<div class="highlight-JSON notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;@odata.context&quot;</span><span class="p">:</span> <span class="s2">&quot;/redfish/v1/$metadata#ComputerSystem.ComputerSystem&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;@odata.etag&quot;</span><span class="p">:</span> <span class="s2">&quot;W/\&quot;E4BDA463\&quot;&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;@odata.id&quot;</span><span class="p">:</span> <span class="s2">&quot;/redfish/v1/Systems/1&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;@odata.type&quot;</span><span class="p">:</span> <span class="s2">&quot;#ComputerSystem.v1_4_0.ComputerSystem&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;Id&quot;</span><span class="p">:</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;Actions&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;#ComputerSystem.Reset&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">&quot;ResetType@Redfish.AllowableValues&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">&quot;On&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;ForceOff&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;ForceRestart&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Nmi&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;PushPowerButton&quot;</span>
+            <span class="p">],</span>
+            <span class="nt">&quot;target&quot;</span><span class="p">:</span> <span class="s2">&quot;/redfish/v1/Systems/1/Actions/ComputerSystem.Reset&quot;</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;AssetTag&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;Bios&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;@odata.id&quot;</span><span class="p">:</span> <span class="s2">&quot;/redfish/v1/systems/1/bios&quot;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>A full description of the Response Object is available in the reference <a class="reference external" href="Reference.html#redfish.rest.containers.RestResponse">here</a>.</p>
+</div>
+<div class="section" id="other-http-requests">
+<h2>Other HTTP Requests<a class="headerlink" href="#other-http-requests" title="Permalink to this headline">¶</a></h2>
+<p>Other HTTP Requests <strong>HEAD</strong>, <strong>PATCH</strong>, <strong>POST</strong>, <strong>DELETE</strong>, and <strong>PUT</strong> are just as simple to use as <strong>GET</strong>.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">response</span> <span class="o">=</span> <span class="n">REST_OBJ</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="s1">&#39;/redfish/v1/systems/1&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">response</span> <span class="o">=</span> <span class="n">REST_OBJ</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="s1">&#39;/redfish/v1/systems/1&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;AssetTag&#39;</span><span class="p">:</span> <span class="s1">&#39;newtag&#39;</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">response</span> <span class="o">=</span> <span class="n">REST_OBJ</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s1">&#39;/redfish/v1/Systems/1/Actions/ComputerSystem.Reset/&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;ResetType&#39;</span><span class="p">:</span> <span class="s1">&#39;ForceRestart&#39;</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">response</span> <span class="o">=</span> <span class="n">REST_OBJ</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">REST_OBJ</span><span class="o">.</span><span class="n">session_location</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">response</span> <span class="o">=</span> <span class="n">REST_OBJ</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s1">&#39;&lt;uri&gt;&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="close-the-login-session">
+<h2>Close the login session<a class="headerlink" href="#close-the-login-session" title="Permalink to this headline">¶</a></h2>
+<p>Logout of the current session. This is only required for <cite>session</cite> based authentication.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">REST_OBJ</span><span class="o">.</span><span class="n">logout</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="continued-reading">
+<h2>Continued Reading<a class="headerlink" href="#continued-reading" title="Permalink to this headline">¶</a></h2>
+<p>That’s it! You’re ready to perform some Redfish requests! If you are looking for more advanced topics like
+<em>setting timeouts</em>, more detail on the <em>response</em> object, or configuration of the <em>Redfish</em> or <em>LegacyRest</em> objects check out the <a class="reference external" href="Advanced-Usage.html">Advanced Usage</a> section.</p>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+
+        <a href="Advanced-Usage.html" class="btn btn-neutral float-right" title="Advanced Usage" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+
+
+        <a href="Installation-Guide.html" class="btn btn-neutral" title="Installation Guide" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+
+    </div>
+
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright Copyright 2020 Hewlett Packard Enterprise Development LP.
+
+    </p>
+  </div>
+
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+
+  <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      <span class="fa fa-book"> Other Versions</span>
+      <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+      <dl>
+        <dt>Versions</dt>
+          <dd><a href="https://pages.github.hpe.com/intelligent-provisioning/python-redfish-library/">latest</dd>
+          <dd><a href="https://pages.github.hpe.com/intelligent-provisioning/python-redfish-library/3.0/">3.0</dd>
+      </dl>
+
+    </div>
+  </div>
+
+
+
+
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'3.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="_static/language_data.js"></script>
+
+
+
+
+
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+
+
+</body>
+</html>

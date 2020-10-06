@@ -1,0 +1,578 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>The Monolith &mdash; python-ilorest-library 3.1.0 documentation</title>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+
+
+
+
+
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="python-ilorest-library 3.1.0 documentation" href="index.html"/>
+        <link rel="next" title="System Compatibility" href="System-Compatibility.html"/>
+        <link rel="prev" title="Advanced Usage" href="Advanced-Usage.html"/>
+
+
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+
+  <div class="wy-grid-for-nav">
+
+
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+
+
+
+            <a href="index.html" class="icon icon-home"> python-ilorest-library
+
+
+
+          </a>
+
+
+
+
+              <div class="version">
+                3.1
+              </div>
+
+
+
+
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+
+
+
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="API-Overview.html">API Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installation-Guide.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Client-Quick-Start.html">Client Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Advanced-Usage.html">Advanced Usage</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">The Monolith</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#direct-monolith-usage">Direct Monolith Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#creating-a-monolith">Creating a monolith</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#building-the-monolith">Building the monolith</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#loading-an-instance-directly">Loading an instance directly</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#loading-a-single-path">Loading a single path</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#crawling-the-entire-tree">Crawling the entire tree</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#rmcapp-usage">RmcApp Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#creating-the-rmcapp-class">Creating the RmcApp class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#using-the-rmcapp-with-a-server">Using the RmcApp with a Server</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#getting-data">Getting data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#getting-schema-data">Getting schema data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#modifying-data">Modifying data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#performing-actions">Performing Actions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#http-handlers">HTTP handlers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ending-a-session">Ending A Session</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="System-Compatibility.html">System Compatibility</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Frequently-Asked-Questions.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Reference.html">Reference Documentation</a></li>
+</ul>
+
+
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">python-ilorest-library</a>
+      </nav>
+
+
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+
+    <li>The Monolith</li>
+    <li class="wy-breadcrumbs-aside">
+
+
+          <a href="_sources/Monolith.rest.txt" rel="nofollow"></a>
+
+
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <a class="reference internal image-reference" href="_images/hpe_logo2.png"><img alt="_images/hpe_logo2.png" src="_images/hpe_logo2.png" style="width: 150pt;" /></a>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<div class="toctree-wrapper compound">
+</div>
+<div class="section" id="the-monolith">
+<h1>The Monolith<a class="headerlink" href="#the-monolith" title="Permalink to this headline">¶</a></h1>
+<p>The monolith is a database of LegacyRest or Redfish responses. The main database class is <strong>RisMonolith</strong> with members being of class <strong>RisMonolithMemberv100</strong>.</p>
+<p>You can interact with the monolith directly, or with the <strong>RmcApp</strong> class for full convenience functions and monolith interaction.</p>
+<p>A monolith is automatically created as part of an RmcApp class.</p>
+<div class="section" id="direct-monolith-usage">
+<h2>Direct Monolith Usage<a class="headerlink" href="#direct-monolith-usage" title="Permalink to this headline">¶</a></h2>
+<p>Direct usage of the monolith can be useful for crawling an entire tree or creating your own app
+implementation. The first thing we need to do is create a client and login.
+If you are unfamiliar with clients, please see the <a class="reference external" href="Quick-Start.html">Quickstart section</a>.</p>
+<div class="section" id="creating-a-monolith">
+<h3>Creating a monolith<a class="headerlink" href="#creating-a-monolith" title="Permalink to this headline">¶</a></h3>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">redfish</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">REST_OBJ</span> <span class="o">=</span> <span class="n">redfish</span><span class="o">.</span><span class="n">RedfishClient</span><span class="p">(</span><span class="n">base_url</span><span class="o">=</span><span class="n">iLO_host</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="n">login_account</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="n">login_password</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">REST_OBJ</span><span class="o">.</span><span class="n">login</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Then, we need to create a compatibility instance that goes along with this client. For more information
+on this compatibility class, see <a class="reference external" href="System-Compatibility.html">System Compatibility</a>.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">redfish.ris.gen_compat</span> <span class="kn">import</span> <span class="n">Typesandpathdefines</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">COMPAT_OBJ</span> <span class="o">=</span> <span class="n">Typesandpathdefines</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">COMPAT_OBJ</span><span class="o">.</span><span class="n">getgen</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">iLO_host</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="n">login_account</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="n">login_password</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We now have everything required to build a <strong>RisMonolith</strong> class. Just pass in the client and
+compatibility instances.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">redfish.ris.ris</span> <span class="kn">import</span> <span class="n">RisMonolith</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">MONOLITH</span> <span class="o">=</span> <span class="n">RisMonolith</span><span class="p">(</span><span class="n">REST_OBJ</span><span class="p">,</span> <span class="n">COMPAT_OBJ</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="building-the-monolith">
+<h3>Building the monolith<a class="headerlink" href="#building-the-monolith" title="Permalink to this headline">¶</a></h3>
+<p>Now that we have a monolith object we can use our client to build the database.
+There are multiple ways we can add data to the monolith. We can crawl and load the entire tree,
+load a single path, or add a <strong>RestResponse</strong> or <strong>RisMonolithMember</strong> instance directly.</p>
+<div class="section" id="loading-an-instance-directly">
+<h4>Loading an instance directly<a class="headerlink" href="#loading-an-instance-directly" title="Permalink to this headline">¶</a></h4>
+<p>We can load an instance from data we already have with the <strong>update_member</strong> function.
+A path that already has a member will be updated instead of creating a new instance in monolith.</p>
+<p>Just include a monolith member instance…</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">redfish.ris.ris</span> <span class="kn">import</span> <span class="n">RisMonolithMemberv100</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">resp</span> <span class="o">=</span> <span class="n">REST_OBJ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;/redfish/v1/Systems/1/&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">member</span> <span class="o">=</span> <span class="n">RisMonolithMemberv100</span><span class="p">(</span><span class="n">resp</span><span class="p">,</span> <span class="n">COMPAT_OBJ</span><span class="o">.</span><span class="n">is_redfish</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">member</span>
+<span class="go">&lt;redfish.ris.ris.RisMonolithMemberv100 object at 0x0000000006912550&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">MONOLITH</span><span class="o">.</span><span class="n">update_member</span><span class="p">(</span><span class="n">member</span><span class="o">=</span><span class="n">member</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">MONOLITH</span><span class="o">.</span><span class="n">paths</span>
+<span class="go">{&#39;/redfish/v1/Systems/1/&#39;: &lt;redfish.ris.ris.RisMonolithMemberv100 object at 0x0000000006912550&gt;}</span>
+</pre></div>
+</div>
+<p>or the rest response and path.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">resp</span> <span class="o">=</span> <span class="n">REST_OBJ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;/redfish/v1/Managers/1/&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">MONOLITH</span><span class="o">.</span><span class="n">update_member</span><span class="p">(</span><span class="n">resp</span><span class="o">=</span><span class="n">resp</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">resp</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">MONOLITH</span><span class="o">.</span><span class="n">paths</span>
+<span class="go">{&#39;/redfish/v1/Systems/1/&#39;: &lt;redfish.ris.ris.RisMonolithMemberv100 object at 0x0000000006912550&gt;,</span>
+<span class="go">&#39;/redfish/v1/Managers/1/&#39;: &lt;redfish.ris.ris.RisMonolithMemberv100 object at 0x0000000006912198&gt;}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="loading-a-single-path">
+<h4>Loading a single path<a class="headerlink" href="#loading-a-single-path" title="Permalink to this headline">¶</a></h4>
+<p>We can instruct the monolith to load a single path into the monolith using the client we passed when
+we created it using the monolith <strong>load</strong> function.</p>
+<p>Just specify the path and set crawl to <strong>False</strong>.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">MONOLITH</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s1">&#39;/redfish/v1/Systems/&#39;</span><span class="p">,</span> <span class="n">crawl</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">MONOLITH</span><span class="o">.</span><span class="n">paths</span>
+<span class="go">{&#39;/redfish/v1/Systems/1/&#39;: &lt;redfish.ris.ris.RisMonolithMemberv100 object at 0x0000000006912550&gt;,</span>
+<span class="go">&#39;/redfish/v1/Managers/1/&#39;: &lt;redfish.ris.ris.RisMonolithMemberv100 object at 0x0000000006912198&gt;,</span>
+<span class="go">&#39;/redfish/v1/Systems/&#39;: &lt;redfish.ris.ris.RisMonolithMemberv100 object at 0x000000000692C080&gt;}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="crawling-the-entire-tree">
+<h4>Crawling the entire tree<a class="headerlink" href="#crawling-the-entire-tree" title="Permalink to this headline">¶</a></h4>
+<p>Monolith’s main functionality is crawling the entire tree and creating a database from the responses.</p>
+<p>We need to use the <strong>load</strong> function to crawl. The <strong>directory_load</strong> attribute needs to be set to <strong>False</strong> to
+load the monolith completely with responses for all members.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">MONOLITH</span><span class="o">.</span><span class="n">directory_load</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">MONOLITH</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">MONOLITH</span><span class="o">.</span><span class="n">paths</span><span class="p">)</span>
+<span class="go">295</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">member</span> <span class="o">=</span> <span class="n">MONOLITH</span><span class="o">.</span><span class="n">path</span><span class="p">(</span><span class="s1">&#39;/redfish/v1/Systems/1/&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">member</span><span class="o">.</span><span class="n">dict</span><span class="p">[</span><span class="s1">&#39;@odata.id&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It may take a while for load to perform get responses on all URIs. This is expected with large trees.</p>
+</div>
+<p>For systems with a <strong>ResourceDirectory.</strong> type with the <strong>directory_load</strong> flag set to <strong>True</strong>
+monolith will perform a quick load of all types in the ResourceDirectory, creating monolith
+members for every item in the <strong>ResourceDirectory.</strong> <em>Instances</em> list, but not actually visit that path.
+This can be useful to get the majority of paths and types available on the system without needed to
+actually crawl everything. In order to add the members that do not have responses to the monolith the
+<strong>init</strong> argument must be included with load.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">MONOLITH</span> <span class="o">=</span> <span class="n">RisMonolith</span><span class="p">(</span><span class="n">REST_OBJ</span><span class="p">,</span> <span class="n">COMPAT_OBJ</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">MONOLITH</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">MONOLITH</span><span class="o">.</span><span class="n">paths</span><span class="p">)</span>
+<span class="go">286</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">member</span> <span class="o">=</span> <span class="n">MONOLITH</span><span class="o">.</span><span class="n">path</span><span class="p">(</span><span class="s1">&#39;/redfish/v1/Systems/1/&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">member</span><span class="o">.</span><span class="n">path</span>
+<span class="go">u&#39;/redfish/v1/Systems/1/&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">member</span><span class="o">.</span><span class="n">dict</span>
+<span class="go">AttributeError: &#39;NoneType&#39; object has no attribute &#39;dict&#39;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Any response without a json response will return an <strong>AttributeError</strong></p>
+</div>
+<p>For a full list of options in <strong>load</strong>, see the resource documentation <a class="reference external" href="Reference.html#redfish.ris.ris.RisMonolith.load">here</a>.</p>
+</div>
+</div>
+</div>
+<div class="section" id="rmcapp-usage">
+<h2>RmcApp Usage<a class="headerlink" href="#rmcapp-usage" title="Permalink to this headline">¶</a></h2>
+<p>The RmcApp class is a convenience class that combines the client, compatibility, validation, caching, and monolith into one class.
+RmcApp supplies functions for easily interacting with a server and monolith.</p>
+<p>For full functionality see the reference on RmcApp <a class="reference external" href="Reference.html#module-redfish.ris.rmc">here</a>.</p>
+<div class="section" id="creating-the-rmcapp-class">
+<h3>Creating the RmcApp class<a class="headerlink" href="#creating-the-rmcapp-class" title="Permalink to this headline">¶</a></h3>
+<p>Creating an RmcApp class will build everything we need to start working with a server.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">redfish.ris.rmc</span> <span class="kn">import</span> <span class="n">RmcApp</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">APP</span> <span class="o">=</span> <span class="n">RmcApp</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="using-the-rmcapp-with-a-server">
+<h3>Using the RmcApp with a Server<a class="headerlink" href="#using-the-rmcapp-with-a-server" title="Permalink to this headline">¶</a></h3>
+<p>We have an RmcApp, but we haven’t connected it to a server yet. We can do that with the <strong>login</strong> function. Include the login/connection
+information with the login command and the App will use that to create a client, monolith, and compatibility class.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">APP</span><span class="o">.</span><span class="n">login</span><span class="p">(</span><span class="n">base_url</span><span class="o">=</span><span class="s1">&#39;https://16.83.62.248&#39;</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="s1">&#39;password&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now that we are logged in we can start performing functions on the server and reading data. If you used the RedfishClient or RestClient
+you may have noticed we were always working with paths or &#64;odata.ids. The RmcApp generally works with types, or &#64;odata.types.</p>
+<div class="section" id="getting-data">
+<h4>Getting data<a class="headerlink" href="#getting-data" title="Permalink to this headline">¶</a></h4>
+<p><strong>getprops</strong> can be used to gather or <strong>GET</strong> data from the server. We specify the type of data we want to gather with the <strong>selector</strong> argument and what properties
+we want to gather with the <strong>props</strong> argument. If <strong>props</strong> isn’t included, the entire dictionary is returned in a list.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">APP</span><span class="o">.</span><span class="n">getprops</span><span class="p">(</span><span class="n">selector</span><span class="o">=</span><span class="s1">&#39;ComputerSystem.&#39;</span><span class="p">,</span> <span class="n">props</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;AssetTag&#39;</span><span class="p">,</span><span class="s1">&#39;Boot/BootSourceOverrideEnabled&#39;</span><span class="p">])</span>
+<span class="go">[{u&#39;AssetTag&#39;: u&#39;&#39;, u&#39;Boot&#39;: {u&#39;BootSourceOverrideEnabled&#39;: u&#39;Disabled&#39;}}]</span>
+</pre></div>
+</div>
+<p>If there are multiple instances associated with one type, each is returned in the list.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">APP</span><span class="o">.</span><span class="n">getprops</span><span class="p">(</span><span class="n">selector</span><span class="o">=</span><span class="s1">&#39;EthernetInterface.&#39;</span><span class="p">,</span> <span class="n">props</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;@odata.id&#39;</span><span class="p">])</span>
+<span class="go">[{u&#39;@odata.id&#39;: u&#39;/redfish/v1/Systems/1/EthernetInterfaces/2/&#39;}, {u&#39;@odata.id&#39;: u&#39;/redfish/v1/Systems/1/EthernetInterfaces/1/&#39;}, {u&#39;@odata.id&#39;: u&#39;/redfish/v1/Managers/1/EthernetInterfaces/1/&#39;}, {u&#39;@odata.id&#39;: u&#39;/redfish/v1/Systems/1/EthernetInterfaces/3/&#39;}, {u&#39;@odata.id&#39;: u&#39;/redfish/v1/Managers/1/EthernetInterfaces/2/&#39;}, {u&#39;@odata.id&#39;: u&#39;/redfish/v1/Systems/1/EthernetInterfaces/4/&#39;}, {u&#39;@odata.id&#39;: u&#39;/redfish/v1/Managers/1/EthernetInterfaces/3/&#39;}]</span>
+</pre></div>
+</div>
+<p>If there are multiple instances associated, but you only want specific instance(s) returned, you can directly choose which monolith instances are
+searched by <strong>getprops</strong> using <strong>select</strong>, filtering by a key/value pair with the fltrvals argument. <strong>fltrvals</strong> takes a tuple of (Key,Value).
+You can then pass these instances to <strong>getprops</strong> to use instead of using all instances of a specific type.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The value can include a (*) which will include all instances that match the Key exactly and with a Value string that starts with the value exactly up to the (*). Anything after is ignored.</p>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">instances</span> <span class="o">=</span> <span class="n">APP</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">selector</span><span class="o">=</span><span class="s1">&#39;EthernetInterface.&#39;</span><span class="p">,</span> <span class="n">fltrvals</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;@odata.id&#39;</span><span class="p">,</span><span class="s1">&#39;/redfish/v1/Managers/*&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">instances</span>
+<span class="go">[&lt;redfish.ris.ris.RisMonolithMemberv100 object at 0x0000000006D4A780&gt;, &lt;redfish.ris.ris.RisMonolithMemberv100 object at 0x0000000006D554E0&gt;, &lt;redfish.ris.ris.RisMonolithMemberv100 object at 0x0000000006D797B8&gt;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">APP</span><span class="o">.</span><span class="n">getprops</span><span class="p">(</span><span class="n">insts</span><span class="o">=</span><span class="n">instances</span><span class="p">,</span> <span class="n">props</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;@odata.id&#39;</span><span class="p">])</span>
+<span class="go">[{u&#39;@odata.id&#39;: u&#39;/redfish/v1/Managers/1/EthernetInterfaces/1/&#39;}, {u&#39;@odata.id&#39;: u&#39;/redfish/v1/Managers/1/EthernetInterfaces/2/&#39;}, {u&#39;@odata.id&#39;: u&#39;/redfish/v1/Managers/1/EthernetInterfaces/3/&#39;}]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="getting-schema-data">
+<h4>Getting schema data<a class="headerlink" href="#getting-schema-data" title="Permalink to this headline">¶</a></h4>
+<p>If schema data is available on the system, we can get schema data with the <strong>info</strong> function. Just include the <strong>selector</strong> for the schema you wish to return.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>info</strong> is optimized for HPE servers, but it should work for any schema which is on the system. If a specific system does not return schema data, please open a GitHub issue.</p>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">schema</span> <span class="o">=</span> <span class="n">APP</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">selector</span><span class="o">=</span><span class="s1">&#39;ComputerSystem.&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">schema</span><span class="p">[</span><span class="s1">&#39;AssetTag&#39;</span><span class="p">]</span>
+<span class="go">{u&#39;readonly&#39;: False, u&#39;etag&#39;: True, u&#39;type&#39;: [u&#39;string&#39;, u&#39;null&#39;], u&#39;description&#39;: u&#39;A user-definable tag that is used to track this system for inventory or other client purposes.&#39;}</span>
+</pre></div>
+</div>
+<p>Instead of querying the entire schema, you can get specific schema keys using the <strong>props</strong> argument.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">assettag_schema</span> <span class="o">=</span> <span class="n">APP</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">selector</span><span class="o">=</span><span class="s1">&#39;ComputerSystem.&#39;</span><span class="p">,</span> <span class="n">props</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;AssetTag&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">assettag_schema</span>
+<span class="go">{u&#39;readonly&#39;: False, u&#39;etag&#39;: True, u&#39;type&#39;: [u&#39;string&#39;, u&#39;null&#39;], u&#39;description&#39;: u&#39;A user-definable tag that is used to track this system for inventory or other client purposes.&#39;}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="modifying-data">
+<h4>Modifying data<a class="headerlink" href="#modifying-data" title="Permalink to this headline">¶</a></h4>
+<p><strong>loadset</strong> can be used to set or <strong>PATCH</strong> data to the server. Data modified with <strong>loadset</strong> requires a <strong>commit</strong> to be updated on the server.</p>
+<p>First we need to get the dictionary we want to modify. We will use <strong>getprops</strong>.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">system</span> <span class="o">=</span> <span class="n">APP</span><span class="o">.</span><span class="n">getprops</span><span class="p">(</span><span class="n">selector</span><span class="o">=</span><span class="s1">&#39;ComputerSystem.&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">system</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;AssetTag&#39;</span><span class="p">]</span>
+<span class="go">u&#39;&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">system</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;AssetTag&#39;</span><span class="p">]</span><span class="o">=</span><span class="s1">&#39;newtag&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">system</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;AssetTag&#39;</span><span class="p">]</span>
+<span class="go">&#39;newtag&#39;</span>
+</pre></div>
+</div>
+<p>You can also pass partial dictionaries to <strong>loadset</strong>. So you can use <strong>getprops</strong> to only gather the properties that you want to modify.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">assettag</span> <span class="o">=</span> <span class="n">APP</span><span class="o">.</span><span class="n">getprops</span><span class="p">(</span><span class="n">selector</span><span class="o">=</span><span class="s1">&#39;ComputerSystem.&#39;</span><span class="p">,</span> <span class="n">props</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;AssetTag&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">assettag</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;AssetTag&#39;</span><span class="p">]</span>
+<span class="go">u&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">assettag</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;AssetTag&#39;</span><span class="p">]</span><span class="o">=</span><span class="s1">&#39;newtag&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">assettag</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;AssetTag&#39;</span><span class="p">]</span>
+<span class="go">&#39;newtag&#39;</span>
+</pre></div>
+</div>
+<p>Now that we have a modified dictionary, we can pass it to <strong>loadset</strong> to set patches. Loadset will return a list of changes that occurred. Remember to pass the dictionary, not the list returned from <strong>getprops</strong>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>fltrvals</strong>, much like in getprops, can be used to filter out instances of the same type so that you only make changes to specific instances, instead of all instances of a type.</p>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">APP</span><span class="o">.</span><span class="n">loadset</span><span class="p">(</span><span class="n">seldict</span><span class="o">=</span><span class="n">system</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">selector</span><span class="o">=</span><span class="s1">&#39;ComputerSystem.&#39;</span><span class="p">)</span>
+<span class="go">[{u&#39;AssetTag&#39;: &#39;newtag&#39;}]</span>
+</pre></div>
+</div>
+<p>You can also use <strong>status</strong> to see all of the pending patches. Even if they are from multiple types.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">APP</span><span class="o">.</span><span class="n">status</span><span class="p">()</span>
+<span class="go">[{u&#39;ComputerSystem.v1_4_0(/redfish/v1/Systems/1/)&#39;: [{u&#39;path&#39;: u&#39;/AssetTag&#39;, u&#39;value&#39;: &#39;newtag&#39;, u&#39;op&#39;: u&#39;replace&#39;}]}]</span>
+</pre></div>
+</div>
+<p>Finally, we apply our pending changes to the server with <strong>commit</strong>. Commit is a generator, so we need to loop through to confirm the settings applied.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>False means no error occurred for that path. True means an error occurred.</p>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">commit</span> <span class="ow">in</span> <span class="n">APP</span><span class="o">.</span><span class="n">commit</span><span class="p">():</span>
+<span class="go">        print commit</span>
+<span class="go">/redfish/v1/Systems/1/</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+<p>We can double check our setting applied with another getprops call.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We don’t need to reload the monolith because it knows changes were made and auto reloads the path!</p>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">assettag</span> <span class="o">=</span> <span class="n">APP</span><span class="o">.</span><span class="n">getprops</span><span class="p">(</span><span class="n">selector</span><span class="o">=</span><span class="s1">&#39;ComputerSystem.&#39;</span><span class="p">,</span> <span class="n">props</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;AssetTag&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">assettag</span>
+<span class="go">[{u&#39;AssetTag&#39;: u&#39;newtag&#39;}]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="performing-actions">
+<h4>Performing Actions<a class="headerlink" href="#performing-actions" title="Permalink to this headline">¶</a></h4>
+<p>Actions are just <strong>POST</strong> operations. They can be performed with the RmcApp handlers for raw HTTP commands. See the <a class="reference external" href="Monolith.html#id2">post_handler</a>.</p>
+</div>
+<div class="section" id="http-handlers">
+<h4>HTTP handlers<a class="headerlink" href="#http-handlers" title="Permalink to this headline">¶</a></h4>
+<p>RmcApp supplies handlers for the raw HTTP methods <strong>GET</strong>, <strong>PATCH</strong>, <strong>POST</strong>, <strong>DELETE</strong>, <strong>PUT</strong>, and <strong>HEAD</strong>. On top of standard request and response returns, the handlers
+also allow for either printing or logging of full error message strings from registries if the registries are available on the system.</p>
+<p>TODO: ADD info about showwarnings once it’s fixed.</p>
+<div class="section" id="get-handler">
+<h5>GET Handler<a class="headerlink" href="#get-handler" title="Permalink to this headline">¶</a></h5>
+<p>The <strong>get_handler</strong> is the equivalent of HTTP <strong>GET</strong> and returns a <strong>RestResponse</strong> object. Simply add the path to GET as an argument.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">APP</span><span class="o">.</span><span class="n">get_handler</span><span class="p">(</span><span class="s1">&#39;/redfish/v1/systems/1/&#39;</span><span class="p">)</span>
+<span class="go">&lt;redfish.rest.containers.RestResponse object at 0x00000000067070B8&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="patch-handler">
+<h5>PATCH Handler<a class="headerlink" href="#patch-handler" title="Permalink to this headline">¶</a></h5>
+<p>The <strong>patch_handler</strong> is the equivalent of HTTP <strong>PATCH</strong> and returns a <strong>RestResponse</strong> object. Simply add the path to PATCH and the body as arguments.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">APP</span><span class="o">.</span><span class="n">patch_handler</span><span class="p">(</span><span class="s1">&#39;/redfish/v1/systems/1/&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;AssetTag&#39;</span><span class="p">:</span> <span class="s1">&#39;TAG&#39;</span><span class="p">})</span>
+<span class="go">&lt;redfish.rest.containers.RestResponse object at 0x0000000006707898&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="id2">
+<h5>POST handler<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h5>
+<p>The <strong>post_handler</strong> is the equivalent of HTTP <strong>POST</strong> and returns a <strong>RestResponse</strong> object. Simply add the path to POST and the body as arguments.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">APP</span><span class="o">.</span><span class="n">post_handler</span><span class="p">(</span><span class="s1">&#39;/redfish/v1/Systems/1/Actions/ComputerSystem.Reset/&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;ResetType&#39;</span><span class="p">:</span> <span class="s1">&#39;On&#39;</span><span class="p">})</span>
+<span class="go">&lt;redfish.rest.containers.RestResponse object at 0x0000000006707978&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="delete-handler">
+<h5>DELETE handler<a class="headerlink" href="#delete-handler" title="Permalink to this headline">¶</a></h5>
+<p>The <strong>delete_handler</strong> is the equivalent of HTTP <strong>DELETE</strong> and returns a <strong>RestResponse</strong> object. Simply add the path to DELETE as an argument.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">resp</span> <span class="o">=</span> <span class="n">APP</span><span class="o">.</span><span class="n">delete_handler</span><span class="p">(</span><span class="s1">&#39;/redfish/v1/systems/1/&#39;</span><span class="p">)</span>
+<span class="go">&lt;redfish.rest.containers.RestResponse object at 0x0000000006707978&gt;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We did not actually delete /redfish/v1/systems/1/. If you were to read the RestResponse you would see that an error returned.</p>
+</div>
+</div>
+<div class="section" id="put-handler">
+<h5>PUT handler<a class="headerlink" href="#put-handler" title="Permalink to this headline">¶</a></h5>
+<p>The <strong>put_handler</strong> is the equivalent of HTTP <strong>PUT</strong> and returns a <strong>RestResponse</strong> object. Simply add the path to PUT and the body as arguments.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">APP</span><span class="o">.</span><span class="n">put_handler</span><span class="p">(</span><span class="s1">&#39;/redfish/v1/systems/1/&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;test&#39;</span><span class="p">:</span> <span class="s1">&#39;data&#39;</span><span class="p">})</span>
+<span class="go">&lt;redfish.rest.containers.RestResponse object at 0x0000000006707978&gt;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We did not actually PUT to /redfish/v1/systems/1/. If you were to read the RestResponse, you would see that an error returned.</p>
+</div>
+</div>
+<div class="section" id="head-handler">
+<h5>HEAD handler<a class="headerlink" href="#head-handler" title="Permalink to this headline">¶</a></h5>
+<p>The <strong>head_handler</strong> is the equivalent of HTTP <strong>HEAD</strong> and returns a <strong>RestResponse</strong> object. Simply add the path to gather headers from.
+Note there is no body response of a head. Headers are available by the <strong>getheaders()</strong> function of RestResponse.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">resp</span> <span class="o">=</span> <span class="n">APP</span><span class="o">.</span><span class="n">head_handler</span><span class="p">(</span><span class="s1">&#39;/redfish/v1/Systems/1/&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">resp</span><span class="o">.</span><span class="n">getheaders</span><span class="p">()</span>
+<span class="go">{&#39;Content-Length&#39;: &#39;0&#39;, &#39;ETag&#39;: &#39;W/&quot;44499A19&quot;&#39;, &#39;Link&#39;: &#39;&lt;/redfish/v1/SchemaStore/en/ComputerSystem.json/&gt;; rel=describedby&#39;, &#39;Allow&#39;: &#39;GET, HEAD, POST, PATCH&#39;, &#39;Date&#39;: &#39;Fri, 03 Jan 2020 19:21:53 GMT&#39;, &#39;OData-Version&#39;: &#39;4.0&#39;, &#39;X-Frame-Options&#39;: &#39;sameorigin&#39;}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="ending-a-session">
+<h4>Ending A Session<a class="headerlink" href="#ending-a-session" title="Permalink to this headline">¶</a></h4>
+<p>After finishing operations on a server, it’s important to logout using <strong>logout</strong> to free sessions.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">APP</span><span class="o">.</span><span class="n">logout</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+
+        <a href="System-Compatibility.html" class="btn btn-neutral float-right" title="System Compatibility" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+
+
+        <a href="Advanced-Usage.html" class="btn btn-neutral" title="Advanced Usage" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+
+    </div>
+
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright Copyright 2020 Hewlett Packard Enterprise Development LP.
+
+    </p>
+  </div>
+
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+
+  <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      <span class="fa fa-book"> Other Versions</span>
+      <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+      <dl>
+        <dt>Versions</dt>
+          <dd><a href="https://pages.github.hpe.com/intelligent-provisioning/python-redfish-library/">latest</dd>
+          <dd><a href="https://pages.github.hpe.com/intelligent-provisioning/python-redfish-library/3.0/">3.0</dd>
+      </dl>
+
+    </div>
+  </div>
+
+
+
+
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'3.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="_static/language_data.js"></script>
+
+
+
+
+
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+
+
+</body>
+</html>

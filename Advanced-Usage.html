@@ -5,71 +5,71 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>Advanced Usage &mdash; python-ilorest-library 3.0.0 documentation</title>
-  
 
-  
-  
+  <title>Advanced Usage &mdash; python-ilorest-library 3.1.0 documentation</title>
 
-  
 
-  
-  
-    
 
-  
 
-  
-  
+
+
+
+
+
+
+
+
+
+
+
     <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
 
-  
 
-  
+
+
+
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="python-ilorest-library 3.0.0 documentation" href="index.html"/>
-        <link rel="next" title="Examples" href="Examples.html"/>
-        <link rel="prev" title="Quick Start" href="Quick-Start.html"/> 
+    <link rel="top" title="python-ilorest-library 3.1.0 documentation" href="index.html"/>
+        <link rel="next" title="The Monolith" href="Monolith.html"/>
+        <link rel="prev" title="Client Quick Start" href="Client-Quick-Start.html"/>
 
-  
+
   <script src="_static/js/modernizr.min.js"></script>
 
 </head>
 
 <body class="wy-body-for-nav" role="document">
 
-   
+
   <div class="wy-grid-for-nav">
 
-    
+
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search">
-          
 
-          
+
+
             <a href="index.html" class="icon icon-home"> python-ilorest-library
-          
 
-          
+
+
           </a>
 
-          
-            
-            
-              <div class="version">
-                3.0
-              </div>
-            
-          
 
-          
+
+
+              <div class="version">
+                3.1
+              </div>
+
+
+
+
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -78,17 +78,17 @@
   </form>
 </div>
 
-          
+
         </div>
 
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
+
+
+
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="API-Overview.html">API Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Installation-Guide.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Quick-Start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Client-Quick-Start.html">Client Quick Start</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Advanced Usage</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#a-deeper-dive-into-the-client-classes">A deeper dive into the Client Classes</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#modifying-remote-connection-settings">Modifying Remote Connection Settings</a></li>
@@ -97,6 +97,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#a-deeper-dive-into-the-response-class">A deeper dive into the Response Class</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#response-object">Response Object</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#request-object">Request Object</a></li>
 </ul>
 </li>
@@ -104,53 +105,55 @@
 <li class="toctree-l2"><a class="reference internal" href="#logging">Logging</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="Monolith.html">The Monolith</a></li>
+<li class="toctree-l1"><a class="reference internal" href="System-Compatibility.html">System Compatibility</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Frequently-Asked-Questions.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Reference.html">Reference Documentation</a></li>
 </ul>
 
-            
-          
+
+
         </div>
       </div>
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
-      
+
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
         <a href="index.html">python-ilorest-library</a>
       </nav>
 
 
-      
+
       <div class="wy-nav-content">
         <div class="rst-content">
-          
 
- 
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
-      
+
     <li>Advanced Usage</li>
     <li class="wy-breadcrumbs-aside">
-      
-        
+
+
           <a href="_sources/Advanced-Usage.rest.txt" rel="nofollow"></a>
-        
-      
+
+
     </li>
   </ul>
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+
   <a class="reference internal image-reference" href="_images/hpe_logo2.png"><img alt="_images/hpe_logo2.png" src="_images/hpe_logo2.png" style="width: 150pt;" /></a>
 <div class="line-block">
 <div class="line"><br /></div>
@@ -163,93 +166,125 @@
 <div class="section" id="a-deeper-dive-into-the-client-classes">
 <h2>A deeper dive into the Client Classes<a class="headerlink" href="#a-deeper-dive-into-the-client-classes" title="Permalink to this headline">¶</a></h2>
 <p>The <strong>RedfishClient</strong> and <strong>LegacyRestClient</strong> are both based on the <strong>RestClient</strong> class.
-The only difference between the two are one is configured for <em>Legacy Rest</em> and one for <em>Redfish</em>.
-So it’s possible to directly use the <strong>RestClient</strong> class instead if you wish.
-For other REST APIs it’s even possible to use the <strong>RestClientBase</strong> class as a client.</p>
+The only difference between the two is that one is configured for <em>Legacy Rest</em> and the other one is configured for <em>Redfish</em>.
+So it is possible to directly use the <strong>RestClient</strong> class instead if you want.
+For other REST APIs, it is even possible to use the <strong>RestClientBase</strong> class as a client.</p>
 <div class="section" id="modifying-remote-connection-settings">
 <h3>Modifying Remote Connection Settings<a class="headerlink" href="#modifying-remote-connection-settings" title="Permalink to this headline">¶</a></h3>
-<p>A remote connection eventually turns into a <em>urllib3</em> <strong>PoolManager</strong> class. Because of this,
-any extra arguments we pass to our Client class that <strong>PoolManager</strong> takes (And any urllib3 adds in the future) will be added to the <em>urllib3</em> connection.</p>
+<p>A remote connection eventually turns into a <em>urllib3</em> <strong>PoolManager</strong> class. Because of this setting,
+any extra arguments passed to the Client class that <strong>PoolManager</strong> takes (and any urllib3 adds in the future)are added to the <em>urllib3</em> connection.</p>
 <p>Useful arguments include:</p>
 <ul class="simple">
-<li><strong>timeout</strong> (in seconds)</li>
-<li><strong>retries</strong></li>
-<li><strong>ca_certs</strong></li>
+<li><p><strong>timeout</strong> (in seconds)</p></li>
+<li><p><strong>retries</strong></p></li>
+<li><p><strong>ca_certs</strong></p></li>
 </ul>
 <p>For a full list of arguments possible, see urllib3’s <a class="reference external" href="https://urllib3.readthedocs.io/en/latest/reference/index.html?highlight=PoolManager#urllib3.PoolManager">documentation</a>.</p>
-<p>The following example sets a <strong>RedfishClient</strong> with a timeout of 30 seconds and 5 retries.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">REST_OBJ</span> <span class="o">=</span> <span class="n">redfish</span><span class="o">.</span><span class="n">RedfishClient</span><span class="p">(</span><span class="n">base_url</span><span class="o">=</span><span class="n">iLO_host</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="n">login_account</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="n">login_password</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">retries</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<p>The following example sets a <strong>RedfishClient</strong> with a timeout of 30 seconds and five retries.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">REST_OBJ</span> <span class="o">=</span> <span class="n">redfish</span><span class="o">.</span><span class="n">RedfishClient</span><span class="p">(</span><span class="n">base_url</span><span class="o">=</span><span class="n">iLO_host</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="n">login_account</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="n">login_password</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">retries</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="proxy-support">
 <h3>Proxy Support<a class="headerlink" href="#proxy-support" title="Permalink to this headline">¶</a></h3>
-<p>The python-ilorest-library <strong>version 2.5.0 and greater</strong> supports both HTTP and SOCKS proxies. If you are using a socks proxy you need to <a class="reference external" href="Installation-Guide.html#with-socks-proxy-support">install the [socks] add-on</a>.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">REST_OBJ</span> <span class="o">=</span> <span class="n">redfish</span><span class="o">.</span><span class="n">RedfishClient</span><span class="p">(</span><span class="n">base_url</span><span class="o">=</span><span class="s2">&quot;https://10.0.0.100&quot;</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="s2">&quot;username&quot;</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="s2">&quot;password&quot;</span><span class="p">,</span> <span class="n">proxy</span><span class="o">=</span><span class="s1">&#39;http://proxy.proxy.com:8080&#39;</span><span class="p">)</span>
+<p>The python-ilorest-library <strong>version 2.5.0 and greater</strong> supports both HTTP and SOCKS proxies. If you are using a socks proxy, you must <a class="reference external" href="Installation-Guide.html#with-socks-proxy-support">install the [socks] add-on</a>.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">REST_OBJ</span> <span class="o">=</span> <span class="n">redfish</span><span class="o">.</span><span class="n">RedfishClient</span><span class="p">(</span><span class="n">base_url</span><span class="o">=</span><span class="s2">&quot;https://10.0.0.100&quot;</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="s2">&quot;username&quot;</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="s2">&quot;password&quot;</span><span class="p">,</span> <span class="n">proxy</span><span class="o">=</span><span class="s1">&#39;http://proxy.proxy.com:8080&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>SOCKS proxies must start with <cite>socks</cite></p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">REST_OBJ</span> <span class="o">=</span> <span class="n">redfish</span><span class="o">.</span><span class="n">RedfishClient</span><span class="p">(</span><span class="n">base_url</span><span class="o">=</span><span class="s2">&quot;https://10.0.0.100&quot;</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="s2">&quot;username&quot;</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="s2">&quot;password&quot;</span><span class="p">,</span> <span class="n">proxy</span><span class="o">=</span><span class="s1">&#39;socks5://proxy.proxy.com:8080&#39;</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">REST_OBJ</span> <span class="o">=</span> <span class="n">redfish</span><span class="o">.</span><span class="n">RedfishClient</span><span class="p">(</span><span class="n">base_url</span><span class="o">=</span><span class="s2">&quot;https://10.0.0.100&quot;</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="s2">&quot;username&quot;</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="s2">&quot;password&quot;</span><span class="p">,</span> <span class="n">proxy</span><span class="o">=</span><span class="s1">&#39;socks5://proxy.proxy.com:8080&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="https-verification">
 <h3>HTTPS verification<a class="headerlink" href="#https-verification" title="Permalink to this headline">¶</a></h3>
 <p>By default the python-ilorest-library creates an unverified context for HTTPS connections.
-In order to verify the HTTPS certificate we need to pass an optional argument to urllib3 through a Client object, <strong>ca_certs</strong>.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">REST_OBJ</span> <span class="o">=</span> <span class="n">redfish</span><span class="o">.</span><span class="n">RedfishClient</span><span class="p">(</span><span class="n">base_url</span><span class="o">=</span><span class="s2">&quot;https://hostname&quot;</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="s2">&quot;username&quot;</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="s2">&quot;password&quot;</span><span class="p">,</span> <span class="n">ca_certs</span><span class="o">=</span><span class="s1">&#39;C:\&lt;pathto&gt;\CA.crt&#39;</span><span class="p">)</span>
+To verify the HTTPS certificate, pass an optional argument to urllib3 through a Client object, <strong>ca_certs</strong>.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">REST_OBJ</span> <span class="o">=</span> <span class="n">redfish</span><span class="o">.</span><span class="n">RedfishClient</span><span class="p">(</span><span class="n">base_url</span><span class="o">=</span><span class="s2">&quot;https://hostname&quot;</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="s2">&quot;username&quot;</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="s2">&quot;password&quot;</span><span class="p">,</span> <span class="n">ca_certs</span><span class="o">=</span><span class="s1">&#39;C:\&lt;pathto&gt;\CA.crt&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>For a full description on what is possible arguments are in ca_certs see <a class="reference external" href="https://urllib3.readthedocs.io/en/latest/user-guide.html#certificate-verification">urllib3’s documentation on the subject</a>.</p>
+<p>For a full description of possible arguments in ca_certs, see <a class="reference external" href="https://urllib3.readthedocs.io/en/latest/user-guide.html#certificate-verification">urllib3’s documentation on the subject</a>.</p>
 </div>
 </div>
 <div class="section" id="a-deeper-dive-into-the-response-class">
 <h2>A deeper dive into the Response Class<a class="headerlink" href="#a-deeper-dive-into-the-response-class" title="Permalink to this headline">¶</a></h2>
-<p>The <strong>Response</strong> class was already mentioned briefly in the <a class="reference external" href="Quick-Start.html#response-object">Quick Start</a> section, but we will describe some more useful properties here.</p>
+<p>The <strong>Response</strong> class was already mentioned briefly in the <a class="reference external" href="Quick-Start.html#response-object">Quick Start</a> section, but this section provides more details about the useful properties of the Response class.</p>
 <p>You can use the <strong>getheader()</strong> function to search for a specific header in a response. <em>getheader is case insensitive</em></p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">response</span><span class="o">.</span><span class="n">getheader</span><span class="p">(</span><span class="s1">&#39;link&#39;</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">response</span><span class="o">.</span><span class="n">getheader</span><span class="p">(</span><span class="s1">&#39;link&#39;</span><span class="p">)</span>
 <span class="go">&#39;&lt;/redfish/v1/SchemaStore/en/ComputerSystem.json&gt;; rel=describedby&#39;</span>
 </pre></div>
 </div>
-<p>The <strong>ori</strong> property will return the response body in its original form. Useful for binary responses.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">response</span><span class="o">.</span><span class="n">ori</span>
+<p>The <strong>ori</strong> property returns the response body in its original form, and it is useful for binary responses.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">response</span><span class="o">.</span><span class="n">ori</span>
 </pre></div>
 </div>
-<p>The <strong>obj</strong> property will return the response body in a dot notation usable form</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">resp_obj</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">obj</span>
+<p>The <strong>obj</strong> property returns the response body in dot notation.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">resp_obj</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">obj</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">resp_obj</span><span class="o">.</span><span class="n">AssetTag</span>
 <span class="go">u&#39;assettag&#39;</span>
 </pre></div>
 </div>
-<p>For keys with special characters the dictionary notation still works</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">resp_obj</span><span class="o">.</span><span class="n">Bios</span><span class="p">[</span><span class="s1">&#39;@odata.id&#39;</span><span class="p">]</span>
+<p>For keys with special characters, the dictionary notation still works.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">resp_obj</span><span class="o">.</span><span class="n">Bios</span><span class="p">[</span><span class="s1">&#39;@odata.id&#39;</span><span class="p">]</span>
 <span class="go">u&#39;/redfish/v1/systems/1/bios&#39;</span>
 </pre></div>
 </div>
+<div class="section" id="response-object">
+<h3>Response Object<a class="headerlink" href="#response-object" title="Permalink to this headline">¶</a></h3>
+<p>A class has been implemented within the library to handle HTTP response codes from iLO for patch, post and put type requests. HTTP response data is parsed and then combined with the relevant error response resource as associated with the applied properties (categorized by type and MessageId).</p>
+<p>Error response data is guided by HTTP status codes. See <a class="reference external" href="https://en.wikipedia.org/wiki/List_of_HTTP_status_codes">List of HTTP status codes</a> for more information:</p>
+<ul class="simple">
+<li><p><strong>200</strong> response codes indicate success. Generally these types of responses include simple messages, such as “successful” or “one or more properties have been changed, an ilo reset is required for the properties to take effect” (on some rare occassions no response message or an empty response string will occur).</p></li>
+<li><p><strong>400</strong> response codes indicate client failures such as an invalid post or patch, or the resource could not be modified. Additional detailed information will likely accompany the response message.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Response codes outside of 200 and 400 have not been extensively tested or witnessed. Responses for HTTP response codes under 300 redirects or 500 server errors might be observed; please feel free to note and share the results of such encounters by opening a GitHub issue.</p>
+</div>
+<p>Generally 400 error response codes result in a full error response. A response might include the following data; however, the entries are not guaranteed for every response:</p>
+<ul class="simple">
+<li><p>An error response message ID (“MessageId”), iLO response error message code identification.</p></li>
+<li><p>An error response message description (“Description”), essentially a quick synopsis of the issue.</p></li>
+<li><p>An error response message (“Message”) describing the reason for the error in greater detail. The offending properties are noted as per the relevant error response resource.</p></li>
+<li><p>An error response resolution (“Resolution”) describing steps to correct the error.</p></li>
+</ul>
+<p>The following is an example response message for an error in the iLODateTime type regarding the property “NTPServers”:</p>
+<div class="highlight-TEXT notranslate"><div class="highlight"><pre><span></span>HTTP Response Code: [400]
+MessageId: iLO.2.8.PropertyNotWritableOrUnknown
+Description: The request included a value for a  read-only or unknown property.
+Message: The property &quot;NTPServers&quot; is a read-only property and cannot be assigned a value, or not valid for this resource.
+Resolution: If the operation did not complete, remove the property from the request body and resubmit the request.
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The response data is also available when utilizing the iLO Channel Interface Driver (Chif).</p>
+</div>
+</div>
 <div class="section" id="request-object">
 <h3>Request Object<a class="headerlink" href="#request-object" title="Permalink to this headline">¶</a></h3>
-<p>The <strong>response</strong> property of the Response object returns a <strong>Request</strong> object which describes the request that generated the response.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">response</span><span class="o">.</span><span class="n">request</span>
+<p>The <strong>response</strong> property of the Response object returns a <strong>Request</strong> object, which describes the request that generated the response.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">response</span><span class="o">.</span><span class="n">request</span>
 <span class="go">&lt;redfish.rest.containers.RestRequest object at 0x00000000070C7E80&gt;</span>
 </pre></div>
 </div>
-<p>The <strong>url</strong> property shows the actual system the call was made against</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">response</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">url</span>
+<p>The <strong>url</strong> property shows the actual system the call was made against.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">response</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">url</span>
 <span class="go">&#39;https://10.0.0.100&#39;</span>
 </pre></div>
 </div>
-<p>The <strong>method</strong> property shows the method applied</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">response</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">method</span>
+<p>The <strong>method</strong> property shows the method applied.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">response</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">method</span>
 <span class="go">&#39;PATCH&#39;</span>
 </pre></div>
 </div>
-<p>The <strong>path</strong> property shows what path the method was made against</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">response</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">path</span>
+<p>The <strong>path</strong> property shows what path the method was made against.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">response</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">path</span>
 <span class="go">&#39;/redfish/v1/systems/1&#39;</span>
 </pre></div>
 </div>
-<p>The <strong>body</strong> property shows what body (if any) was passed along with the request</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">response</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">body</span>
+<p>The <strong>body</strong> property shows what body (if any) was passed along with the request.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">response</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">body</span>
 <span class="go">&#39;{&quot;AssetTag&quot;: &quot;new tag&quot;}&#39;</span>
 </pre></div>
 </div>
@@ -258,43 +293,43 @@ In order to verify the HTTPS certificate we need to pass an optional argument to
 <div class="section" id="multi-part-form-data">
 <h2>Multi-part Form Data<a class="headerlink" href="#multi-part-form-data" title="Permalink to this headline">¶</a></h2>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Multi-part Form data is only supported on iLO with a <strong>Remote Object</strong>.</p>
+<p class="admonition-title">Note</p>
+<p>Multi-part Form data is only supported on iLO with a <strong>Remote Object</strong>.</p>
 </div>
 <p>Multi-part form data is sent as a list of tuples.</p>
 <p>Standard fields are a tuple of <cite>(field, value)</cite></p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="s1">&#39;field1&#39;</span><span class="p">:</span> <span class="s1">&#39;value&#39;</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="s1">&#39;field1&#39;</span><span class="p">:</span> <span class="s1">&#39;value&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Json data is just another value</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="s1">&#39;jsondata&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;key1&#39;</span><span class="p">:</span> <span class="s1">&#39;value1&#39;</span><span class="p">,</span> <span class="s1">&#39;key2&#39;</span><span class="p">:</span> <span class="s1">&#39;value2&#39;</span><span class="p">})</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="s1">&#39;jsondata&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;key1&#39;</span><span class="p">:</span> <span class="s1">&#39;value1&#39;</span><span class="p">,</span> <span class="s1">&#39;key2&#39;</span><span class="p">:</span> <span class="s1">&#39;value2&#39;</span><span class="p">})</span>
 </pre></div>
 </div>
 <p>Files &amp; binary data are similar to the standard fields, except instead of a value we have another tuple.</p>
 <p>This value tuple has 2 or 3 items <cite>(filename, filedata)</cite> or optionally include the MIME type explicitly <cite>(filename, filedata , MIME type)</cite></p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="s1">&#39;filedata&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;filename.data&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;binary data&gt;&#39;</span><span class="p">,</span> <span class="s1">&#39;application/octet-stream&#39;</span><span class="p">))</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="s1">&#39;filedata&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;filename.data&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;binary data&gt;&#39;</span><span class="p">,</span> <span class="s1">&#39;application/octet-stream&#39;</span><span class="p">))</span>
 </pre></div>
 </div>
 <p>So putting it all together in a single form data request:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">[(</span><span class="s1">&#39;field1&#39;</span><span class="p">:</span> <span class="s1">&#39;value&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;jsondata&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;key1&#39;</span><span class="p">:</span> <span class="s1">&#39;value1&#39;</span><span class="p">,</span> <span class="s1">&#39;key2&#39;</span><span class="p">:</span> <span class="s1">&#39;value2&#39;</span><span class="p">}),</span> <span class="p">(</span><span class="s1">&#39;filedata&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;filename.data&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;binary data&gt;&#39;</span><span class="p">,</span> <span class="s1">&#39;application/octet-stream&#39;</span><span class="p">))]</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">[(</span><span class="s1">&#39;field1&#39;</span><span class="p">:</span> <span class="s1">&#39;value&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;jsondata&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;key1&#39;</span><span class="p">:</span> <span class="s1">&#39;value1&#39;</span><span class="p">,</span> <span class="s1">&#39;key2&#39;</span><span class="p">:</span> <span class="s1">&#39;value2&#39;</span><span class="p">}),</span> <span class="p">(</span><span class="s1">&#39;filedata&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;filename.data&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;binary data&gt;&#39;</span><span class="p">,</span> <span class="s1">&#39;application/octet-stream&#39;</span><span class="p">))]</span>
 </pre></div>
 </div>
-<p>For an example of Multi-part form data in action, see the <a class="reference external" href="https://github.com/HewlettPackard/python-ilorest-library/tree/master/examples/Redfish/upload_firmware_ilo_repository.py">example for uploading firmware to the iLO repository</a>.</p>
+<p>For an example of Multi-part form data in action, see the <a class="reference external" href="https://github.com/HewlettPackard/python-ilorest-library/blob/master/examples/Redfish/upload_firmware_ilo_repository.py">example for uploading firmware to the iLO repository</a>.</p>
 </div>
 <div class="section" id="logging">
 <h2>Logging<a class="headerlink" href="#logging" title="Permalink to this headline">¶</a></h2>
 <p>Logging of all request and responses is available through the redfish_logger function. First, import the logging and redfish_logger functions.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">logging</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">redfish</span> <span class="k">import</span> <span class="n">redfish_logger</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">logging</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">redfish</span> <span class="kn">import</span> <span class="n">redfish_logger</span>
 </pre></div>
 </div>
-<p>Then specify the logger file name, format of the logger, and the logging level. See the <cite>logging</cite> python documentation for more information on these arguments.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">LOGGERFILE</span> <span class="o">=</span> <span class="s2">&quot;RedfishApiExamples.log&quot;</span>
+<p>Then, specify the logger file name, format of the logger, and the logging level. See the <cite>logging</cite> python documentation for more information on these arguments.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">LOGGERFILE</span> <span class="o">=</span> <span class="s2">&quot;RedfishApiExamples.log&quot;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">LOGGERFORMAT</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%(asctime)s</span><span class="s2"> - </span><span class="si">%(name)s</span><span class="s2"> - </span><span class="si">%(levelname)s</span><span class="s2"> - </span><span class="si">%(message)s</span><span class="s2">&quot;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">LOGGER</span> <span class="o">=</span> <span class="n">redfish_logger</span><span class="p">(</span><span class="n">LOGGERFILE</span><span class="p">,</span> <span class="n">LOGGERFORMAT</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>After running some commands your log file should be populated in the file specified at creation.</p>
+<p>After running some commands, your log file should be populated in the file specified at creation.</p>
 </div>
 </div>
 
@@ -302,26 +337,26 @@ In order to verify the HTTPS certificate we need to pass an optional argument to
            </div>
           </div>
           <footer>
-  
+
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="Examples.html" class="btn btn-neutral float-right" title="Examples" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="Quick-Start.html" class="btn btn-neutral" title="Quick Start" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+
+        <a href="Monolith.html" class="btn btn-neutral float-right" title="The Monolith" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+
+
+        <a href="Client-Quick-Start.html" class="btn btn-neutral" title="Client Quick Start" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+
     </div>
-  
+
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright Copyright 2019 Hewlett Packard Enterprise Development LP.
+        &copy; Copyright Copyright 2020 Hewlett Packard Enterprise Development LP.
 
     </p>
   </div>
-   
+
 
 </footer>
 
@@ -331,15 +366,31 @@ In order to verify the HTTPS certificate we need to pass an optional argument to
     </section>
 
   </div>
-  
 
 
-  
+  <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      <span class="fa fa-book"> Other Versions</span>
+      <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+      <dl>
+        <dt>Versions</dt>
+          <dd><a href="https://pages.github.hpe.com/intelligent-provisioning/python-redfish-library/">latest</dd>
+          <dd><a href="https://pages.github.hpe.com/intelligent-provisioning/python-redfish-library/3.0/">3.0</dd>
+      </dl>
+
+    </div>
+  </div>
+
+
+
+
 
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'3.0.0',
+            VERSION:'3.1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
@@ -350,21 +401,21 @@ In order to verify the HTTPS certificate we need to pass an optional argument to
       <script type="text/javascript" src="_static/doctools.js"></script>
       <script type="text/javascript" src="_static/language_data.js"></script>
 
-  
 
-  
-  
+
+
+
     <script type="text/javascript" src="_static/js/theme.js"></script>
-  
 
-  
-  
+
+
+
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.StickyNav.enable();
       });
   </script>
-   
+
 
 </body>
 </html>

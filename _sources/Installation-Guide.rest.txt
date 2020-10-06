@@ -7,7 +7,7 @@
 Installation Guide
 ==================
 
-The python-ilorest-library supports both Python 2.7 and Python 3.
+The python-ilorest-library supports **Python 2** (Up to 2.7.15, which is the EOL version) and **Python 3** (At present, 3.8).
 
 Pip install
 ===========
@@ -21,7 +21,7 @@ Standard install
 With SOCKS proxy support
 ------------------------
 
-Starting with **version 2.5.0** of the python-ilorest-library you can include the SOCKS proxy add-on if you need that support.
+Starting with **version 2.5.0** of the python-ilorest-library, you can include the SOCKS proxy add-on if you need that support.
 
 ::
 
@@ -34,20 +34,20 @@ Building from Source
 Checkout using SVN (Subversion)
 -------------------------------
 
-Assuming that SVN is already installed in your system and it is already in System Path, execute the following command from the directory where you want to copy the source.
+Assuming that SVN is already installed in your system and it is already in the system path, run the following command from the directory where you want to copy the source.
 
 ::
 
- svn checkout https://github.com/HewlettPackard/python-ilorest-library.git
+ svn checkout https://github.hpe.com/intelligent-provisioning/python-redfish-library.git
 
 Clone using GIT
 ---------------
 
-Execute the following command from the directory where you want to copy the source.
+Run the following command from the directory where you want to copy the source.
 
 ::
 
- git clone https://github.com/HewlettPackard/python-ilorest-library.git
+ git clone https://github.hpe.com/intelligent-provisioning/python-redfish-library.git
 
 Building Source
 ---------------
