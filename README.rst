@@ -20,7 +20,7 @@ Description
 ----------
 The python-ilorest-library is a python library built for interacting with the Redfish API remotely to any BMC that
 implements a Redfish API or any HPE system locally. The library also supports HPE's legacy REST API. Go to the library
-`documentation <https://pages.github.hpe.com/intelligent-provisioning/python-redfish-library/>`_ for more details.
+`documentation <https://hewlettpackard.github.io/python-ilorest-library/>`_ for more details.
 
 HPE RESTful API for iLO is a RESTful application programming interface for the
 management of iLO and iLO Chassis Manager based HPE servers. REST
@@ -84,9 +84,7 @@ It must be placed in your working environment path.
 
 Usage
 ----------
-For 3.x and greater versions of the library see the documentation for usage: https://pages.github.hpe.com/intelligent-provisioning/python-redfish-library/
-
-For 2.x versions of the library documentation is located at the `Wiki <https://github.hpe.com/intelligent-provisioning/python-redfish-library/wiki>`_.
+See the documentation at https://hewlettpackard.github.io/python-ilorest-library/
 
 Contributing
 ----------
@@ -122,13 +120,14 @@ History
   * 07/11/2019: Release of v2.5.1
   * 08/13/2019: Release of v2.5.2
   * 11/13/2019: Release of v3.0.0
+  * 10/05/2020: Release of v3.1.0
 
 Copyright and License
 ---------------------
 
 ::
 
- Copyright 2016 Hewlett Packard Enterprise Development LP
+ Copyright 2016-2020 Hewlett Packard Enterprise Development LP
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
