@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -58,8 +58,8 @@ if __name__ == "__main__":
     # SYSTEM_URL acceptable examples:
     # "https://10.0.0.100"
     # "https://ilo.hostname"
-    SYSTEM_URL = "https://10.0.0.100"
-    LOGIN_ACCOUNT = "admin"
+    SYSTEM_URL = "https://16.83.61.9"
+    LOGIN_ACCOUNT = "Administrator"
     LOGIN_PASSWORD = "password"
 
     # flag to force disable resource directory. Resource directory and associated operations are
@@ -78,4 +78,3 @@ if __name__ == "__main__":
 
     computer_details(REDFISHOBJ)
     REDFISHOBJ.logout()
-  

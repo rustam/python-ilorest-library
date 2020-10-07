@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -48,8 +48,6 @@ def get_ESKM(_redfishobj):
                 break
 
     if security_service_eskm_uri:
-        security_service_eskm_uri = _redfishobj.get(security_service_uri).obj.Links\
-                                                                            ['ESKM']['@odata.id']
         security_service_eskm_resp = _redfishobj.get(security_service_eskm_uri)
         print(json.dumps(security_service_eskm_resp.dict, indent=4, sort_keys=True))
 

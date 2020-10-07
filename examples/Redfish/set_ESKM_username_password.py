@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -24,7 +24,8 @@ from redfish.rest.v1 import ServerDownOrUnreachableError
 
 from get_resource_directory import get_resource_directory
 
-def ESKM_username_pass(_redfishobj, eskm_username, eskm_password, eskm_accountgroup):
+def ESKM_username_pass(_redfishobj, eskm_username, eskm_password, eskm_accountgroup, \
+                       eskm_primarykeyserver_addr, eskm_primarykeyserver_port):
 
     eskm_uri = None
     body = dict()
@@ -54,7 +55,9 @@ def ESKM_username_pass(_redfishobj, eskm_username, eskm_password, eskm_accountgr
         body["KeyManagerConfig"]["Password"] = eskm_password
         body["KeyManagerConfig"]["AccountGroup"] = eskm_accountgroup
         body["KeyManagerConfig"]["ESKMLocalCACertificateName"] = ""
-        resp = _redfishobj.post(eskm_uri, body)
+        body["PrimaryKeyServerAddress"] = eskm_primarykeyserver_addr
+        body["PrimaryKeyServerPort"] = eskm_primarykeyserver_port
+        resp = _redfishobj.patch(eskm_uri, body)
         #If iLO responds with soemthing outside of 200 or 201 then lets check the iLO extended info
         #error message to see what went wrong
         if resp.status == 400:
@@ -88,6 +91,8 @@ if __name__ == "__main__":
     ESKM_USERNAME = "admin"
     ESKM_PASSWORD = "password"
     ESKM_ACCOUNTGROUP = "group"
+    ESKM_PRIMARYKEYSERVER_ADDR = "192.168.1.10"
+    ESKM_PRIMARYKEYSERVER_PORT = 5927
     # flag to force disable resource directory. Resource directory and associated operations are
     # intended for HPE servers.
     DISABLE_RESOURCE_DIR = False
@@ -102,5 +107,6 @@ if __name__ == "__main__":
         sys.stderr.write("ERROR: server not reachable or does not support RedFish.\n")
         sys.exit()
 
-    ESKM_username_pass(REDFISHOBJ, ESKM_USERNAME, ESKM_PASSWORD, ESKM_ACCOUNTGROUP)
+    ESKM_username_pass(REDFISHOBJ, ESKM_USERNAME, ESKM_PASSWORD, ESKM_ACCOUNTGROUP, \
+                       ESKM_PRIMARYKEYSERVER_ADDR, ESKM_PRIMARYKEYSERVER_PORT)
     REDFISHOBJ.logout()

@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -40,21 +40,19 @@ def set_bios_iscsi(_redfishobj, iscsi_properties):
         bios_uri = systems_members_response.obj['Bios']['@odata.id']
         bios_response = _redfishobj.get(bios_uri)
         iscsi_uri = bios_response.obj.Oem.Hpe.Links['iScsi']['@odata.id']
+        iscsi_data = _redfishobj.get(iscsi_uri)
     else:
         #Use Resource directory to find the relevant URI
         for instance in resource_instances:
             if '#HpeiSCSISoftwareInitiator.' in instance['@odata.type']:
                 iscsi_uri = instance['@odata.id']
+                iscsi_data = _redfishobj.get(iscsi_uri)
 
-    if iscsi_uri:
-        iscsi_data = _redfishobj.get(iscsi_uri)
-        iscsi_settings_uri = iscsi_data.obj['@Redfish.Settings']['SettingsObject']['@odata.id']
-        for inst, _ in enumerate(iscsi_data.obj['iSCSISources']):
-            if iscsi_properties['iSCSIBootInstance'] == inst:
-                del iscsi_properties["iSCSIBootInstance"]
-                iscsi_data.dict['iSCSISources'][inst].update(iscsi_properties)
-                resp = _redfishobj.patch(iscsi_settings_uri, {'iSCSISources' : \
-                                                                iscsi_data.dict['iSCSISources']})
+    if iscsi_data:
+        for indx, inst in enumerate(iscsi_data.obj['iSCSISources']):
+            if iscsi_properties['iSCSIBootInstance'] == indx:
+                iscsi_data.dict['iSCSISources'][indx].update(iscsi_properties)
+                resp = _redfishobj.patch(iscsi_uri, {'iSCSISources' : iscsi_data.dict['iSCSISources']})
                 #If iLO responds with soemthing outside of 200 or 201 then lets check the
                 #iLO extended info error message to see what went wrong
                 if resp.status == 400:

@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development, LP.
+ # Copyright 2020 Hewlett Packard Enterprise Development, LP.
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -31,7 +31,7 @@ def get_base_registry(restobj):
         if identifier not in ["Base", "iLO"]:
             continue
 
-        for location in entry["Location"]:  
+        for location in entry["Location"]:
             reg_resp = restobj.get(location["Uri"]["extref"])
 
             if reg_resp.status == 200:
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     # LOGIN_ACCOUNT = None
     # LOGIN_PASSWORD = None
 
-    # When running remotely connect using the iLO secured (https://) address, 
+    # When running remotely connect using the iLO secured (https://) address,
     # iLO account name, and password to send https requests
     # SYSTEM_URL acceptable examples:
     # "https://10.0.0.100"
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     SYSTEM_URL = "https://10.0.0.100"
     LOGIN_ACCOUNT = "admin"
     LOGIN_PASSWORD = "password"
-    
+
     #Create a REST object
     REST_OBJ = LegacyRestClient(base_url=SYSTEM_URL, username=LOGIN_ACCOUNT, password=LOGIN_PASSWORD)
     REST_OBJ.login()

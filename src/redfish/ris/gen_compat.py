@@ -1,5 +1,5 @@
 ###
-# Copyright 2019 Hewlett Packard Enterprise, Inc. All rights reserved.
+# Copyright 2020 Hewlett Packard Enterprise, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,9 @@
 ###
 
 # -*- coding: utf-8 -*-
-"""Typedefs implementation"""
+"""Compatibility functionality in between iLO versions and generic Redfish/LegacyRest servers.
+Used to provide convenient string variables that are usable on any iLO irrespective of version or
+API type."""
 #---------Imports---------
 import logging
 
@@ -28,7 +30,21 @@ LOGGER = logging.getLogger(__name__)
 
 #TODO: This will be a part of the compatability class
 class Typesandpathdefines(object):
-    """Global types and path definitions class"""
+    """The global types and path definitions class. Holds information on a system and automatically
+    creates the correct type strings along with some generic paths. Paths are meant to be used with
+    iLO systems. Paths may be different on generic Redfish systems. Self variables are created when
+    the `getgen` function is called.
+    
+    Useful self variables that are created include:
+
+    * **url**: The url of the system that the defines were created for.
+    * **defs**: The string defines for the system that was passed to `getgen`. Includes key
+      property keys, paths, types, and flags to check what the system type is.
+    * **ilogen**: The iLO generation of the system that the defines were created for. For non-iLO
+      Redfish systems this is set to **5**.
+    * **iloversion**: The iLO version of the system that the defines were created for.
+    * **flagiften**: Flag is set to true if the system is Gen 10 or a non-iLO Redfish system.
+    """
     def __init__(self):
         self.url = None
         self.defs = None
@@ -39,12 +55,24 @@ class Typesandpathdefines(object):
 
     def getgen(self, gen=None, url=None, username=None, password=None, logger=None,\
                                                     proxy=None, ca_certs=None, isredfish=True):
-        """Function designed to verify the servers platform
+        """Function designed to verify the servers platform. Will generate the `Typeandpathdefines`
+        variables based on the system type that is detected.
 
         :param url: The URL to perform the request on.
-        :type url: str.
-        :param logger: The logger handler.
-        :type logger: str.
+        :type url: str
+        :param username: The username to login with.
+        :type username: str
+        :param password: The password to login with.
+        :type password: str
+        :param proxy: The proxy to connect to the system with.
+        :type proxy: str
+        :param ca_certs: The location to the certificate bundle or file to use.
+        :type ca_certs: str
+        :param isredfish: The flag to force redfish conformance on iLO 4 systems. You will still
+          need to call `updatedefinesflag` to update the defines to Redfish.
+        :type isredfish: bool
+        :param logger: The logger handler to log data too uses the default if none is provided.
+        :type logger: str
         """
 
         if self.adminpriv is False and url.startswith("blob"):
@@ -73,7 +101,7 @@ class Typesandpathdefines(object):
                                     password=password, proxy=proxy, ca_certs=ca_certs)
                     restclient._get_root()
                     #Check that the response is actually legacy rest and not a redirect
-                    _ = restclient.root.Type
+                    _ = restclient.root.obj.Type
                     self.is_redfish = False
                     client = restclient
                 except Exception as excep:
@@ -126,7 +154,7 @@ class Typesandpathdefines(object):
             self.defs = DefinevalsNine()
 
     def defineregschemapath(self, rootobj):
-        """Define the schema and registry paths using data in root path
+        """Defines the schema and registry paths using data in root path.
 
         :param rootobj: The root path data.
         :type rootobj: dict.
@@ -142,11 +170,15 @@ class Typesandpathdefines(object):
                 self.is_redfish and self.flagiften and self.gencompany else self.regpath
     #TODO: Move these to a compatability class
     def updatedefinesflag(self, redfishflag=None):
-        """Updates the redfish and rest flag depending on system and user input
+        """Updates the redfish and rest flag depending on system and redfishflag input. On an iLO 5
+        system or another Redfish system, this will do nothing. On an iLO 4 system with both Redfish
+        and LegacyRest this will update the defines to redfish if the *redfishflag* is set to True
+        and stay with the LegacyRest defines otherwise.
 
         :param redfishflag: User input for redfish
-        :type redfishflag: bool.
+        :type redfishflag: bool
         :returns: True if the system should use Redfish, False for legacy Rest.
+        :rtype: bool
         """
         if self.defs:
             is_redfish = redfishflag or self.defs.isgen10
@@ -159,11 +191,13 @@ class Typesandpathdefines(object):
             return redfishflag
 
     def modifyselectorforgen(self, sel):
-        """Changes the query to match the Generation's HP string.
+        """Changes the select to match the Generation's HP string based to the correct type for
+        specific iLO versions.
 
         :param sel: query to be changed to match Generation's HP string
         :type sel: str
-        :returns: returns a modified sel matching the Generation's HP string.
+        :returns: A modified selector matching the Generation's HP string.
+        :rtype: string
         """
         sel = sel.lower()
         returnval = sel
@@ -180,12 +214,12 @@ class Typesandpathdefines(object):
         return returnval
 
 class Definevals(object):
-    """Class for setting platform dependent variables"""
+    """Base class for setting platform dependent variables."""
     def __init__(self):
         pass
 
 class Definevalstenplus(Definevals):
-    """Platform dependent variables"""
+    """Platform dependent variables for iLO 5+ (Gen 10)."""
     # pylint: disable=too-many-instance-attributes
     # As a defines class this will need all the attributes
     def __init__(self):
@@ -241,12 +275,12 @@ class Definevalstenplus(Definevals):
         super(Definevalstenplus, self).__init__()
 
     def redfishchange(self):
-        """Function to update redfish variables"""
+        """Empty function to update redfish variables (unneeded when the system is already redfish).
+        """
         pass
 
-
 class DefinevalsNine(Definevals):
-    """Platform dependent variables"""
+    """Platform dependent variables for iLO 4 LegacyRest (Gen 9)."""
     # pylint: disable=too-many-instance-attributes
     # As a defines class this will need all the attributes
     def __init__(self):
@@ -302,7 +336,7 @@ class DefinevalsNine(Definevals):
         super(DefinevalsNine, self).__init__()
 
     def redfishchange(self):
-        """Function to update redfish variables"""
+        """Function to update redfish variables from LegacyRest to iLO 4 Redfish (Gen 9)."""
         self.startpath = "/redfish/v1/"
         self.systempath = "/redfish/v1/Systems/1/"
         self.managerpath = "/redfish/v1/Managers/1/"

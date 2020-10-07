@@ -1,5 +1,5 @@
 ###
-# Copyright 2019 Hewlett Packard Enterprise, Inc. All rights reserved.
+# Copyright 2020 Hewlett Packard Enterprise, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,18 +15,20 @@
 ###
 
 # -*- coding: utf-8 -*-
-"""RIS Schema classes"""
+"""Handles schema and registry gathering as well as schema parsing and validation."""
 
 # ---------Imports---------
 
 import re
+import six
 import json
 import logging
 import textwrap
+import jsonpath_rw
 
-import six
-
+from collections import OrderedDict
 from redfish.rest.containers import (RisObject)
+from redfish.ris.utils import json_traversal
 from .sharedtypes import JSONEncoder
 
 # ---------End of imports---------
@@ -51,13 +53,12 @@ class RegistryValidationError(Exception):
         self.sel = selector
 
 class UnknownValidatorError(Exception):
-    """Raised when we find an attribute type that we don't know how to
-    validate. """
+    """Raised when we find an attribute type that we don't know how to validate. """
     pass
 
 class ValidationManager(object):
-    """Keep track of all the schemas and registries and provides helpers
-    to simplify validation """
+    """Keeps track of all the schemas and registries and provides helpers
+    to simplify validation."""
     def __init__(self, monolith, defines=None):
         """init of ValidationManager"""
         super(ValidationManager, self).__init__()
@@ -76,21 +77,20 @@ class ValidationManager(object):
         self.updatevalidationdata()
     @property
     def errors(self):
-        """errors property"""
+        """All errors found by the last validation."""
         return self._errors
     @property
     def warnings(self):
-        """warnings property"""
+        """All warnings found by the last validation."""
         return self._warnings
 
     def reset_errors_warnings(self):
-        """Function to reset warnings and errors"""
+        """Resets warnings and errors, getting ready for the next validation."""
         self._errors = list()
         self._warnings = list()
 
     def updatevalidationdata(self):
-        """Loads the types from monolith.
-        """
+        """Loads the types into the validation manager from monolith."""
         monolith = self.monolith
         for instance in monolith.iter():
             if (x.lower() in instance.maj_type.lower() for x in (self.defines.defs.\
@@ -103,11 +103,15 @@ class ValidationManager(object):
 
     def find_prop(self, propname, latestschema=False, proppath=None):
         """Searches through all locations and returns the first schema
-        found for the provided type
+        found for the provided type.
 
-        :param propname: string containing the schema name.
-        :type propname: str.
-
+        :param propname: String containing the schema name.
+        :type propname: str
+        :param proppath: String containing the schema path if you wish to use that instead.
+        :type proppath: str
+        :param latestschema: Flag to determine if we should drop the schema version when we try to
+                             match schema information. If True, the version will be dropped.
+        :type latestschema: bool
         """
         if proppath:
             self.monolith.load(path=proppath, crawl=False, loadtype='ref')
@@ -119,11 +123,11 @@ class ValidationManager(object):
         return None
 
     def itermems(self, membername=None):
-        """Searches through all locations and yields each entry
+        """Searches through all locations and yields each entry.
 
-        :param membername: string containing the schema/registry name.
-        :type membername: str.
-
+        :param membername: string containing the registry name. If not passed we use the typedefines
+                           string by default.
+        :type membername: str
         """
         if not membername:
             membername = self.defines.defs.collectionstring
@@ -132,11 +136,11 @@ class ValidationManager(object):
                 yield item
 
     def iterregmems(self, membername=None):
-        """Searches through all locations and yields each entry
+        """Searches through all registries and yields each entry.
 
-        :param membername: string containing the registry name.
-        :type membername: str.
-
+        :param membername: string containing the registry name. If not passed we use the typedefines
+                           string by default.
+        :type membername: str
         """
         if not membername:
             membername = self.defines.defs.collectionstring
@@ -146,11 +150,11 @@ class ValidationManager(object):
                     yield item
 
     def iterschemamems(self, membername=None):
-        """Searches through all locations and yields each entry
+        """Searches through all schemas and yields each entry
 
-        :param membername: string containing the schema name.
-        :type membername: str.
-
+        :param membername: string containing the registry name. If not passed we use the typedefines
+                           string by default.
+        :type membername: str
         """
         if not membername:
             membername = self.defines.defs.collectionstring
@@ -162,15 +166,14 @@ class ValidationManager(object):
     def find_property(self, propname, cls=None, latestschema=False):
         """Returns iLO/BIOS registries/schemas
 
-        :param propname: string containing the registry name.
-        :type propname: str.
+        :param propname: string containing the registry/schema name.
+        :type propname: str
         :param cls: self._classes list of dictionaries.
-        :type cls: list.
+        :type cls: list
         :param latestschema: flag to drop the versioning in the type string.
         :type latestschema: bool.
 
-        :returns: returns iLO/BIOS registries/schemas
-
+        :returns: iLO/BIOS registries/schemas that match the supplied name.
         """
         result = []
         dataloc = cls.get('Items', None)
@@ -206,42 +209,44 @@ class ValidationManager(object):
     def geturidict(self, locationobj):
         """Return the external reference link.
 
-        :param locationobj: location of the dict
+        :param locationobj: Dictionary to get the URI reference from.
         :type locationobj: dict
         """
         if Typepathforval.typepath.defs.isgen10:
             try:
                 return locationobj["Uri"]
-            except Exception:
+            except KeyError:
                 raise InvalidPathsError("Error accessing Uri path!/n")
         elif Typepathforval.typepath.defs.isgen9:
             try:
                 return locationobj["Uri"]["extref"]
-            except Exception:
+            except KeyError:
                 raise InvalidPathsError("Error accessing extref path!/n")
 
     def validatedict(self, tdict, currtype=None, proppath=None, latestschema=False, \
             searchtype=None, monolith=None, reg=None, unique=None):
-        """Load the schema file and validate tdict against it
+        """Load the schema file and validate tdict against it.
 
         :param tdict: the dictionary to test against.
-        :type tdict: dict.
-        :param errlist: list containing found errors.
-        :type errlist: list.
-        :param warnings: list containing found warnings.
-        :type warnings: list.
-        :param currtype: current selection dictionary type.
-        :type currtype: str.
-        :param searchtype: classifier for the current search.
-        :type searchtype: str.
-        :param monolith: full data model retrieved from server.
-        :type monolith: dict.
-        :param unique: flag to determine override for unique properties.
+        :type tdict: dict
+        :param currtype: String containing the type the tdict dictionary is.
+        :type currtype: str
+        :param proppath: String containing the schema path of the tdict dictionary if you wish to
+                         use that instead.
+        :type proppath: str
+        :param latestschema: Flag to determine if we should drop the schema version when we try to
+                             match schema information. If True, the version will be dropped.
+        :type latestschema: bool
+        :param searchtype: Include the attribute registry of you are validating a bios registry.
+        :type searchtype: str
+        :param monolith: Full data model retrieved from server.
+        :type monolith: dict
+        :param unique: Flag to override for skipping unique properties.
         :type unique: bool
-        :param reg: Registry entry of the given attribute.
+        :param reg: Registry entry of the given attribute. If this is not provided we will attempt
+                    to search based on the searchtype and currtype/proppath arguments.
         :type reg: dict.
         :returns: returns an error list.
-
         """
         if not reg:
             reg = self.get_registry_model(currtype=currtype, searchtype=searchtype, \
@@ -255,10 +260,10 @@ class ValidationManager(object):
                       if not isinstance(val, (dict, list))}
             results = reg.validate_attribute_values(ttdict)
             self._errors.extend(results)
-
-            for key, val in list(tdict.items()):
-                if key in ttdict:
-                    tdict[key] = ttdict[key]
+            
+            for ki, val in list(tdict.items()):
+                if ki in ttdict:
+                    tdict[ki] = ttdict[ki]
                     continue
                 reg = orireg.copy()
                 valexists = False
@@ -266,23 +271,23 @@ class ValidationManager(object):
                     valexists = True
                     #TODO: only validates if its a single dict within list
                     if len(val) == 1 and isinstance(val[0], dict):
-                        treg = self.nestedreg(reg=reg, args=[key])
+                        treg = self.nestedreg(reg=reg, args=[ki])
                         self.validatedict(val[0], unique=unique, monolith=monolith, reg=treg,\
                               currtype=currtype, searchtype=searchtype)
                     else:
                         continue
                 elif val and isinstance(val, dict):
                     valexists = True
-                    treg = self.nestedreg(reg=reg, args=[key])
+                    treg = self.nestedreg(reg=reg, args=[ki])
                     self.validatedict(val, monolith=monolith, reg=treg, unique=unique, \
                                   searchtype=searchtype)
                 if not val and valexists:
-                    del tdict[key]
+                    del tdict[ki]
+
         else:
             self._errors.append(RegistryValidationError('Unable to locate registry model'))
 
-    def checkreadunique(self, tdict, tkey, searchtype=None, \
-                        reg=None, warnings=None, unique=None):
+    def checkreadunique(self, tdict, tkey, searchtype=None, reg=None, warnings=None, unique=None):
         """Check for and remove the readonly and unique attributes if required.
 
         :param tdict: the dictionary to test against.
@@ -298,45 +303,36 @@ class ValidationManager(object):
         :returns: returns boolean.
 
         """
-        if reg.get("ReadOnly", None) is False \
-            or (reg.get(tkey, None) and reg[tkey].get("readonly", None) is False)\
-            or (reg.get(tkey, None) and reg[tkey].get("ReadOnly", None) is False):
-            if unique or (not reg.get("IsSystemUniqueProperty", None)\
-                and (reg.get(tkey, None) and not reg[tkey].get("IsSystemUniqueProperty", None))):
+        
+        if reg.get("ReadOnly") == False or (reg.get(tkey, None)\
+                                                        and reg[tkey].get("readonly") == False):
+            if unique or not reg.get("IsSystemUniqueProperty", None):
                 return
-
-        if not searchtype or (reg.get("ReadOnly", None) == True \
-            or (reg.get(tkey, None) and reg[tkey].get("readonly", None) is True)\
-            or (reg.get(tkey, None) and reg[tkey].get("ReadOnly", None) is True)):
+        if not searchtype or (reg.get("ReadOnly") == True or (reg.get(tkey) \
+                                                    and reg[tkey].get("readonly") == True)):
             warnings.append("Property is read-only skipping '%s'\n" % str(tkey))
-            del tdict[tkey]
-            return True
-        elif not searchtype or (reg.get("IsSystemUniqueProperty", None))\
-            or (reg.get(tkey, None) and reg[tkey].get("IsSystemUniqueProperty", None) is True):
-            warnings.append("Property is unique to the system skipping '%s'\n" % str(tkey))
             del tdict[tkey]
             return True
 
     def get_registry_model(self, currtype=None, proppath=None, \
            getmsg=False, searchtype=None, newarg=None, latestschema=False):
-        """Load the schema file and find the registry model if available
+        """Loads the schema file and find the registry model if available. A registry model is a
+        object built for schema/bios registry data.
 
-        :param currdict: current selection dictionary.
-        :type currdict: dict.
-        :param monolith: full data model retrieved from server.
-        :type monolith: dict.
-        :param errlist: list containing found errors.
-        :type errlist: list.
-        :param getmsg: flag to determine if commit should be skipped.
-        :type getmsg: boolean.
-        :param searchtype: classifier for the current search.
-        :type searchtype: str.
-        :param newargs: list of multi level properties to be modified.
-        :type newargs: list.
-        :param latestschema: flag to determine if we should use smart schema.
-        :type latestschema: boolean.
-        :returns: returns registry model
-
+        :param currtype: Type selection string.
+        :type currtype: dict.
+        :param proppath: String containing the schema path if you wish to use that instead.
+        :type proppath: str
+        :param getmsg: Flag to determine if commit should be skipped.
+        :type getmsg: bool
+        :param searchtype: Include the attribute registry of you are validating a bios registry.
+        :type searchtype: str
+        :param newarg: List of multi level properties to be modified.
+        :type newarg: list
+        :param latestschema: Flag to determine if we should drop the schema version when we try to
+                             match schema information. If True, the version will be dropped.
+        :type latestschema: bool
+        :returns: Schema in object form called a registry object.
         """
         regdict = None
         monolith = self.monolith
@@ -395,14 +391,13 @@ class ValidationManager(object):
             return self.nestedreg(reg=reg, args=newarg) if newarg else reg
 
     def nestedreg(self, reg=None, args=None):
-        """Go through the registry entry to find the required nested attribute
+        """Go through the registry entry to find the required nested attribute.
 
         :param reg: Registry entry of the given attribute.
-        :type reg: dict.
-        :param args: list of multi level properties to be modified.
-        :type args: list.
+        :type reg: dict
+        :param args: List of multi level properties to be modified.
+        :type args: list
         :returns: dict of Registry entry
-
         """
         for arg in args:
             try:
@@ -433,17 +428,16 @@ class ValidationManager(object):
         return reg
 
 class HpPropertiesRegistry(RisObject):
-    """Models the HpPropertiesRegistry file"""
+    """Models a schema or bios attribute registry. Registry model."""
     def __init__(self, d):
         super(HpPropertiesRegistry, self).__init__(d)
 
     def validate_attribute_values(self, tdict):
-        """Look for tdict in attribute list and attempt to validate its value
+        """Look for tdict in the attribute list and attempt to validate its value.
 
         :param tdict: the dictionary to test against.
-        :type tdict: list.
-        :returns: returns a validated list
-
+        :type tdict: dict
+        :returns: A validated list
         """
         result = list()
 
@@ -467,16 +461,16 @@ class HpPropertiesRegistry(RisObject):
         return result
 
     def get_validator(self, attrname, newargs=None, oneof=None):
-        """Returns attribute validator type
+        """Returns attribute validator type.
 
-        :param attrname: attribute name to be used for validation.
-        :type attrname: str.
-        :param newargs: list of multi level properties to be modified.
-        :type newargs: list.
-        :param oneof: special string for "oneof" options within validation.
-        :type oneof: list.
-        :returns: returns attribute validator type
-
+        :param attrname: attribute name to validate. Ex: In A/B/C, this will be A.
+        :type attrname: str
+        :param newargs: List of multi level properties to be modified. Ex: In A/B/C this will be 
+                        a list of B and C.
+        :type newargs: list
+        :param oneof: Special string for "oneof" options within validation.
+        :type oneof: string
+        :returns: The validator type class for the property passed.
         """
         if oneof:
             self = oneof
@@ -518,16 +512,15 @@ class HpPropertiesRegistry(RisObject):
         return validator
 
     def validate_attribute(self, attrentry, attrvallist, name):
-        """Function to validate attribute against iLO schema
+        """Function to validate attribute against its schema.
 
-        :param attrentry: attribute entry to be used for validation.
-        :type attrentry: str.
-        :param attrval: attribute value to be used for validation.
-        :type attrval: str.
-        :param name: clean name for outputting.
-        :type name: str.
-        :returns: returns list with validated attribute
-
+        :param attrentry: Key of property to validate.
+        :type attrentry: str
+        :param attrval: Value of Key to validate.
+        :type attrval: str
+        :param name: Clean name for outputting information to users.
+        :type name: str
+        :returns: returns list with validated attributes
         """
         result = list()
         validator = None
@@ -555,23 +548,23 @@ class HpPropertiesRegistry(RisObject):
         return result
 
     def nulltypevalidationcheck(self, attrval=None, attrentry=None):
-        """Function to validate attribute against iLO schema
+        """Function to validate null attributes against iLO schema
 
-        :param attrentry: attribute entry to be used for validation.
-        :type attrentry: str.
-        :param attrval: attribute value to be used for validation.
-        :type attrval: str.
-        :returns: returns boolean
-
+        :param attrentry: Key of property to validate.
+        :type attrentry: str
+        :param attrval: Value of Key to validate.
+        :type attrval: str
+        :returns: True if entry is null and valid.
         """
         if 'type' in attrentry and attrval is None:
             if isinstance(attrentry['type'], list):
                 for item in attrentry['type']:
                     if item.lower() == 'null':
                         return True
+        return False
 
 class BaseValidator(RisObject):
-    """Base validator class"""
+    """Base class for all validators."""
     def __init__(self, d):
         super(BaseValidator, self).__init__(d)
 
@@ -580,12 +573,11 @@ class BaseValidator(RisObject):
         raise RuntimeError('You must override this method in your derived class')
 
     def common_print_help(self, name):
-        """Info command helper function for print outs
+        """Common human readable schema data.
 
         :param name: clean name for outputting.
-        :type name: str.
-        :returns: str
-
+        :type name: str
+        :returns: A human readable string of schema data.
         """
         outdata = ''
         wrapper = textwrap.TextWrapper()
@@ -643,24 +635,24 @@ class BaseValidator(RisObject):
         return outdata
 
     def is_arrtype(self, attrentry):
-        """Validate that the type is array
+        """Validate that the type is an array.
 
-        :param attrname: attribute name to be used for validation.
-        :type attrname: str.
-        :returns: returns a boolean based on whether type is array
-
+        :param attrentry: Registry model entry used for validation.
+        :type attrentry: dict
+        :returns: A boolean based on whether type is an array.
         """
         if 'type' in attrentry and attrentry['type'] == "array":
             return True
         return False
 
     def is_array(self, attrentry, arrval, name):
-        """Validate that the given value is an array type
+        """Validate that the given value is an array type.
 
-        :param arrval: attribute name to be used for validation.
-        :type arrval: unknown type.
-        :returns: returns a boolean based on whether type is array
-
+        :param attrentry: Registry model entry used for validation.
+        :type attrentry: dict
+        :param attrval: Value of Key to validate.
+        :type attrval: str
+        :returns: A boolean based on whether type is array and the value is valid for array type.
         """
         result = []
 
@@ -679,12 +671,11 @@ class EnumValidator(BaseValidator):
 
     @staticmethod
     def is_type(attrentry):
-        """Validate that the type is enumeration
+        """Validate that the type is enumeration.
 
-        :param attrname: attribute name to be used for validation.
-        :type attrname: str.
-        :returns: returns a boolean based on whether type is eneumeration
-
+        :param attrentry: Registry model entry used for validation.
+        :type attrentry: dict
+        :returns: A boolean based on whether type is eneumeration.
         """
         if 'type' in attrentry:
             if isinstance(attrentry['type'], list):
@@ -709,23 +700,22 @@ class EnumValidator(BaseValidator):
         return False
 
     def validate(self, keyval, name):
-        """Validate against iLO schema
+        """Validate against schemas.
 
-        :param keyval: new value to be used for validation.
-        :type keyval: list.
-        :param name: clean name for outputting.
-        :type name: str.
-        :returns: returns an error if fails
-
+        :param keyval: New value to be used for validation in a list
+        :type keyval: list
+        :param name: Clean name for outputting human readable info.
+        :type name: str
+        :returns: An error if validation fails.
         """
         result = list()
         newval = keyval[0]
 
         try:
             for possibleval in self.enum:
-                if possibleval and isinstance(possibleval, type(newval)) or \
-                            (isinstance(possibleval, six.string_types) and \
-                             isinstance(newval, six.string_types)) and \
+                if possibleval and (isinstance(possibleval, type(newval)) or \
+                             (isinstance(possibleval, six.string_types) and \
+                             isinstance(newval, six.string_types))) and \
                              possibleval.lower() == str(newval).lower():
                     keyval[0] = possibleval
                     return result
@@ -741,12 +731,11 @@ class EnumValidator(BaseValidator):
         return result
 
     def print_help(self, name):
-        """Info command helper function for print outs
+        """Human readable schema information specific to Enum data.
 
-        :param name: clean name for outputting.
-        :type name: str.
-        :returns: str.
-
+        :param name: Clean name for outputting human readable info.
+        :type name: str
+        :returns: A human readable string of schema data.
         """
         outdata = self.common_print_help(name)
         outdata += '\nPOSSIBLE VALUES\n'
@@ -766,12 +755,11 @@ class BoolValidator(BaseValidator):
 
     @staticmethod
     def is_type(attrentry):
-        """Validate that the type is boolean
+        """Validate that the type is boolean.
 
-        :param attrentry: attribute entry containing data to be validated.
-        :type attrentry: str.
-        :returns: returns boolean on whether type is boolean
-
+        :param attrentry: Registry model entry used for validation.
+        :type attrentry: dict
+        :returns: A boolean based on whether type is boolean.
         """
         if 'type' in attrentry:
             if isinstance(attrentry['type'], list):
@@ -792,14 +780,13 @@ class BoolValidator(BaseValidator):
         return False
 
     def validate(self, newval, name):
-        """Validate against iLO schema
+        """Validate against schemas.
 
-        :param newval: new value to be used for validation.
-        :type newval: str.
-        :param name: clean name for outputting.
-        :type name: str.
-        :returns: returns an error if no validation value
-
+        :param newval: New value to be used for validation in a list
+        :type newval: list
+        :param name: Clean name for outputting human readable info.
+        :type name: str
+        :returns: An error if value is invalid.
         """
         result = list()
         if newval[0] is False or newval[0] is True:
@@ -812,12 +799,11 @@ class BoolValidator(BaseValidator):
         return result
 
     def print_help(self, name):
-        """Info command helper function for print outs
+        """Human readable schema information specific to Boolean data.
 
-        :param name: clean name for outputting.
-        :type name: str.
-        :returns: str.
-
+        :param name: Clean name for outputting human readable info.
+        :type name: str
+        :returns: A human readable string of schema data.
         """
         outdata = self.common_print_help(name)
         outdata += '\nPOSSIBLE VALUES\n'
@@ -832,12 +818,11 @@ class StringValidator(BaseValidator):
 
     @staticmethod
     def is_type(attrentry):
-        """Validate that the type is string
+        """Validate that the type is string.
 
-        :param attrentry: attribute entry containing data to be validated.
-        :type attrentry: str.
-        :returns: returns boolean based on whether type to validate is string
-
+        :param attrentry: Registry model entry used for validation.
+        :type attrentry: dict
+        :returns: A boolean based on whether type is string.
         """
         if 'type' in attrentry:
             if isinstance(attrentry['type'], list):
@@ -858,12 +843,11 @@ class StringValidator(BaseValidator):
         return False
 
     def validate(self, newvallist, _):
-        """Validate against iLO schema
+        """Validate against schemas.
 
-        :param newvallist: new value to be used for validation.
-        :type newvallist: list.
-        :returns: returns an error if validation fails criteria
-
+        :param newvallist: New value to be used for validation in a list
+        :type newvallist: list
+        :returns: An error if validation fails criteria.
         """
         newval = newvallist[0]
         result = list()
@@ -893,12 +877,11 @@ class StringValidator(BaseValidator):
         return result
 
     def print_help(self, name):
-        """Info command helper function for print outs
+        """Human readable schema information specific to String data.
 
-        :param name: clean name for outputting.
-        :type name: str.
-        :returns: str.
-
+        :param name: Clean name for outputting human readable info.
+        :type name: str
+        :returns: A human readable string of schema data.
         """
         wrapper = textwrap.TextWrapper()
         wrapper.initial_indent = ' ' * 4
@@ -922,12 +905,11 @@ class IntegerValidator(BaseValidator):
 
     @staticmethod
     def is_type(attrentry):
-        """Validate that the type is integer
+        """Validate that the type is integer.
 
-        :param attrname: attribute name to be used for validation.
-        :type attrname: str.
-        :returns: returns boolean based on type being an integer
-
+        :param attrentry: Registry model entry used for validation.
+        :type attrentry: dict
+        :returns: A boolean based on whether type is integer.
         """
         if 'type' in attrentry:
             if isinstance(attrentry['type'], list):
@@ -950,12 +932,11 @@ class IntegerValidator(BaseValidator):
         return False
 
     def validate(self, newvallist, _):
-        """Validate against iLO schema
+        """Validate against schemas.
 
-        :param newvallist: new value to be used for validation.
-        :type newvallist: str.
-        :returns: list.
-
+        :param newvallist: New value to be used for validation in a list
+        :type newvallist: list
+        :returns: An error if validation fails criteria.
         """
         result = list()
         try:
@@ -986,12 +967,11 @@ class IntegerValidator(BaseValidator):
         return result
 
     def print_help(self, name):
-        """Info command helper function for print outs
+        """Human readable schema information specific to Integer data.
 
-        :param name: clean name for outputting.
-        :type name: str.
-        :returns: str.
-
+        :param name: Clean name for outputting human readable info.
+        :type name: str
+        :returns: A human readable string of schema data.
         """
         outdata = self.common_print_help(name)
         return outdata
@@ -1003,12 +983,11 @@ class ObjectValidator(BaseValidator):
 
     @staticmethod
     def is_type(attrentry):
-        """Validate that the type is object
+        """Validate that the type is object.
 
-        :param attrname: attribute name to be used for validation.
-        :type attrname: str.
-        :returns: returns boolean based on whether type is an object
-
+        :param attrentry: Registry model entry used for validation.
+        :type attrentry: dict
+        :returns: A boolean based on whether type is object.
         """
         if 'type' in attrentry:
             if isinstance(attrentry['type'], list):
@@ -1035,12 +1014,13 @@ class ObjectValidator(BaseValidator):
         return False
 
     def validate(self, newval, name):
-        """Validate against iLO schema
+        """Validate against schemas.
 
-        :param newval: new value to be used for validation.
-        :type newval: list.
-        :returns: list.
-
+        :param newval: New value to be used for validation in a list
+        :type newval: list
+        :param name: Clean name for outputting human readable info.
+        :type name: str
+        :returns: An error if value is invalid.
         """
         #TODO: need to add logic for true postive and false negatives.
         result = list()
@@ -1051,12 +1031,11 @@ class ObjectValidator(BaseValidator):
         return result
 
     def print_help(self, name):
-        """Info command helper function for print outs
+        """Human readable schema information specific to Object data.
 
-        :param name: clean name for outputting.
-        :type name: str.
-        :returns: str.
-
+        :param name: Clean name for outputting human readable info.
+        :type name: str
+        :returns: A human readable string of schema data.
         """
         wrapper = textwrap.TextWrapper()
         wrapper.initial_indent = ' ' * 4
@@ -1082,12 +1061,11 @@ class PasswordValidator(BaseValidator):
 
     @staticmethod
     def is_type(attrentry):
-        """Validate that the type is password
+        """Validate that the type is a password.
 
-        :param attrname: attribute name to be used for validation.
-        :type attrname: str.
-        :returns: returns boolean whether type is password
-
+        :param attrentry: Registry model entry used for validation.
+        :type attrentry: dict
+        :returns: A boolean based on whether type is a password.
         """
         if 'type' in attrentry:
             if isinstance(attrentry['type'], list):
@@ -1108,12 +1086,11 @@ class PasswordValidator(BaseValidator):
         return False
 
     def validate(self, newvallist, _):
-        """Validate against iLO schema
+        """Validate against schemas.
 
-        :param newvallist: new value to be used for validation.
-        :type newvallist: list.
-        :returns: returns an validation error if criteria not met
-
+        :param newvallist: New value to be used for validation in a list
+        :type newvallist: list
+        :returns: An error if validation fails criteria.
         """
         result = list()
         newval = newvallist[0]
@@ -1146,12 +1123,11 @@ class PasswordValidator(BaseValidator):
         return result
 
     def print_help(self, name):
-        """Info command helper function for print outs
+        """Human readable schema information specific to Password data.
 
-        :param name: clean name for outputting.
-        :type name: str.
-        :returns: str.
-
+        :param name: Clean name for outputting human readable info.
+        :type name: str
+        :returns: A human readable string of schema data.
         """
         wrapper = textwrap.TextWrapper()
         wrapper.initial_indent = ' ' * 4
@@ -1176,7 +1152,7 @@ class Typepathforval(object):
             Typepathforval.typepath = typepathobj
 
 def checkattr(aobj, prop):
-    """Check attribute function"""
+    """Check if an attribute exists"""
     try:
         if hasattr(aobj, prop):
             return True

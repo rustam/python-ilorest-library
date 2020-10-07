@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -94,34 +94,34 @@ if __name__ == "__main__":
     # SYSTEM_URL acceptable examples:
     # "https://10.0.0.100"
     # "https://ilo.hostname"
-    SYSTEM_URL = "https://10.0.0.100"
+    SYSTEM_URL = "https://16.83.61.9"
     LOGIN_ACCOUNT = "admin"
     LOGIN_PASSWORD = "password"
 
     # Static NTP Servers
     NTP_SERVER_LIST = ["192.168.0.1", "192.168.0.2"]
+
     # flag to force disable resource directory. Resource directory and associated operations are
-    # intended for HPE servers
-    DISABLE_RESOURCE_DIR = True
+    # intended for HPE servers.
+    DISABLE_RESOURCE_DIR = False
 
     REDFISHOBJ = give_client()
     #must enable ntp servers for the primary iLO network management interface
-    enable_ntp(REDFISHOBJ, True)
+    enable_ntp(REDFISHOBJ, True, DISABLE_RESOURCE_DIR)
     sys.stdout.write("NTP Servers property has been set on the relevant ethernet management "\
                                                                                 "interfaces...\n")
     #must reset iLO for ntp servers changes to be applied.
     sys.stdout.write("iLO must be reset to apply the NTP Server properties and reveal the "\
                      " static NTP servers in the DateTime URI.\n")
-    reset_ilo(REDFISHOBJ)
+    reset_ilo(REDFISHOBJ, DISABLE_RESOURCE_DIR)
     sys.stdout.write("iLO has been reset...sleeping 60 seconds before trying login.\n")
+    time.sleep(60)
     #logout to release the channel
     REDFISHOBJ.logout()
     #delete the redfish object. By a new token must be issued when iLO is reset
     #(all channels are cleared), and this library does not cache credentials (for security reasons)
     #A new redfish object must be created and asigned the appropriate credentials.
     del REDFISHOBJ
-    time.sleep(60)
     REDFISHOBJ = give_client()
     set_ilo_ntp_servers(REDFISHOBJ, NTP_SERVER_LIST)
     REDFISHOBJ.logout()
-  

@@ -1,5 +1,5 @@
 ###
-# Copyright 2019 Hewlett Packard Enterprise, Inc. All rights reserved.
+# Copyright 2020 Hewlett Packard Enterprise, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 ###
 
 # -*- coding: utf-8 -*-
-"""RMC helper implementation"""
+"""RMC helper file. Includes RMC errors and caching functionality for monolith."""
 
 #---------Imports---------
 
@@ -30,7 +30,6 @@ from redfish.rest.containers import StaticRestResponse, RestRequest
 
 from .ris import (RisMonolith)
 from .sharedtypes import (JSONEncoder)
-from .config import (AutoConfigParser)
 
 #---------End of imports---------
 
@@ -51,19 +50,19 @@ class InvalidCommandLineError(RdmcError):
     pass
 
 class FailureDuringCommitError(RdmcError):
-    """Raised when there is an error while updating firmware"""
+    """Raised when there is an error while committing."""
     pass
 
 class UserNotAdminError(RdmcError):
-    """Raised when user doesn't have admin priviledges"""
+    """Raised when user doesn't have admin priviledges, but they are required."""
     pass
 
 class UndefinedClientError(Exception):
-    """Raised when there are no clients active (usually when user hasn't logged in"""
+    """Raised when there are no clients active (usually when user hasn't logged in)."""
     pass
 
 class InstanceNotFoundError(Exception):
-    """Raised when attempting to select an instance that does not exist"""
+    """Raised when attempting to select an instance that does not exist."""
     pass
 
 class CurrentlyLoggedInError(Exception):
@@ -71,59 +70,57 @@ class CurrentlyLoggedInError(Exception):
     pass
 
 class NothingSelectedError(Exception):
-    """Raised when attempting to access an object without first selecting it"""
+    """Raised when attempting to access an object without first selecting it."""
     pass
 
 class NothingSelectedFilterError(Exception):
-    """Raised when the filter applied doesn't match any selection"""
+    """Raised when the filter applied doesn't match any selection (general)."""
     pass
 
 class NothingSelectedSetError(Exception):
-    """Raised when attempting to access an object
-        without first selecting it"""
+    """Raised when attempting to access an object without first selecting it (In set)."""
     pass
 
 class InvalidSelectionError(Exception):
-    """Raised when selection argument fails to match anything"""
+    """Raised when selection argument fails to match anything."""
     pass
 
 class IdTokenError(Exception):
-    """Raised when BIOS password credentials have not been provided"""
+    """Raised when user is not authorized to complete the operation."""
     pass
 
 class ValueChangedError(Exception):
-    """Raised if user tries to set/commit un-updated value from monolith"""
+    """Raised if user tries to set/commit a value when monolith has older data."""
     pass
 
 class LoadSkipSettingError(Exception):
-    """Raised when one or more settings are absent in given server"""
+    """Raised when one or more settings are absent in given server."""
     pass
 
 class InvalidPathError(Exception):
-    """Raised when requested path is not found"""
+    """Raised when requested path is not found."""
     pass
 
 class UnableToObtainIloVersionError(Exception):
-    """Raised when iloversion is missing from default path"""
+    """Raised when iloversion is missing from default path."""
     pass
 
 class IncompatibleiLOVersionError(Exception):
-    """Raised when the iLO version is above or below the required \
-    version"""
+    """Raised when the iLO version is above or below the required version."""
     pass
 
 class ValidationError(Exception):
-    """Raised when there is a problem with user input"""
+    """Raised when there is a problem with user input."""
     def __init__(self, errlist):
         super(ValidationError, self).__init__(errlist)
         self._errlist = errlist
 
     def get_errors(self):
-        """Wrapper function to return error list"""
+        """Returns error list."""
         return self._errlist
 
 class IloResponseError(Exception):
-    """Raised when iLO returns with a non 200 response"""
+    """Raised when iLO returns with a non 2XX response."""
     pass
 
 class EmptyRaiseForEAFP(Exception):
@@ -131,243 +128,15 @@ class EmptyRaiseForEAFP(Exception):
     pass
 
 class IncorrectPropValue(Exception):
-    """Raised when you incorrect value to for the associated property"""
+    """Raised when you pass an incorrect value to for the associated property."""
     pass
 
-class RmcConfig(AutoConfigParser):
-    """RMC config object"""
-    def __init__(self, filename=None):
-        """Initialize RmcConfig
-
-        :param filename: file name to be used for Rmcconfig loading.
-        :type filename: str
-
-        """
-        AutoConfigParser.__init__(self, filename=filename)
-        self._sectionname = 'redfish'
-        self._configfile = filename
-        self._ac__logdir = os.getcwd()
-        self._ac__cache = True
-        self._ac__url = ''
-        self._ac__username = ''
-        self._ac__password = ''
-        self._ac__sslcert = ''
-        self._ac__commit = ''
-        self._ac__format = ''
-        self._ac__iloschemadir = ''
-        self._ac__biosschemadir = ''
-        self._ac__cachedir = ''
-        self._ac__savefile = ''
-        self._ac__loadfile = ''
-        self._ac__biospasswordword = ''
-
-    def get_configfile(self):
-        """The current configuration file"""
-        return self._configfile
-
-    def set_configfile(self, config_file):
-        """Set the current configuration file
-
-        :param config_file: file name to be used for Rmcconfig loading.
-        :type config_file: str
-
-        """
-        self._configfile = config_file
-
-    def get_logdir(self):
-        """Get the current log directory"""
-        return self._get('logdir')
-
-    def set_logdir(self, value):
-        """Set the current log directory
-
-        :param value: current working directory for logging
-        :type value: str
-
-        """
-        return self._set('logdir', value)
-
-    def get_cache(self):
-        """Get the config file cache status"""
-
-        if isinstance(self._get('cache'), bool):
-            return self._get('cache')
-
-        return self._get('cache').lower() in ("yes", "true", "t", "1")
-
-    def set_cache(self, value):
-        """Get the config file cache status
-
-        :param value: status of config file cache
-        :type value: bool
-
-        """
-        return self._set('cache', value)
-
-    def get_url(self):
-        """Get the config file URL"""
-        url = self._get('url')
-        url = url[:-1] if url.endswith('/') else url
-
-        return url
-
-    def set_url(self, value):
-        """Set the config file URL
-
-        :param value: URL path for the config file
-        :type value: str
-
-        """
-        return self._set('url', value)
-
-    def get_username(self):
-        """Get the config file user name"""
-        return self._get('username')
-
-    def set_username(self, value):
-        """Set the config file user name
-
-        :param value: user name for config file
-        :type value: str
-
-        """
-        return self._set('username', value)
-
-    def get_password(self):
-        """Get the config file password"""
-        return self._get('password')
-
-    def set_password(self, value):
-        """Set the config file password
-
-        :param value: password for config file
-        :type value: str
-
-        """
-        return self._set('password', value)
-
-    def get_commit(self):
-        """Get the config file commit status"""
-        return self._get('commit')
-
-    def set_commit(self, value):
-        """Set the config file commit status
-
-        :param value: commit status
-        :type value: str
-
-        """
-        return self._set('commit', value)
-
-    def get_format(self):
-        """Get the config file default format"""
-        return self._get('format')
-
-    def set_format(self, value):
-        """Set the config file default format
-
-        :param value: set the config file format
-        :type value: str
-
-        """
-        return self._set('format', value)
-
-    def get_schemadir(self):
-        """Get the config file schema directory"""
-        return self._get('iloschemadir')
-
-    def set_schemadir(self, value):
-        """Set the config file schema directory
-
-        :param value: config file schema directory
-        :type value: str
-
-        """
-        return self._set('iloschemadir', value)
-
-    def get_biosschemadir(self):
-        """Get the config file BIOS schema directory"""
-        return self._get('biosschemadir')
-
-    def set_biosschemadir(self, value):
-        """Set the config file BIOS schema directory
-
-        :param value: config file BIOS schema directory
-        :type value: str
-
-        """
-        return self._set('biosschemadir', value)
-
-    def get_cachedir(self):
-        """Get the config file cache directory"""
-        return self._get('cachedir')
-
-    def set_cachedir(self, value):
-        """Set the config file cache directory
-
-        :param value: config file cache directory
-        :type value: str
-
-        """
-        return self._set('cachedir', value)
-
-    def get_defaultsavefilename(self):
-        """Get the config file default save name"""
-        return self._get('savefile')
-
-    def set_defaultsavefilename(self, value):
-        """Set the config file default save name
-
-        :param value: config file save name
-        :type value: str
-
-        """
-        return self._set('savefile', value)
-
-    def get_defaultloadfilename(self):
-        """Get the config file default load name"""
-        return self._get('loadfile')
-
-    def set_defaultloadfilename(self, value):
-        """Set the config file default load name
-
-        :param value: name of config file to load by default
-        :type value: str
-
-        """
-        return self._set('loadfile', value)
-
-    def get_bios_password(self):
-        """Get the config file BIOS password"""
-        return self._get('biospasswordword')
-
-    def set_bios_password(self, value):
-        """Set the config file BIOS password
-
-        :param value: BIOS password for config file
-        :type value: str
-
-        """
-        return self._set('biospasswordword', value)
-
-    def get_proxy(self):
-        """Get proxy value to be set for communication"""
-        return self._get('proxy')
-
-    def set_proxy(self, value):
-        """Set proxy value for communication"""
-        return self._set('proxy', value)
-
-    def get_ssl_cert(self):
-        """Get proxy value to be set for communication"""
-        return self._get('sslcert')
-
-    def set_ssl_cert(self, value):
-        """Set proxy value for communication"""
-        return self._set('sslcert', value)
-
 class RmcCacheManager(object):
-    """Manages caching/uncaching of data for RmcApp"""
+    """Manages caching/uncaching of data for RmcApp.
+
+    :param rmc: RmcApp to be managed
+    :type rmc: :class:`redfish.ris.rmc.RmcApp`
+    """
     def __init__(self, rmc):
         """Initialize RmcCacheManager
 
@@ -381,19 +150,26 @@ class RmcCacheManager(object):
         self.decodefunct = lambda data: data
 
 class RmcFileCacheManager(RmcCacheManager):
-    """RMC file cache manager"""
+    """RMC file cache manager.
+
+    :param rmc: RmcApp to be managed
+    :type rmc: :class:`redfish.ris.rmc.RmcApp`
+    """
     def __init__(self, rmc):
         super(RmcFileCacheManager, self).__init__(rmc)
 
     def logout_del_function(self, url=None):
-        """Helper function for logging out a specific URL
+        """Searches for a specific url in cache or returns all urls and returns them for RmcApp
+        to run logout on, clearing the session.
 
-        :param url: The URL to perform a logout request on.
-        :type url: str.
-
+        :param url: The URL to pass back for logout.
+        :type url: str
         """
-        cachedir = self._rmc.config.get_cachedir()
-        indexfn = os.path.join(cachedir, "index") #%s\\index' % cachedir
+        if self._rmc.cache:
+            cachedir = self._rmc.cachedir
+            indexfn = os.path.join(cachedir, "index") #%s\\index' % cachedir
+        else:
+            indexfn = ''
         sessionlocs = []
 
         if os.path.isfile(indexfn):
@@ -433,8 +209,15 @@ class RmcFileCacheManager(RmcCacheManager):
         return sessionlocs
 
     def uncache_rmc(self, creds=None, enc=False):
-        """Simple monolith uncache function"""
-        cachedir = self._rmc.config.get_cachedir()
+        """Uncaches monolith data from cache location specified by RmcApp.
+
+        :param creds: Dictionary of username and password.
+                      Only required for restoring high security local calls.
+        :type creds: dict
+        :param enc: Flag if credentials passed are encoded.
+        :type enc: bool
+        """
+        cachedir = self._rmc.cachedir
         indexfn = '%s/index' % cachedir
 
         if os.path.isfile(indexfn):
@@ -456,7 +239,7 @@ class RmcFileCacheManager(RmcCacheManager):
         :type cachefn: str.
 
         """
-        cachedir = self._rmc.config.get_cachedir()
+        cachedir = self._rmc.cachedir
         clientsfn = '%s/%s' % (cachedir, cachefn)
 
         if os.path.isfile(clientsfn):
@@ -476,6 +259,7 @@ class RmcFileCacheManager(RmcCacheManager):
                                  url=login_data.get('url'), \
                                  isredfish=login_data.get('redfish', None), \
                                  ca_certs=login_data.get('ca_certs', None))
+                #TODO: Add certificate data
                 if creds and login_data.get('url', '').startswith('blobstore://'):
                     if enc:
                         creds['username'] = self._rmc._cm.decodefunct(creds['username'])
@@ -520,11 +304,11 @@ class RmcFileCacheManager(RmcCacheManager):
                 LOGGER.warning('Unable to read cache data %s', excp)
 
     def cache_rmc(self):
-        """Caching function for monolith"""
+        """Saves monolith data to the file path specified in RmcApp."""
         if not self._rmc.cache:
             return
 
-        cachedir = self._rmc.config.get_cachedir()
+        cachedir = self._rmc.cachedir
         if not os.path.isdir(cachedir):
             try:
                 os.makedirs(cachedir)
@@ -551,6 +335,7 @@ class RmcFileCacheManager(RmcCacheManager):
             indexfh.close()
 
         if self._rmc.redfishinst:
+            #TODO: Add certificate data
             login_data = dict(\
                 username=None, \
                 password=None, url=self._rmc.redfishinst.base_url, \

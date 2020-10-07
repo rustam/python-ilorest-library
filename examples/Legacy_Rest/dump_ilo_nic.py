@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development, LP.
+ # Copyright 2020 Hewlett Packard Enterprise Development, LP.
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -46,14 +46,14 @@ def dump_ilo_nic(restobj):
             else:
                 sys.stdout.write("\tFQDN:  " + str(nic["FQDN"]) + "\n")
             for addr in nic["IPv4Addresses"]:
-                sys.stdout.write("\tIPv4 Address:  " + addr["Address"] 
+                sys.stdout.write("\tIPv4 Address:  " + addr["Address"]
                        + " from " + addr["AddressOrigin"] + "\n")
             if "IPv6Addresses" not in nic:
                 sys.stderr.write("\tIPv6Addresses information not "\
                                                             "available\n")
             else:
                 for addr in nic["IPv6Addresses"]:
-                    sys.stdout.write("\tIPv6 Address:  " + addr["Address"] 
+                    sys.stdout.write("\tIPv6 Address:  " + addr["Address"]
                            + " from " + addr["AddressOrigin"] + "\n")
     sys.stdout.write("%s" % response)
 if __name__ == "__main__":
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # LOGIN_ACCOUNT = None
     # LOGIN_PASSWORD = None
 
-    # When running remotely connect using the iLO secured (https://) address, 
+    # When running remotely connect using the iLO secured (https://) address,
     # iLO account name, and password to send https requests
     # SYSTEM_URL acceptable examples:
     # "https://10.0.0.100"
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     SYSTEM_URL = "https://10.0.0.100"
     LOGIN_ACCOUNT = "admin"
     LOGIN_PASSWORD = "password"
-    
+
     #Create a REST object
     REST_OBJ = LegacyRestClient(base_url=SYSTEM_URL, username=LOGIN_ACCOUNT, password=LOGIN_PASSWORD)
     REST_OBJ.login()

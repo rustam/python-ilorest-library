@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -25,12 +25,12 @@ from redfish.rest.v1 import ServerDownOrUnreachableError
 from get_resource_directory import get_resource_directory
 
 def find_ilo_mac_address(_redfishobj):
-    
+
     ethernet_data = {}
 
     resource_instances = get_resource_directory(_redfishobj)
     if DISABLE_RESOURCE_DIR or not resource_instances:
-        #if we do not have a resource directory or want to force it's non use to find the 
+        #if we do not have a resource directory or want to force it's non use to find the
         #relevant URI
         managers_uri = _redfishobj.root.obj['Managers']['@odata.id']
         managers_response = _redfishobj.get(managers_uri)
@@ -89,4 +89,3 @@ if __name__ == "__main__":
 
     find_ilo_mac_address(REDFISHOBJ)
     REDFISHOBJ.logout()
-  

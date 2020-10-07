@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -14,7 +14,7 @@
 
 # -*- coding: utf-8 -*-
 """
-An example of gathering the Manager NIC data
+An example of gathering all available Management NIC Data and parsing 'Interface_Enabled'.
 """
 
 import sys
@@ -57,7 +57,7 @@ def get_ilo_nic(_redfishobj, get_enabled):
 
     if ethernet_data:
         for ethernet_interface in ethernet_data:
-            sys.stdout.write("\n\nShowing iLO IPv4 Address Info on: %s\n\n" % ethernet_interface)
+            sys.stdout.write("\n\nShowing iLO NIC Info on: %s\n\n" % ethernet_interface)
             sys.stdout.write("\n\'Interface_Enabled\': \'%s\'\n" % json.dumps(ethernet_data\
                                     [ethernet_interface][get_enabled], indent=4, sort_keys=True))
 
@@ -95,4 +95,3 @@ if __name__ == "__main__":
 
     get_ilo_nic(REDFISHOBJ, GET_ENABLED)
     REDFISHOBJ.logout()
-  

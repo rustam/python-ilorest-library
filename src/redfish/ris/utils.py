@@ -1,5 +1,5 @@
 ###
-# Copyright 2019 Hewlett Packard Enterprise, Inc. All rights reserved.
+# Copyright 2020 Hewlett Packard Enterprise, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,12 +14,16 @@
 # limitations under the License.
 ###
 # -*- coding: utf-8 -*-
-"""Utility functions for internal and external use."""
+"""Utility functions for internal and external use. Contains general json navigating functions as
+well as some monolith utility functions."""
 import re
 import sys
+import six
 import copy
 import logging
-import itertools
+
+if six.PY3:
+    from functools import reduce
 
 from collections import Mapping
 
@@ -29,6 +33,13 @@ from six import iterkeys, string_types
 
 from redfish.ris.rmc_helper import IncorrectPropValue
 
+try:
+    #itertools ifilter compatibility for python 2
+    from future_builtins import filter 
+except ImportError:
+    #filter function provides the same functionality in python 3
+    pass
+
 #---------Debug logger---------
 
 LOGGER = logging.getLogger()
@@ -36,11 +47,11 @@ LOGGER = logging.getLogger()
 #---------End of debug logger---------
 
 def warning_handler(msg):
-    """Helper function for handling warning messages appropriately
+    """Helper function for handling warning messages appropriately. If LOGGER level is set to 40
+    print out the warnings, else log them as a warning.
 
     :param msg: The warning message.
-    :type msg: str.
-
+    :type msg: str
     """
     if LOGGER.getEffectiveLevel() == 40:
         sys.stderr.write(msg)
@@ -48,14 +59,14 @@ def warning_handler(msg):
         LOGGER.warning(msg)
 
 def validate_headers(instance, verbose=False):
-    """Validates an instance is patchable
+    """Validates an instance is patchable.
 
-    :param instance: instance of the property to check
-    :type instance: RisMonolithMemberv100
-    :param verbose: enable to print more operations
+    :param instance: Instance of the property to check.
+    :type instance: :class:`redfish.ris.RisMonolithMemberv100`
+    :param verbose: Flag to print or log more information.
     :type verbose: bool
+    :returns: True if the setting is not patchable, False if it is.
     """
-
     skip = False
     try:
         headervals = instance.resp.getheaders()
@@ -71,13 +82,12 @@ def validate_headers(instance, verbose=False):
     return skip
 
 def merge_dict(currdict, newdict):
-    """Merges dictionaries together
+    """Merges dictionaries together.
 
-    :param currdict: current selection dictionary.
-    :type currdict: dict.
-    :param newdict: new selection dictionary.
-    :type newdict: dict.
-
+    :param currdict: Dictionary that will absorb the second.
+    :type currdict: dict
+    :param newdict: Dictionary to merge into the first.
+    :type newdict: dict
     """
     for k, itemv2 in list(newdict.items()):
         itemv1 = currdict.get(k)
@@ -88,11 +98,13 @@ def merge_dict(currdict, newdict):
             currdict[k] = itemv2
 
 def get_errmsg_type(results):
-    """Return the registry type of a response
-    :param resuts: rest response.
-    :type results: RestResponse.
-    :returns: returns a Registry Id type string, None if not match is found, or no_id if the
+    """Return the registry type of a response.
+
+    :param results: rest response.
+    :type results: :class:`redfish.rest.containers.RestResponse`
+    :returns: A Registry Id type string, None if not match is found, or no_id if the
               response is not an error message
+    :rtype: None or string
     """
 
     message_type = None
@@ -110,16 +122,17 @@ def get_errmsg_type(results):
     return message_type
 
 def filter_output(output, sel, val):
-    """Filters a list of dictionaries based on a key:value pair
+    """Filters a list of dictionaries based on a key:value pair only returning the dictionaries
+    that include the key and value.
 
-    :param output: output list.
-    :type output: list.
+    :param output: List of dictionaries to check for the key:value.
+    :type output: list
     :param sel: the key for the property to be filtered by.
-    :type sel: str.
+    :type sel: str
     :param val: value for the property be filtered by.
-    :type val: str.
-    :returns: returns an filtered list from output parameter
-
+    :type val: str
+    :returns: A filtered list from output parameter
+    :rtype: list
     """
     #TODO: check if this can be replaced by navigatejson
     newoutput = []
@@ -145,13 +158,13 @@ def filter_output(output, sel, val):
     return newoutput
 
 def checkallowablevalues(newdict=None, oridict=None):
-    """Validate the changes with allowable values overwritten from schema
+    """Validate dictionary changes with Redfish allowable values. This will raise an 
+    :class:`redfish.ris.rmc_helper.IncorrectPropValue` error if the dictionary is not valid.
 
-    :param newdict: dictionary with only the properties that have changed
-    :type newdict: dict.
-    :param oridict: selection dictionary with current state.
-    :type oridict: dict.
-
+    :param newdict: dictionary with only the properties that have changed.
+    :type newdict: dict
+    :param oridict: Full dictionary with current state. (Includes @Redfish.AllowableValues)
+    :type oridict: dict
     """
     for strmatch in re.finditer('@Redfish.AllowableValues', str(oridict)):
         propname = str(oridict)[:strmatch.start()].split("'")[-1]
@@ -176,14 +189,15 @@ def checkallowablevalues(newdict=None, oridict=None):
                                 ('/'.join(checkpath.split('.')), str(match.value)[1:-1]))
 
 def navigatejson(selector, currdict, val=None):
-    """Function for navigating the json dictinary
+    """Function for navigating the json dictionary. Searches a dictionary for specific keys
+    and possibly values, returning only the dictionary sections for the requested keys and values.
 
     :param selector: the property required from current dictionary.
-    :type selector: list.
+    :type selector: list
     :param val: value to be filtered by.
-    :type val: str or int or bool.
+    :type val: str or int or bool
     :param currdict: json dictionary of list to be filtered
-    :type currdict: json dictionary/list.
+    :type currdict: json dictionary/list
     :returns: returns a dictionary of selected items
     """
     #TODO: Check for val of different types(bool, int, etc)
@@ -236,10 +250,10 @@ def navigatejson(selector, currdict, val=None):
     return temp_dict
 
 def iterateandclear(dictbody, proplist):
-    """Iterate over a dictionary and remove listed properties
+    """Iterate over a dictionary and remove listed properties.
 
     :param dictbody: json body
-    :type dictbody: dictionary or list
+    :type dictbody: dict or list
     :param proplist: property list
     :type proplist: list
     """
@@ -253,46 +267,55 @@ def iterateandclear(dictbody, proplist):
     return dictbody
 
 def skipnonsettingsinst(instances):
-    """helper function to remove non /settings section
+    """Removes non /settings sections. Useful for only returning settings monolith members.
+    Example: Members with paths `/redfish/v1/systems/1/bios/` and
+    `/redfish/v1/systems/1/bios/settings`
+    will return only the `/redfish/v1/systems/1/bios/settings` member.
 
-    :param instances: list of RisMonolithMemberv100 instances to check for settings paths.
-    :type instances: list.
-    :returns: returns list of RisMonolithMemberv100 setting instances
+    :param instances: list of :class:`redfish.ris.ris.RisMonolithMemberv100`
+      instances to check for settings paths.
+    :type instances: list
+    :returns: list of :class:`redfish.ris.ris.RisMonolithMemberv100` setting instances
+    :rtype: list
     """
     instpaths = [inst.path.lower() for inst in instances]
-    cond = list(itertools.ifilter(lambda x: x.endswith(("/settings", \
-                                                "settings/")), instpaths))
-    paths = [path.split('settings/')[0].split('/settings')[0] \
-                                                for path in cond]
+    cond = list(filter(lambda x: x.endswith(("/settings", "settings/")), instpaths))
+    paths = [path.split('settings/')[0].split('/settings')[0] for path in cond]
     newinst = [inst for inst in instances if inst.path.lower() not in paths]
     return newinst
 
 def getattributeregistry(instances, adict=None):
     #add try except return {} after test
-    """Get attribute registry in given instances
+    """Gets an attribute registry in given monolith instances.
 
-    :param instances: list of RisMonolithMemberv100 instances to be checked for attribute.
-    :type instances: list.
+    :param instances: list of :class:`redfish.ris.ris.RisMonolithMemberv100` instances to be
+      checked for attribute registry.
+    :type instances: list
     :param adict: A dictionary containing an AttributeRegistry
-    :type adict: dict.
+    :type adict: dict
     :return: returns a dictionary containing the attribute registry string(s)
+    :rtype: dict
     """
     if adict:
         return adict.get("AttributeRegistry", None)
+    newdict = {}
+    for inst in instances:
+        if 'AttributeRegistry' in inst.resp.dict:
+            newdict[inst.maj_type] = inst.resp.obj["AttributeRegistry"]
     return {inst.maj_type:inst.resp.obj["AttributeRegistry"]\
             for inst in instances if 'AttributeRegistry' in inst.resp.dict}
 
 def diffdict(newdict=None, oridict=None, settingskipped=[False]):
-    """Diff's two dicts, returning the value differences
+    """Diff two dictionaries, returning only the values that are different between the two.
 
-    :param newdict: selection dictionary with required changes.
-    :type newdict: dict.
-    :param oridict: selection dictionary with current state.
-    :type oridict: dict.
-    :param settingskipped: flag to determine if any settings were missing
-    :type settingskipped: list.
+    :param newdict: The first dictionary to check for differences.
+    :type newdict: dict
+    :param oridict: The second dictionary to check for differences.
+    :type oridict: dict
+    :param settingskipped: Flag to determine if any settings were missing.
+    :type settingskipped: list
     :returns: dictionary with only the properties that have changed.
-
+    :rtype: dict
     """
     try:
         if newdict == oridict:
@@ -345,3 +368,71 @@ def diffdict(newdict=None, oridict=None, settingskipped=[False]):
                 del newdict[key]
 
     return newdict
+
+def json_traversal(data, key_to_find, ret_dict=False):
+    """
+    PENDING MODIFICATION TO MORE GENERALIZED NOTATION
+
+    Recursive function to traverse a JSON resposne object and retrieve the array of
+    relevant data (value or full key/value pair). Only a single key needs to be found within the 
+    dictionary in order to return a valid dictionary or value.
+    
+    #Intended Usage:
+    - Error response message parsing
+    - Checkreadunique in Validation
+
+    :param data: json data to be parsed
+    :type data: JSON error response object
+    :param key_to_find: JSON key to be found
+    :type key_to_find: String
+    :param ret_dict: return dictionary instead of just value
+    :type ret_dict: boolean
+    :returns: value or dictionary containing 'key_to_find' 
+                (and all additional keys at the same level).
+    """
+
+    try:
+        for i, _iter in enumerate(data):
+            try:
+                if _iter == data:
+                    return None
+            except Exception as exp:
+                pass
+            try:
+                if key_to_find.lower() == _iter.lower():
+                    if ret_dict:
+                        return data
+                    else:
+                        return data[_iter]
+            except Exception as exp:
+                pass
+            try:
+                if key_to_find.lower() in [str(_.lower()) for _ in _iter.keys()]:
+                    if ret_dict:
+                        return data
+                    else:
+                        return data[_iter]
+            except Exception as exp:
+                pass
+            _tmp = None
+            try:
+                if isinstance(data[_iter], dict):
+                    for k in data[_iter].keys():
+                        if k.lower() == key_to_find.lower():
+                            if ret_dict:
+                                return data[_iter]
+                            else:
+                                return data[_iter][k]
+                    _tmp = json_traversal(data[_iter], key_to_find, ret_dict)
+                elif isinstance(data[_iter], list) or isinstance(data[_iter], tuple):
+                    try:
+                        _tmp = json_traversal(data[i], key_to_find, ret_dict)
+                    except Exception as exp:
+                        _tmp = json_traversal(data[_iter], key_to_find, ret_dict)
+            except Exception as exp:
+                _tmp = json_traversal(data[i], key_to_find, ret_dict)
+            finally:
+                if _tmp:
+                    return _tmp
+    except Exception as exp:
+        pass

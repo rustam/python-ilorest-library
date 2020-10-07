@@ -1,5 +1,5 @@
 ###
-# Copyright 2019 Hewlett Packard Enterprise, Inc. All rights reserved.
+# Copyright 2020 Hewlett Packard Enterprise, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -106,14 +106,15 @@ class HttpConnection(object):
         if self.proxy:
             if self.proxy.startswith('socks'):
                 LOGGER.info("Initializing a SOCKS proxy.")
-                http = SOCKSProxyManager(self.proxy, cert_reqs=cert_reqs, \
+                http = SOCKSProxyManager(self.proxy, cert_reqs=cert_reqs, maxsize=6, \
                                                                     **self._connection_properties)
             else:
                 LOGGER.info("Initializing a HTTP proxy.")
-                http = ProxyManager(self.proxy, cert_reqs=cert_reqs, **self._connection_properties)
+                http = ProxyManager(self.proxy, cert_reqs=cert_reqs, maxsize=6, \
+                                    **self._connection_properties)
         else:
             LOGGER.info("Initializing no proxy.")
-            http = PoolManager(cert_reqs=cert_reqs, **self._connection_properties)
+            http = PoolManager(cert_reqs=cert_reqs, maxsize=6, **self._connection_properties)
 
         self._conn = http.request
 
@@ -178,6 +179,9 @@ class HttpConnection(object):
             elif method == 'PUT' or method == 'POST' or method == 'PATCH':
                 headers['Content-Type'] = 'application/x-www-form-urlencoded'
                 body = urlencode(args)
+
+        #TODO: ADD to the default headers?
+        headers['Accept-Encoding'] = 'gzip'
 
         restreq = RestRequest(path, method, data=files if files else body, url=self.base_url)
 
@@ -369,7 +373,7 @@ class Blobstore2Connection(object):
 
         str1 = '{} {} {}\r\n'.format(method, reqpath, Blobstore2Connection._http_vsn_str)
         str1 += 'Host: \r\n'
-        str1 += 'Accept-Encoding: identity\r\n'
+        str1 += 'Accept-Encoding: gzip\r\n'
         for header, value in headers.items():
             str1 += '{}: {}\r\n'.format(header, value)
 

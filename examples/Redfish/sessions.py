@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -33,9 +33,9 @@ def sessions(_redfishobj, login_account, login_password):
         session_uri = response.getheader("location")
         session_uri = urllib.parse.urlparse(session_uri)
         sys.stdout.write("\tSession " + session_uri.path + " created.\n")
-
         x_auth_token = response.getheader("x-auth-token")
         sys.stdout.write("\tThis is the session X-Auth Token key " + x_auth_token + ".\n")
+        print(json.dumps(response.dict, indent=4, sort_keys=True))
 
         # Delete the created session
         sys.stdout.write("\tTerminating this session.\n")

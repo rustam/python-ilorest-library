@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -42,7 +42,7 @@ def change_temporary_boot_order(_redfishobj, boottarget):
                 systems_members_response = _redfishobj.get(systems_members_uri)
 
     if systems_members_response:
-        print("\n\nShowing bios attributes before changes:\n\n")
+        print("\n\nShowing BIOS attributes before changes:\n\n")
         print(json.dumps(systems_members_response.dict.get('Boot'), indent=4, sort_keys=True))
     body = {'Boot': {'BootSourceOverrideTarget': boottarget}}
     resp = _redfishobj.patch(systems_members_uri, body)
@@ -97,4 +97,3 @@ if __name__ == "__main__":
 
     change_temporary_boot_order(REDFISHOBJ, TEMP_DEVICE)
     REDFISHOBJ.logout()
-  

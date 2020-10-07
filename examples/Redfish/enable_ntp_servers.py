@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -24,7 +24,7 @@ from redfish.rest.v1 import ServerDownOrUnreachableError
 
 from get_resource_directory import get_resource_directory
 
-def enable_ntp(_redfishobj, ntp_servers):
+def enable_ntp(_redfishobj, ntp_servers, DISABLE_RESOURCE_DIR):
 
     ethernet_data = {}
 
@@ -112,5 +112,5 @@ if __name__ == "__main__":
         sys.stderr.write("ERROR: server not reachable or does not support RedFish.\n")
         sys.exit()
 
-    enable_ntp(REDFISHOBJ, NTP_SERVERS)
+    enable_ntp(REDFISHOBJ, NTP_SERVERS, DISABLE_RESOURCE_DIR)
     REDFISHOBJ.logout()

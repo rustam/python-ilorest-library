@@ -22,8 +22,7 @@ import json
 from redfish import RedfishClient
 from redfish.rest.v1 import ServerDownOrUnreachableError
 
-from ilorest_util import get_resource_directory
-from ilorest_util import get_gen
+from get_resource_directory import get_resource_directory
 
 def get_SmartArray_LogicalDrives(_redfishobj):
 
@@ -46,52 +45,19 @@ def get_SmartArray_LogicalDrives(_redfishobj):
     else:
         for instance in resource_instances:
             #Use Resource directory to find the relevant URI
-            if '#HpeSmartStorageArrayControllerCollection.' in instance['@odata.type']:
+            if '#HpeSmartStorageArrayController.' in instance['@odata.type']:
                 smartstorage_uri = instance['@odata.id']
-                print (smartstorage_uri)
-                smartstorage_response = _redfishobj.get(smartstorage_uri).obj['Members']
-                break
-
-    for controller in smartstorage_response:
-        smartarraycontrollers[controller['@odata.id']] = _redfishobj.get(controller['@odata.id']).obj
-        sys.stdout.write("Logical Drive URIs for Smart Storage Array Controller \'%s\' : \n" \
-                                        % smartarraycontrollers[controller['@odata.id']].get('Id'))
-        logicaldrives_uri = smartarraycontrollers[controller['@odata.id']].Links\
-                                                                    ['LogicalDrives']['@odata.id']
-        logicaldrives_resp = _redfishobj.get(logicaldrives_uri)
-        smartarraycontrollers[controller['@odata.id']]['LogicalDrives'] = logicaldrives_resp.dict\
-                                                                                        ['Members']
-        if not logicaldrives_resp.dict['Members']:
-            sys.stderr.write("\tLogical drives are not available for this controller.\n")
-        for drives in logicaldrives_resp.dict['Members']:
-            sys.stdout.write("\t An associated logical drive: %s\n" % drives)
-            drive_data = _redfishobj.get(drives).dict
-            print(json.dumps(drive_data, indent=4, sort_keys=True))
-
-def get_SmartArray_LogicalDrives_gen9(_redfishobj):
-
-    smartstorage_response = []
-    smartarraycontrollers = dict()
-
-    smartstorage_uri = "/redfish/v1/Systems/1/SmartStorage/ArrayControllers/"
-    print (smartstorage_uri)
-    smartstorage_response = _redfishobj.get(smartstorage_uri).obj['Members']    
-
-    for controller in smartstorage_response:
-        smartarraycontrollers[controller['@odata.id']] = _redfishobj.get(controller['@odata.id']).obj
-        sys.stdout.write("Logical Drive URIs for Smart Storage Array Controller \'%s\' : \n" \
-                                        % smartarraycontrollers[controller['@odata.id']].get('Id'))
-        logicaldrives_uri = smartarraycontrollers[controller['@odata.id']].Links\
-                                                                    ['LogicalDrives']['@odata.id']
-        print (logicaldrives_uri)
-        logicaldrives_resp = _redfishobj.get(logicaldrives_uri)        
-        if logicaldrives_resp.dict['Members@odata.count'] == 0:
-            sys.stderr.write("\tLogical drives are not available for this controller.\n")
-        else:
-            for drives in logicaldrives_resp.dict['Members']:
-                sys.stdout.write("\t An associated logical drive: %s\n" % drives)
-                drive_data = _redfishobj.get(drives).dict
-                print(json.dumps(drive_data, indent=4, sort_keys=True))
+                smartstorage_resp = _redfishobj.get(smartstorage_uri).obj
+                sys.stdout.write("Logical Drive URIs for Smart Storage Array Controller " \
+                    "'%s\' : \n" % smartstorage_resp.get('Id'))
+                logicaldrives_uri = smartstorage_resp.Links['LogicalDrives']['@odata.id']
+                logicaldrives_resp = _redfishobj.get(logicaldrives_uri)
+                if not logicaldrives_resp.dict['Members']:
+                    sys.stderr.write("\tLogical drives are not available for this controller.\n")
+                for drives in logicaldrives_resp.dict['Members']:
+                    sys.stdout.write("\t An associated logical drive: %s\n" % drives)
+                    drive_data = _redfishobj.get(drives['@odata.id']).dict
+                    print(json.dumps(drive_data, indent=4, sort_keys=True))
 
 if __name__ == "__main__":
     # When running on the server locally use the following commented values
@@ -104,16 +70,9 @@ if __name__ == "__main__":
     # SYSTEM_URL acceptable examples:
     # "https://10.0.0.100"
     # "https://ilo.hostname"
-    if len(sys.argv) == 4:
-        # Remote mode
-        SYSTEM_URL = sys.argv[1]
-        LOGIN_ACCOUNT = sys.argv[2]
-        LOGIN_PASSWORD = sys.argv[3]
-    else:
-        # Local mode
-        SYSTEM_URL = None
-        LOGIN_ACCOUNT = None
-        LOGIN_PASSWORD = None
+    SYSTEM_URL = "https://10.0.0.100"
+    LOGIN_ACCOUNT = "admin"
+    LOGIN_PASSWORD = "password"
 
     # flag to force disable resource directory. Resource directory and associated operations are
     # intended for HPE servers.
@@ -128,10 +87,6 @@ if __name__ == "__main__":
     except ServerDownOrUnreachableError as excp:
         sys.stderr.write("ERROR: server not reachable or does not support RedFish.\n")
         sys.exit()
-    (ilogen,_) = get_gen(REDFISHOBJ)
-    print ("Generation is ", ilogen)
-    if int(ilogen) == 5:
-        get_SmartArray_LogicalDrives(REDFISHOBJ)
-    else:
-        get_SmartArray_LogicalDrives_gen9(REDFISHOBJ)
+
+    get_SmartArray_LogicalDrives(REDFISHOBJ)
     REDFISHOBJ.logout()

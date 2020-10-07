@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -30,7 +30,7 @@ def clear_ilo_event_log(_redfishobj, clear_IML_IEL):
 
     resource_instances = get_resource_directory(_redfishobj)
     if DISABLE_RESOURCE_DIR or not resource_instances:
-        #if we do not have a resource directory or want to force it's non use to find the 
+        #if we do not have a resource directory or want to force it's non use to find the
         #relevant URI
         systems_uri = _redfishobj.root.obj['Systems']['@odata.id']
         systems_response = _redfishobj.get(systems_uri)
@@ -110,4 +110,3 @@ if __name__ == "__main__":
 
     clear_ilo_event_log(REDFISHOBJ, CLEAR_IML_IEL)
     REDFISHOBJ.logout()
-  

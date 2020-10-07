@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development, LP.
+ # Copyright 2020 Hewlett Packard Enterprise Development, LP.
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -34,17 +34,17 @@ def modify_ilo_user_account(restobj, ilo_login_name_to_modify, \
                 body = {}
                 body_oemhp = {}
                 body_oemhp_privs = {}
-    
+
                 # if new loginname or password specified
                 if new_ilo_password:
                     body["Password"] = new_ilo_password
                 if new_ilo_loginname:
                     body["UserName"] = new_ilo_loginname
-    
+
                 # if different username specified
                 if new_ilo_username:
                     body_oemhp["LoginName"] = new_ilo_username
-    
+
                 # if different privileges were requested (None = no change)
                 if irc != None:
                     body_oemhp_privs["RemoteConsolePriv"] = irc
@@ -56,7 +56,7 @@ def modify_ilo_user_account(restobj, ilo_login_name_to_modify, \
                     body_oemhp_privs["UserConfigPriv"] = usercfg
                 if vpr != None:
                     body_oemhp_privs["VirtualPowerAndResetPriv"] = vpr
-    
+
                 # component assembly
                 if len(body_oemhp_privs):
                     body_oemhp["Privileges"] = body_oemhp_privs
@@ -66,7 +66,7 @@ def modify_ilo_user_account(restobj, ilo_login_name_to_modify, \
                 newrsp = restobj.patch(account["links"]["self"]["href"], body)
                 sys.stdout.write("%s" % newrsp)
                 return
-            
+
     sys.stderr.write("Account not found\n")
 
 if __name__ == "__main__":
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     # LOGIN_ACCOUNT = None
     # LOGIN_PASSWORD = None
 
-    # When running remotely connect using the iLO secured (https://) address, 
+    # When running remotely connect using the iLO secured (https://) address,
     # iLO account name, and password to send https requests
     # SYSTEM_URL acceptable examples:
     # "https://10.0.0.100"
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     SYSTEM_URL = "https://10.0.0.100"
     LOGIN_ACCOUNT = "admin"
     LOGIN_PASSWORD = "password"
-    
+
     #Create a REST object
     REST_OBJ = LegacyRestClient(base_url=SYSTEM_URL, username=LOGIN_ACCOUNT, password=LOGIN_PASSWORD)
     REST_OBJ.login()

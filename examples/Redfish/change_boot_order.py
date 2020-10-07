@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -51,7 +51,7 @@ def change_boot_order(_redfishobj, bios_password):
         #Bios boot settings URI is needed
         bios_boot_settings_uri = bios_boot_response.obj['@Redfish.Settings']['SettingsObject']\
                                                                                     ['@odata.id']
-        #update bios password
+        #update BIOS password
         if bios_password:
             _redfishobj.bios_password = bios_password
         sys.stdout.write("Rotating the first boot device to the end of the boot order.\n")
@@ -115,4 +115,3 @@ if __name__ == "__main__":
 
     change_boot_order(REDFISHOBJ, BIOS_PASSWORD)
     REDFISHOBJ.logout()
-  

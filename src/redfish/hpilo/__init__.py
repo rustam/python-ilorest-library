@@ -1,3 +1,3 @@
 """
-Utilities to simplify communicating with iLO
+Utilities to simplify communicating with iLO locally
 """

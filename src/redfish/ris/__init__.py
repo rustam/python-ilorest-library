@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-RIS implementation
+Expanded LegacyREST/Redfish interface for schema validation, database for responses, caching,
+and error registries.
 """
 
 from .sharedtypes import (
@@ -26,7 +27,6 @@ from .rmc_helper import (
     IdTokenError,
     ValidationError,
     ValueChangedError,
-    RmcConfig,
     RmcCacheManager,
     RmcFileCacheManager,
 )

@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -24,7 +24,7 @@ from redfish.rest.v1 import ServerDownOrUnreachableError
 
 from get_resource_directory import get_resource_directory
 
-def reset_ilo(_redfishobj):
+def reset_ilo(_redfishobj, DISABLE_RESOURCE_DIR):
 
     managers_members_response = None
 
@@ -91,5 +91,5 @@ if __name__ == "__main__":
         sys.stderr.write("ERROR: server not reachable or does not support RedFish.\n")
         sys.exit()
 
-    reset_ilo(REDFISHOBJ)
+    reset_ilo(REDFISHOBJ, DISABLE_RESOURCE_DIR)
     REDFISHOBJ.logout()

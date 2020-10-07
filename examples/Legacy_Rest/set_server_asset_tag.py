@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development, LP.
+ # Copyright 2020 Hewlett Packard Enterprise Development, LP.
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     # LOGIN_ACCOUNT = None
     # LOGIN_PASSWORD = None
 
-    # When running remotely connect using the iLO secured (https://) address, 
+    # When running remotely connect using the iLO secured (https://) address,
     # iLO account name, and password to send https requests
     # SYSTEM_URL acceptable examples:
     # "https://10.0.0.100"

@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -39,7 +39,7 @@ def get_resource_directory(redfishobj):
         sys.stderr.write("\tResource directory missing at /redfish/v1/resourcedirectory" + "\n")
 
     return resources
-	
+
 def get_gen(_redfishobj):
 	rootresp = _redfishobj.root.obj
 	#Default iLO 5

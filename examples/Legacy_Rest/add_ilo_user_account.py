@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development, LP.
+ # Copyright 2020 Hewlett Packard Enterprise Development, LP.
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -11,6 +11,12 @@
  # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  # License for the specific language governing permissions and limitations
  # under the License.
+
+
+"""
+An example of adding a user account by iLO privileges
+"""
+
 
 import sys
 from redfish import LegacyRestClient
@@ -48,7 +54,7 @@ if __name__ == "__main__":
     # LOGIN_ACCOUNT = None
     # LOGIN_PASSWORD = None
 
-    # When running remotely connect using the iLO secured (https://) address, 
+    # When running remotely connect using the iLO secured (https://) address,
     # iLO account name, and password to send https requests
     # SYSTEM_URL acceptable examples:
     # "https://10.0.0.100"

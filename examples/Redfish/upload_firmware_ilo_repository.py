@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -82,12 +82,12 @@ if __name__ == "__main__":
     # SYSTEM_URL acceptable examples:
     # "https://10.0.0.0"
     # "https://ilo.hostname"
-    SYSTEM_URL = "https://10.0.0.0"
+    SYSTEM_URL = "https://16.83.61.104"
     LOGIN_ACCOUNT = "admin"
     LOGIN_PASSWORD = "password"
 
     # The path to the firmware file to upload
-    FIRMWARE_PATH = "/path/to/firmware.bin"
+    FIRMWARE_PATH = "C:\\Users\\oconnogr\\git\\python-restful-interface-tool\\src\\ilo5_230_p31.fwpkg"
     # Upload the firmware file to the iLO Repository
     UPDATE_REPO = True
     # Update the system with the firmware file

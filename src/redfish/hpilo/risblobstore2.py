@@ -1,5 +1,5 @@
 ###
-# Copyright 2019 Hewlett Packard Enterprise, Inc. All rights reserved.
+# Copyright 2020 Hewlett Packard Enterprise, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -828,7 +828,7 @@ class BlobStore2(object):
         :param password: The password to login.
         :type password: str.
         """
-
+        #TODO: initialize credentials for certificate
         dll = BlobStore2.gethprestchifhandle()
         if LOGGER.isEnabledFor(logging.DEBUG):
             dll.enabledebugoutput()

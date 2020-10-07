@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -53,7 +53,7 @@ def set_ESKM_PrimaryKeyServer(_redfishobj, primary_key_server_address, primary_k
         body["PrimaryKeyServerAddress"] = primary_key_server_address
         body["PrimaryKeyServerPort"] = int(primary_key_server_port)
 
-        resp = _redfishobj.patch(eskm_uri, body)
+        resp = _redfishobj.post(eskm_uri, body)
         #If iLO responds with soemthing outside of 200 or 201 then lets check the iLO extended info
         #error message to see what went wrong
         if resp.status == 400:

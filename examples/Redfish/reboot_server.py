@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -34,18 +34,17 @@ def reboot_server(_redfishobj):
         #relevant URI
         systems_uri = _redfishobj.root.obj['Systems']['@odata.id']
         systems_response = _redfishobj.get(systems_uri)
-        systems_members_uri = next(iter(systems_response.obj['Members']))['@odata.id']
-        systems_members_response = _redfishobj.get(systems_members_uri)
+        systems_uri = next(iter(systems_response.obj['Members']))['@odata.id']
+        systems_response = _redfishobj.get(systems_uri)
     else:
         for instance in resource_instances:
             #Use Resource directory to find the relevant URI
             if '#ComputerSystem.' in instance['@odata.type']:
-                systems_members_uri = instance['@odata.id']
-                systems_members_response = _redfishobj.get(systems_members_uri)
+                systems_uri = instance['@odata.id']
+                systems_response = _redfishobj.get(systems_uri)
 
-    if systems_members_response:
-        system_reboot_uri = systems_members_response.obj['Actions']['#ComputerSystem.Reset']\
-                                                                                        ['target']
+    if systems_response:
+        system_reboot_uri = systems_response.obj['Actions']['#ComputerSystem.Reset']['target']
         body = dict()
         body['Action'] = 'ComputerSystem.Reset'
         body['ResetType'] = "ForceRestart"

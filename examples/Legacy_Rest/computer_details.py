@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development, LP.
+ # Copyright 2020 Hewlett Packard Enterprise Development, LP.
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -55,7 +55,7 @@ def computer_details(restobj):
     sys.stdout.write("\tBIOS Version: " + \
              response.dict["Bios"]["Current"]["VersionString"] + "\n")
 
-    sys.stdout.write("\tMemory:  " + 
+    sys.stdout.write("\tMemory:  " +
            str(response.dict["Memory"]["TotalSystemMemoryGB"]) +" GB\n")
 
     sys.stdout.write("\tProcessors:  " + \
@@ -74,7 +74,7 @@ def computer_details(restobj):
         if "HostFQDN" in response.dict["HostCorrelation"]:
             sys.stdout.write("\tHost FQDN:  " + \
                  response.dict["HostCorrelation"]["HostFQDN"] + "\n")
-            
+
         if "HostMACAddress" in response.dict["HostCorrelation"]:
             for mac in response.dict["HostCorrelation"]["HostMACAddress"]:
                 sys.stdout.write("\tHost MAC Address:  " + str(mac) + "\n")
@@ -96,7 +96,7 @@ if __name__ == "__main__":
     # LOGIN_ACCOUNT = None
     # LOGIN_PASSWORD = None
 
-    # When running remotely connect using the iLO secured (https://) address, 
+    # When running remotely connect using the iLO secured (https://) address,
     # iLO account name, and password to send https requests
     # SYSTEM_URL acceptable examples:
     # "https://10.0.0.100"

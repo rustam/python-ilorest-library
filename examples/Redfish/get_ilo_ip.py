@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -14,7 +14,7 @@
 
 # -*- coding: utf-8 -*-
 """
-An example of getting the Manager IP
+An example of getting the iLO Network Management Interface(s) IP Address(s)
 """
 
 import sys
@@ -24,7 +24,7 @@ from redfish.rest.v1 import ServerDownOrUnreachableError
 
 from get_resource_directory import get_resource_directory
 
-def get_ilo_ip(_redfishobj):
+def get_ilo_ip(_redfishobj, DISABLE_RESOURCE_DIR):
     ethernet_data = {}
 
     resource_instances = get_resource_directory(_redfishobj)

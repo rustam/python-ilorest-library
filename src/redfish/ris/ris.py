@@ -1,5 +1,5 @@
 ###
-# Copyright 2019 Hewlett Packard Enterprise, Inc. All rights reserved.
+# Copyright 2020 Hewlett Packard Enterprise, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,9 @@
 # limitations under the License.
 ###
 # -*- coding: utf-8 -*-
-"""RIS implementation"""
+"""Monolith database implementation. Crawls Redfish and Legacy REST implementations
+   and holds all data retrieved. The created database is called the **monolith** and referenced as
+   such in the code documentation."""
 
 #---------Imports---------
 
@@ -22,12 +24,14 @@ import re
 import sys
 import weakref
 import logging
+import threading
 
 from collections import (OrderedDict, defaultdict)
 
 #Added for py3 compatibility
 import six
 
+from six.moves.queue import Queue
 from six.moves.urllib.parse import urlparse, urlunparse
 
 import jsonpath_rw
@@ -36,6 +40,7 @@ import jsonpointer
 from jsonpointer import set_pointer
 
 from redfish.ris.sharedtypes import Dictable
+from redfish.ris.ris_threaded import LoadWorker
 from redfish.rest.containers import RestRequest, StaticRestResponse
 #---------End of imports---------
 
@@ -66,10 +71,20 @@ class RisInstanceNotFoundError(Exception):
     pass
 
 class RisMonolithMemberv100(RisMonolithMemberBase):
-    """Wrapper around RestResponse that adds the monolith data"""
+    """Class used by :class:`RisMonolith` for holding information on a response and adds extra data
+    for monolith usage. A member can be marked as *modified* which means another operation may have
+    rendered this member out of date. It should be reloaded before continuing to ensure data is
+    up to date.
+
+    :param restresp: `RestResponse` to create a member from.
+    :type restresp: :class:`redfish.rest.containers.RestResponse`
+    :param isredfish: Flag if the response is redfish or not
+    :type isredfish: bool
+    """
     def __init__(self, restresp=None, isredfish=True):
         self._resp = restresp
         self._patches = list()
+        #Check if typedef can be used here
         self._typestring = '@odata.type' if isredfish else 'Type'
         self.modified = False
         self.defpath = self.deftype = self.defetag = self._type = None
@@ -77,7 +92,7 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
 
     @property
     def type(self):
-        """Return type from monolith"""
+        """Get type of the monolith member's response"""
         try:
             if self and self._typestring in self._resp.dict:
                 return self._resp.dict[self._typestring]
@@ -90,7 +105,7 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
 
     @property
     def maj_type(self):
-        """Return maj type from monolith"""
+        """Get major type of the monolith member's response"""
         if self.type:
             if '.' in self.type:
                 types = ".".join(self.type.split(".", 2)[:2])
@@ -106,44 +121,53 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
 
     @property
     def resp(self):
-        """Return resp from monolith"""
+        """Get the entire response of the monolith member"""
         return self._resp
 
     @property
     def path(self):
-        """Return path from monolith"""
+        """Get path of the monolith member's response"""
         return self._resp.request.path if self else self.defpath
 
     @property
     def patches(self):
-        """Return patches from monolith"""
+        """Get patches for the monolith member"""
         return self._patches
 
     @patches.setter
     def patches(self, val):
-        """Set patches from monolith"""
+        """Set patches for the monolith member"""
         self._patches = val
 
     @property
     def dict(self):
-        """Return dict from monolith"""
+        """Get the dictionary of the monolith member's response"""
         return self._resp.dict
 
     @property
     def etag(self):
         """Get the etag of the response"""
-        return self.defetag if not self.resp else self.resp.\
-            getheader('etag') if 'etag' in self.resp.getheaders()\
-            else self.resp.getheader('ETag')
+        return self.defetag if not self.resp else self.resp.getheader('etag')
 
     def popdefs(self, typename, pathval, etagval):
-        """Populate the default values in the class"""
+        """Populate the default values in the class
+
+        :param typename: The default **Type** string. Example: @odata.type
+        :type typename: str
+        :param pathval: The default **Path** string. Example: @odata.id
+        :type pathval: str
+        :param etagval: The default **ETag** value.
+        :type etagval: str
+        """
         self.defetag = etagval
         self.deftype = typename
         self.defpath = pathval
 
     def to_dict(self):
-        """Convert monolith to dict"""
+        """Converts Monolith Member to a dictionary. This is the reverse of :func:`load_from_dict`.
+
+        :returns: returns the Monolith Member in dictionary form
+        """
         result = OrderedDict()
         if self.maj_type:
             result['Type'] = self.type
@@ -167,9 +191,10 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
         return result
 
     def load_from_dict(self, src):
-        """Load variables from dict monolith
+        """Load variables to a monolith member from a dictionary.
+        This is the reverse of :func:`to_dict`.
 
-        :param src: source to load from
+        :param src: Source to load member data from.
         :type src: dict
         """
         if 'Type' in src:
@@ -185,23 +210,27 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
             self.modified = src['modified']
 
 class RisMonolith(Dictable):
-    """Monolithic cache of RIS data"""
-    def __init__(self, client, typepath):
-        """Initialize RisMonolith
+    """Monolithic cache of RIS data. This takes a :class:`redfish.rest.v1.RestClient` and uses it to
+    gather data from a server and saves it in a modifiable database called monolith.
 
-        :param client: client to utilize
-        :type client: RmcClient object
-        Client is saved as a weakref, using it requires brackets and will not survive if the client
-        used in init is removed
-
-        """
+    :param client: client to use for data retrieval. Client is saved as a weakref, using it requires
+                   parenthesis and will not survive if the client used in init is removed.
+    :type client: :class:`redfish.rest.v1.RestClient`
+    :param typepath: The compatibility class to use for differentiating between Redfish/LegacyRest.
+    :type typepath: :class:`redfish.rest.ris.Typesandpathdefines`
+    :param directory_load: The flag to quick load using resource directory if possible.
+           When set to True this will load paths, etags, and types, but not create responses for
+           every monolith member. When responses are needed, they will need to be loaded separately.
+    :type directory_load: bool
+    """
+    def __init__(self, client, typepath, directory_load=True):
         self._client = weakref.ref(client)
         self.name = "Monolithic output of RIS Service"
         self._visited_urls = list()
-        self._current_location = '/'
         self._type = None
         self._name = None
         self.progress = 0
+        self._directory_load = directory_load
         self.is_redfish = self._client().is_redfish
         self.typesadded = defaultdict(set)
         self.paths = dict()
@@ -216,6 +245,21 @@ class RisMonolith(Dictable):
         else:
             self._resourcedir = '/rest/v1/ResourceDirectory'
 
+        #MultiThreading
+        self.get_queue = Queue()
+        self.threads = []
+
+    @property
+    def directory_load(self):
+        """The flag to gather information about a tree without downloading every path. Only usable
+        on HPE systems with a ResourceDirectory. type"""
+        return self._directory_load
+    
+    @directory_load.setter
+    def directory_load(self, dir_load):
+        """Set the directory_load flag"""
+        self._directory_load = dir_load
+
     @property
     def type(self):
         """Return monolith version type"""
@@ -223,17 +267,18 @@ class RisMonolith(Dictable):
 
     @property
     def visited_urls(self):
-        """Return the visited URLS"""
+        """The urls visited by the monolith"""
         return list(set(self._visited_urls)|set(self.paths.keys()))
 
     @visited_urls.setter
     def visited_urls(self, visited_urls):
-        """Set visited URLS to given list."""
+        """Set visited URLS."""
         self._visited_urls = visited_urls
 
     @property
     def types(self):
-        """Returns list of types of members in monolith
+        """Returns list of types for members in the monolith
+
         :rtype: list
         """
         return list(self.typesadded.keys())
@@ -243,7 +288,7 @@ class RisMonolith(Dictable):
         """Adds a member to monolith
 
         :param member: Member created based on response.
-        :type member: RisMonolithMemberv100.
+        :type member: RisMonolithMemberv100
         """
         self.typesadded[member.maj_type].add(member.path)
         patches = []
@@ -253,41 +298,134 @@ class RisMonolith(Dictable):
         self.paths[member.path].patches.extend([patch for patch in patches])
 
     def path(self, path):
-        """Provide the response of requested path
+        """Provides the member corresponding to the path specified. Case sensitive.
 
-        :param path: path of response requested
-        :type path: str.
-        :rtype: RestResponse
+        :param path: path of the monolith member to return
+        :type path: str
+        :rtype: RisMonolithMemberv100
         """
         try:
             return self.paths[path]
         except:
             return None
 
-    def update_progress(self):
-        """Simple function to increment the dot progress"""
-        if self.progress % 6 == 0:
-            sys.stdout.write('.')
+    def iter(self, typeval=None):
+        """An iterator that yields each member of monolith associated with a specific type. In the
+        case that no type is included this will yield all members in the monolith.
+
+        :rtype: RisMonolithMemberv100
+        """
+        if not typeval:
+            for _, val in self.paths.items():
+                yield val
+        else:
+            for typename in self.gettypename(typeval):
+                for item in self.typesadded[typename]:
+                    yield self.paths[item]
+#             types = next(self.gettypename(typeval), None)
+#             if types in self.typesadded:
+#                 for item in self.typesadded[types]:
+#                     yield self.paths[item]
+#             else:
+#                 raise RisInstanceNotFoundError("Unable to locate instance for" \
+#                                                             " '%s'" % typeval)
+
+    def itertype(self, typeval):
+        """Iterator that yields member(s) of given type in the monolith and raises an error if no
+        member of that type is found.
+
+        :param typeval: type name of the requested member.
+        :type typeval: str
+        :rtype: RisMonolithMemberv100
+        """
+        typeiter = self.gettypename(typeval)
+        types = next(typeiter, None)
+        if types:
+            while types:
+                for item in self.typesadded[types]:
+                    yield self.paths[item]
+                types = next(typeiter, None)
+        else:
+            raise RisInstanceNotFoundError("Unable to locate instance for '%s'" % typeval)
+
+    def typecheck(self, types):
+        """Check if a member of given type exists in the monolith
+
+        :param types: type to check.
+        :type types: str
+        :rtype: bool
+        """
+        if any(types in val for val in self.types):
+            return True
+        return False
+
+    def gettypename(self, types):
+        """Takes a full type response and returns all major types associated.
+        Example: #Type.v1_0_0.Type will return iter(Type.1)
+
+        :param types: The type of the requested response.
+        :type types: str
+        :rtype: iter of major types
+        """
+        types = types[1:] if types[0] in ("#", u"#") else types
+        return iter((xt for xt in self.types if xt and types.lower() in xt.lower()))
+
+    def update_member(self, member=None, resp=None, path=None, init=True):
+        """Adds member to the monolith. If the member already exists the
+        data is updated in place. Takes either a RisMonolithMemberv100 instance or a
+        :class:`redfish.rest.containers.RestResponse` along with that responses path.
+
+        :param member: The monolith member to add to the monolith.
+        :type member: RisMonolithMemberv100
+        :param resp: The rest response to add to the monolith.
+        :type resp: :class:`redfish.rest.containers.RestResponse`
+        :param path: The path correlating to the response.
+        :type path: str
+        :param init: Flag if addition is part of the initial load. Set this to false if you are
+                     calling this by itself.
+        :type init: bool
+        """
+        if not member and resp and path:
+            self._visited_urls.append(path.lower())
+
+            member = RisMonolithMemberv100(resp, self.is_redfish)
+            if not member:#Assuming for lack of member and not member.type
+                return
+            if not member.type:
+                member.deftype = 'object'#Hack for general schema with no type
+
+        if member:
+            self.types = member
+
+        if init:
+            self.progress += 1
+            if LOGGER.getEffectiveLevel() == 40:
+                self._update_progress()
 
     def load(self, path=None, includelogs=False, init=False, \
-            crawl=True, loadtype='href', loadcomplete=False, rel=False):
-        """Walk entire RIS model and cache all responses in self.
+            crawl=True, loadtype='href', loadcomplete=False, path_refresh=False):
+        """Walks the entire data model and caches all responses or loads an individual path into
+        the monolith. Supports both threaded and sequential crawling.
 
-        :param path: path to start load from.
+        :param path: The path to start the crawl from the provided path if crawling or
+                     loads the path into monolith. If path is not included, crawl will start with
+                     the default. The default is */redfish/v1/* or */rest/v1* depending on if the
+                     system is Redfish or LegacyRest.
         :type path: str.
-        :param includelogs: flag to determine if logs should be downloaded also.
-        :type includelogs: boolean.
-        :param init: flag to determine if first run of load.
-        :type init: boolean.
-        :param crawl: flag to determine if load should traverse found links.
-        :type crawl: boolean.
-        :param loadtype: flag to determine if load is meant for only href items.
+        :param includelogs: Flag to determine if logs should be downloaded as well in the crawl.
+        :type includelogs: bool
+        :param init: Flag to determine if this is the initial load.
+        :type init: bool
+        :param crawl: Flag to determine if load should crawl through found links.
+        :type crawl: bool
+        :param loadtype: Flag to determine if loading standard links: *href* or schema links: *ref*.
         :type loadtype: str.
-        :param loadcomplete: flag to download the entire monolith
-        :type loadcomplete: boolean
-        :param rel: flag to reload the path specified
-        :type rel: boolean
-
+        :param loadcomplete: Flag to download the entire data model including registries and
+                             schemas.
+        :type loadcomplete: bool
+        :param path_refresh: Flag to reload the path specified, clearing any patches and overwriting the
+                    current data in the monolith.
+        :type path_refresh: bool
         """
         if init:
             if LOGGER.getEffectiveLevel() == 40:
@@ -299,42 +437,73 @@ class RisMonolith(Dictable):
         selectivepath = path
         if not selectivepath:
             selectivepath = self._client().default_prefix
+        if loadtype == 'href' and not self._client().base_url.startswith("blobstore://."):
+            if not self.threads:
+                for _ in range(6):
+                    workhand = LoadWorker(self.get_queue)
+                    workhand.setDaemon(True)
+                    workhand.start()
+                    self.threads.append(workhand)
 
-        self._load(selectivepath, crawl=crawl, includelogs=includelogs,\
-             init=init, loadtype=loadtype, loadcomplete=loadcomplete, rel=rel)
+            self.get_queue.put((selectivepath, includelogs, loadcomplete, crawl, \
+                                   path_refresh, init, None, None, self))
+            self.get_queue.join()
+
+            #Raise any errors from threads, and set them back to None after
+            excp = None
+            for thread in self.threads:
+                if excp == None:
+                    excp = thread.get_exception()
+                thread.exception = None
+
+            if excp:
+                raise excp
+
+            #self.member_queue.join()
+        else:
+            #We can't load ref or local client in a threaded manner
+            self._load(selectivepath, originaluri=None, crawl=crawl, \
+                       includelogs=includelogs, init=init, loadtype=loadtype, \
+                       loadcomplete=loadcomplete, path_refresh=path_refresh, 
+                       prevpath=None)
 
         if init:
             if LOGGER.getEffectiveLevel() == 40:
                 sys.stdout.write("Done\n")
             else:
                 LOGGER.info("Done\n")
+        if self.directory_load and init:
+            self._populatecollections()
 
     def _load(self, path, crawl=True, originaluri=None, includelogs=False,\
                         init=True, loadtype='href', loadcomplete=False, \
-                                                rel=False, prevpath=None):
-        """Helper function to main load function.
+                                                path_refresh=False, prevpath=None):
+        """Sequential version of loading monolith and parsing schemas.
 
         :param path: path to start load from.
-        :type path: str.
+        :type path: str
         :param crawl: flag to determine if load should traverse found links.
-        :type crawl: boolean.
+        :type crawl: bool
         :param originaluri: variable to assist in determining originating path.
-        :type originaluri: str.
+        :type originaluri: str
         :param includelogs: flag to determine if logs should be downloaded also.
-        :type includelogs: boolean.
+        :type includelogs: bool
         :param init: flag to determine if first run of load.
-        :type init: boolean.
+        :type init: bool
         :param loadtype: flag to determine if load is meant for only href items.
         :type loadtype: str.
         :param loadcomplete: flag to download the entire monolith
-        :type loadcomplete: boolean
-
+        :type loadcomplete: bool
+        :param path_refresh: flag to reload the members in the monolith instead of skip if they exist.
+        :type path_refresh: bool
         """
 
         if path.endswith("?page=1") and not loadcomplete:
+            #Don't download schemas in crawl unless we are loading absolutely everything
             return
-        elif not includelogs and not crawl:
-            if "/Logs" in path:
+        elif not includelogs and crawl:
+            #Only include logs when asked as there can be an extreme amount of entries
+            if "/log" in path.lower():
                 return
 
         #TODO: need to find a better way to support non ascii characters
@@ -347,7 +516,7 @@ class RisMonolith(Dictable):
 
         if prevpath and prevpath != path:
             self.ctree[prevpath].update([path])
-        if not rel:
+        if not path_refresh:
             if path.lower() in self.visited_urls:
                 return
         LOGGER.debug('_loading %s', path)
@@ -367,7 +536,7 @@ class RisMonolith(Dictable):
             try:
                 if resp.status in (201, 200):
                     self.update_member(resp=resp, path=path, init=init)
-                self.parse_schema(resp)
+                self._parse_schema(resp)
             except jsonpointer.JsonPointerException:
                 raise SchemaValidationError()
 
@@ -394,15 +563,15 @@ class RisMonolith(Dictable):
                                includelogs=includelogs, crawl=crawl, \
                                init=init, prevpath=None, loadcomplete=loadcomplete)
                 else:
-                    next_link_uri = path + '?page=' + \
-                                    str(resp.dict['links']['NextPage']['page'])
+                    next_link_uri = path + '?page=' + str(resp.dict['links']['NextPage']['page'])
 
                     href = '%s' % next_link_uri
                     self._load(href, originaluri=path, includelogs=includelogs,\
                         crawl=crawl, init=init, prevpath=None, loadcomplete=loadcomplete)
 
+            #Only use monolith if we are set to
             matchrdirpath = next((match for match in matches if match.value == \
-                                                    self._resourcedir), None)
+                                        self._resourcedir), None) if self.directory_load else None
             if not matchrdirpath and crawl:
                 for match in matches:
                     if path == "/rest/v1" and not loadcomplete:
@@ -441,16 +610,15 @@ class RisMonolith(Dictable):
                         includelogs=includelogs, init=init, loadcomplete=loadcomplete,\
                                      prevpath=fpath(str(match.full_path), path))
 
-    def parse_schema(self, resp):
+    def _parse_schema(self, resp):
         """Function to get and replace schema $ref with data
 
         :param resp: response data containing ref items.
-        :type resp: str.
-
+        :type resp: str
         """
         #pylint: disable=maybe-no-member
         if not self.typepath.gencompany:
-            return self.parse_schema_gen(resp)
+            return self._parse_schema_gen(resp)
         jsonpath_expr = jsonpath_rw.parse('$.."$ref"')
         matches = jsonpath_expr.find(resp.dict)
         respcopy = resp.dict
@@ -488,8 +656,7 @@ class RisMonolith(Dictable):
                             newpath = '/'.join(resp.request.path.split('/')\
                                                 [:-1]) + '/' + jsonfile + '/'
                     else:
-                        newpath = '/'.join(resp.request.path.split('/')[:-1]) \
-                                                                + '/' + jsonfile
+                        newpath = '/'.join(resp.request.path.split('/')[:-1]) + '/' + jsonfile
 
                     if 'href.json' in newpath:
                         continue
@@ -539,8 +706,7 @@ class RisMonolith(Dictable):
 
                                             data = replace_pointer.resolve(val)
                                             set_pointer(val, end.path, data)
-                                            start.resolve(respcopy)[count].\
-                                                                    update(val)
+                                            start.resolve(respcopy)[count].update(val)
 
                                             break
                                     except:
@@ -582,11 +748,11 @@ class RisMonolith(Dictable):
         else:
             resp.loaddict(respcopy)
 
-    def parse_schema_gen(self, resp):
+    def _parse_schema_gen(self, resp):
         """Redfish general function to get and replace schema $ref with data
 
         :param resp: response data containing ref items.
-        :type resp: str.
+        :type resp: str
 
         """
         #pylint: disable=maybe-no-member
@@ -645,10 +811,10 @@ class RisMonolith(Dictable):
                                                 init=False, loadtype='ref')
                     item = self.paths[jsonfile] if jsonfile in self.paths else None
 
-#                     if not item:
-#                         if not 'anyOf' in schemapath:
-#                             raise "We got a situation :|"
-#                         continue
+                    if not item:
+                        if not 'anyOf' in schemapath:
+                            raise SchemaValidationError()
+                        continue
                     if re.search('\[\d+]', itempath):
                         itempath = itempath.translate(None, '[]')
                     itempath = jsonpointer.JsonPointer(itempath)
@@ -679,41 +845,11 @@ class RisMonolith(Dictable):
         else:
             resp.loaddict(respcopy)
 
-    def update_member(self, member=None, resp=None, path=None, init=True):
-        """Adds member to this monolith. If the member already exists the
-        data is updated in place.
-
-        :param member: Ris monolith member object made by branch worker.
-        :type member: RisMonolithMemberv100.
-        :param resp: response received.
-        :type resp: str.
-        :param path: path correlating to the response.
-        :type path: str.
-        :param init: flag to determine if progress bar should be updated.
-        :type init: boolean.
-
-        """
-        if not member and resp and path:
-            self._visited_urls.append(path.lower())
-
-            member = RisMonolithMemberv100(resp, self.is_redfish)
-            if not member:#Assuming for lack of member and not member.type
-                return
-            if not member.type:
-                member.deftype = 'object'#Hack for general schema with no type
-
-        self.types = member
-
-        if init:
-            self.progress += 1
-            if LOGGER.getEffectiveLevel() == 40:
-                self.update_progress()
-
     def load_from_dict(self, src):
-        """Load data to monolith from dict
+        """Load data to monolith from a dict. This is the reverse of :func:`to_dict`.
 
         :param src: data receive from rest operation.
-        :type src: str.
+        :type src: str
 
         """
         self._type = src['Type']
@@ -725,10 +861,9 @@ class RisMonolith(Dictable):
             member = RisMonolithMemberv100(None, self.is_redfish)
             member.load_from_dict(resp)
             self.update_member(member=member, init=False)
-        return
 
     def to_dict(self):
-        """Convert data to dict from monolith"""
+        """Convert data to a dict from monolith. This is the reverse of :func:`load_from_dict`."""
         result = OrderedDict()
         result['Type'] = self.type
         result['Name'] = self.name
@@ -738,78 +873,12 @@ class RisMonolith(Dictable):
         result["resps"] = {x:v.to_dict() for x, v in list(self.paths.items())}
         return result
 
-    @property
-    def location(self):
-        """Return current location"""
-        return self._current_location
-
-    @location.setter
-    def location(self, newval):
-        """Set current location"""
-        self._current_location = newval
-
-    def iter(self, typeval=None):
-        """Returns each member of monolith
-
-        :rtype: RisMonolithMemberv100
-        """
-        if not typeval:
-            for _, val in self.paths.items():
-                yield val
-        else:
-            for typename in self.gettypename(typeval):
-                for item in self.typesadded[typename]:
-                    yield self.paths[item]
-
-    def itertype(self, typeval):
-        """Returns member of given type in monolith
-
-        :param typeval: type name of the requested response.
-        :type typeval: str.
-
-        :rtype: RisMonolithMemberv100
-        """
-        typeiter = self.gettypename(typeval)
-        types = next(typeiter, None)
-        if types:
-            while types:
-                for item in self.typesadded[types]:
-                    yield self.paths[item]
-                types = next(typeiter, None)
-        else:
-            raise RisInstanceNotFoundError("Unable to locate instance for" \
-                                                            " '%s'" % typeval)
-
-    def typecheck(self, types):
-        """Check if a member of given type exists
-
-        :param types: type name of the requested response.
-        :type types: str.
-
-        :rtype: bool.
-        """
-        if any(types in val for val in self.types):
-            return True
-        return False
-
-    def gettypename(self, types):
-        """Get the maj_type name of given type
-
-        :param types: type name of the requested response.
-        :type types: str.
-        """
-        types = types[1:] if types[0] in ("#", u"#") else types
-        return iter((xt for xt in self.types if xt and types.lower() in xt.lower()))
-
     def markmodified(self, opath, path=None, modpaths=None):
-        """Mark the paths to be modifed which are connected to current path.
+        """Mark the paths to be modifed which are connected to current path. When calling this
+        function you only need to include `opath`.
 
         :param opath: original path which has been modified
-        :type path: str
-        :param path: path which has been modified
-        :type path: str
-        :param modpaths: paths in a list which has to be modified
-        :type modpaths: set
+        :type opath: str
         """
         modpaths = set() if modpaths is None else modpaths
         path = path if path else opath
@@ -823,10 +892,11 @@ class RisMonolith(Dictable):
         return modpaths
 
     def checkmodified(self, opath, path=None, modpaths=None):
-        """Check if the path or its children are modified.
+        """Check if the path or its children are modified. When calling this
+        function you only need to include `opath`.
 
-        :param path: path which is to be checked if modified
-        :type path: str
+        :param opath: original path which has been modified
+        :type opath: str
         """
         #return [paths for paths in self.ctree[path] if self.paths[paths].modified]
         modpaths = set() if modpaths is None else modpaths
@@ -861,7 +931,7 @@ class RisMonolith(Dictable):
             del self.ctree[path]
         _ = [self.ctree[paths].remove(path) for paths in self.ctree if path in self.ctree[paths]]
 
-    def populatecollections(self):
+    def _populatecollections(self):
         """Populate the collections type and types depending on resourcedirectory"""
         if not self._resourcedir in self.paths:
             return
@@ -887,11 +957,30 @@ class RisMonolith(Dictable):
             self.colltypes[typename].add(colltype)
 
     def capture(self, redmono=False):
-        """Build and return the entire monolith
+        """Crawls the server specified by the client and returns the entire monolith.
 
-        :param redmono: Flag to return reduced monolith or not
-        :type redmono: bool.
+        :param redmono: Flag to return only the headers and responses instead of the entire monolith
+                        member data.
+        :type redmono: bool
+        :rtype: dict
         """
-        self.load(includelogs=True, crawl=True, loadcomplete=True, rel=True, init=True)
+        self.load(includelogs=True, crawl=True, loadcomplete=True, path_refresh=True, init=True)
         return self.to_dict() if not redmono else {x:{"Headers":v.resp.getheaders(), \
                 "Response":v.resp.dict} for x, v in list(self.paths.items()) if v}
+
+    def killthreads(self):
+        """Function to kill threads on logout"""
+        threads = []
+        for thread in threading.enumerate():
+            if isinstance(thread, LoadWorker):
+                self.get_queue.put(('KILL', 'KILL', 'KILL', 'KILL',\
+                                'KILL', 'KILL', 'KILL', 'KILL', 'KILL', 'KILL'))
+                threads.append(thread)
+
+        for thread in threads:
+            thread.join()
+
+    def _update_progress(self):
+        """Simple function to increment the dot progress"""
+        if self.progress % 6 == 0:
+            sys.stdout.write('.')

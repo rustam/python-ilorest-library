@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -14,7 +14,7 @@
 
 # -*- coding: utf-8 -*-
 """
-An example of changing bios settings
+An example of changing BIOS settings
 """
 
 import sys
@@ -47,14 +47,14 @@ def change_bios_setting(_redfishobj, bios_property, property_value, bios_passwor
                 break
 
     if bios_data:
-        print("\n\nShowing bios attributes before changes:\n\n")
+        print("\n\nShowing BIOS attributes before changes:\n\n")
         print(json.dumps(bios_data.dict, indent=4, sort_keys=True))
 
     if bios_uri:
-        #Bios settings URI is needed
+        #BIOS settings URI is needed
         bios_settings_uri = bios_data.obj['@Redfish.Settings']['SettingsObject']['@odata.id']
         body = {'Attributes': {bios_property: property_value}}
-        #update bios password
+        #update BIOS password
         if bios_password:
             _redfishobj.bios_password = bios_password
         resp = _redfishobj.patch(bios_settings_uri, body)
@@ -74,7 +74,7 @@ def change_bios_setting(_redfishobj, bios_property, property_value, bios_passwor
             print("\nSuccess!\n")
             print(json.dumps(resp.dict, indent=4, sort_keys=True))
             #uncomment if you would like to see the full list of attributes
-            #print("\n\nShowing bios attributes after changes:\n\n")
+            #print("\n\nShowing BIOS attributes after changes:\n\n")
             #bios_data = _redfishobj.get(bios_uri)
             #print(json.dumps(bios_data.dict, indent=4, sort_keys=True))
 

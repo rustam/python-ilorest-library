@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -14,7 +14,7 @@
 
 # -*- coding: utf-8 -*-
 """
-An example of getting the schema data on any system with schemas on system
+An example of obtaining system schema data
 """
 
 import sys
@@ -69,4 +69,3 @@ if __name__ == "__main__":
 
     get_schema(REDFISHOBJ)
     REDFISHOBJ.logout()
-  

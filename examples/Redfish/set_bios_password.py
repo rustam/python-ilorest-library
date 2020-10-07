@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -14,7 +14,7 @@
 
 # -*- coding: utf-8 -*-
 """
-An example of setting the bios password for HPE iLO systems
+An example of setting the BIOS password for HPE iLO systems
 """
 
 import sys
@@ -82,9 +82,9 @@ if __name__ == "__main__":
     LOGIN_ACCOUNT = "admin"
     LOGIN_PASSWORD = "password"
 
-    #new_bios_password
+    #new BIOS password
     NEW_BIOS_PASSWORD = "password"
-    #old bios password
+    #old BIOS password
     OLD_BIOS_PASSWORD = "password"
     # flag to force disable resource directory. Resource directory and associated operations are
     # intended for HPE servers.

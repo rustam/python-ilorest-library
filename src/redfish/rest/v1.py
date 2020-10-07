@@ -1,5 +1,5 @@
 ###
-# Copyright 2019 Hewlett Packard Enterprise, Inc. All rights reserved.
+# Copyright 2020 Hewlett Packard Enterprise, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -58,9 +58,10 @@ class RestClientBase(object):
 
     :param biospassword: The iLO Gen9 bios password. See :func:`bios_password`
     :type biospassword: str
-    :param \\**client_kwargs: Arguments to pass to the client argument. For possible values see """\
-    ":mod:`redfish.rest.connections.Blobstore2Connection` for a local connection "\
-    "or :mod:`redfish.rest.connections.HttpConnection` for remote connection."
+    :param \\**client_kwargs: Arguments to pass to the client argument. For possible values see
+                              :mod:`redfish.rest.connections.Blobstore2Connection` for a local 
+                              connection or :mod:`redfish.rest.connections.HttpConnection` 
+                              for remote connection."""
 
     def __init__(self, biospassword=None, **client_kwargs):
         self.connection = None
@@ -209,6 +210,15 @@ class RestClient(RestClientBase):
         self._user_pass = (username, password)
         self._session_location = None
         super(RestClient, self).__init__(username=username, password=password, **client_kwargs)
+
+    def __enter__(self):
+        """Create a connection and return the session object"""
+        self.login()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Close the connection"""
+        self.logout()
 
     def _get_auth_type(self, auth_param, **client_kwargs):
         """Get the auth type based on key args or positional argument. Defaults to session auth."""
