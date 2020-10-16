@@ -22,7 +22,7 @@ import sys
 import json
 import argparse
 from random import randint
-  
+
 from redfish import RedfishClient
 from redfish.rest.v1 import ServerDownOrUnreachableError
 import logging
@@ -54,18 +54,21 @@ def upload_firmware(_redfishobj, firmware_loc, comp_type, update_repo=True, upda
     print (path)
 
     body = []
-            
+
     json_data = {'UpdateRepository': update_repo, 'UpdateTarget': update_target, 'ETag': 'atag', 'Section': 0}
     session_key = _redfishobj.session_key
 
-    file_name = os.path.basename(firmware_loc)
-    print (file_name)
+    #ImageLocation = "c:\\test"
+    #filename = "I41_2.40_08_10_2020.fwpkg"
+    #ImagePath = os.path.join(ImageLocation, filename)
+    #file_name = os.path.basename(firmware_loc)
+    #print (ImagePath)
     with open(firmware_loc, 'rb') as fle:
         output = fle.read()
 
     session_tuple = ('sessionKey', session_key)
     parameters_tuple = ('parameters', json.dumps(json_data))
-    file_tuple = ('file', (file_name, output, 'application/octet-stream'))
+    file_tuple = ('file', (filename, output, 'application/octet-stream'))
 
     #Build the payload from each multipart-form data tuple
     body.append(session_tuple)
@@ -86,27 +89,27 @@ def upload_firmware(_redfishobj, firmware_loc, comp_type, update_repo=True, upda
         sys.stderr.write("An http response of '%s' was returned.\n" % resp.status)
     else:
         print("Upload complete!\n")
-    
+
 
 def create_task(_redfishobj, firmware_loc, tpm_flag=True):
 
     session_key = _redfishobj.session_key
     #Create our header dictionary
     header = {'Cookie': 'sessionKey=' + session_key}
-    
+
     updatable_by = ['Uefi']
     task_path = '/redfish/v1/UpdateService/UpdateTaskQueue/'
     file_name = os.path.basename(firmware_loc)
 
     task_resp = _redfishobj.get(task_path)
     if not task_resp.obj["Members@odata.count"]:
-        print ("No current tasks, proceed to create new task")    
-    
-    
+        print ("No current tasks, proceed to create new task")
+
+
     update_task = {'Name': 'Update-%s-%s' % (str(randint(0, 1000000)), \
                         file_name), 'Command': 'ApplyUpdate',\
                       'Filename': file_name, 'UpdatableBy': updatable_by, 'TPMOverride': tpm_flag}
-        
+
     resp = _redfishobj.post(task_path, update_task, headers=header)
     #print (resp)
     if resp.status == 400:
@@ -116,14 +119,11 @@ def create_task(_redfishobj, firmware_loc, tpm_flag=True):
     else:
         print("Task Queue Creation complete!\n")
 
-    #reboot_task = {'Name': 'Reboot-%s' % str(randint(0, 1000000)), 'Command': 'ResetServer', 'UpdatableBy': ['Bmc']}
-    #_redfishobj.post(task_path, reboot_task, headers=header)
-                    
 
 if __name__ == "__main__":
-    
-    # Initialize parser 
-    parser = argparse.ArgumentParser(description = "Script to upload and flash NVMe FW")    
+
+    # Initialize parser
+    parser = argparse.ArgumentParser(description = "Script to upload and flash NVMe FW")
 
     parser.add_argument(
         '-c',
@@ -134,10 +134,19 @@ if __name__ == "__main__":
         help="The path to the firmware file to upload",
         default=None)
     parser.add_argument(
+        '-s',
+        '--session_key',
+        dest='session_key',
+        action="store",
+        required=False,
+        help="Http session key for the server",
+        default=None)
+    parser.add_argument(
         '-i',
         '--ilo',
         dest='ilo_ip',
         action="store",
+        required=False,
         help="iLO IP of the server",
         default=None)
     parser.add_argument(
@@ -145,6 +154,7 @@ if __name__ == "__main__":
         '--user',
         dest='ilo_user',
         action="store",
+        required=False,
         help="iLO username to login",
         default=None)
     parser.add_argument(
@@ -152,14 +162,15 @@ if __name__ == "__main__":
         '--password',
         dest='ilo_pass',
         action="store",
+        required=False,
         help="iLO password to log in.",
         default=None)
-    
+
     options = parser.parse_args()
 
     system_url = "https://" + options.ilo_ip
     print (system_url)
-   
+
     # Upload the firmware file to the iLO Repository
     update_repo_flag = True
     # Update the system with the firmware file
@@ -171,10 +182,15 @@ if __name__ == "__main__":
     # flag to force disable resource directory. Resource directory and associated operations are
     # intended for HPE servers.
     DISABLE_RESOURCE_DIR = True
+    #system_url = "https://" + "15.146.46.49"
+    #session_id = "515b196969f7d879886ee4a2da4ccba8"
 
     try:
         # Create a Redfish client object
-        redfish_obj = RedfishClient(base_url=system_url, username=options.ilo_user, password=options.ilo_pass)
+        if options.session_key:
+            redfish_obj = RedfishClient(base_url=system_url, session_key= options.session_key)
+        else:
+            redfish_obj = RedfishClient(base_url=system_url, username=options.ilo_user, password=options.ilo_pass)
         # Login with the Redfish client
         redfish_obj.login()
     except ServerDownOrUnreachableError as excp:

@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -15,7 +15,7 @@
 # -*- coding: utf-8 -*-
 """
 An example of uploading a firmware component with a size less than
-32 GB, and associated compsig signature file to the iLO Repository. 
+32 GB, and associated compsig signature file to the iLO Repository.
 """
 
 import os
@@ -95,10 +95,10 @@ if __name__ == "__main__":
     LOGIN_PASSWORD = "password"
 
     # The path to the firmware component file to upload.
-    # .rpm and .zip component are also valid. 
+    # .rpm and .zip component are also valid.
     #
     FIRMWARE_PATH = "/path/to/cpxxxxxx.exe"
-    COMPSIG_PATH = "/path/to//cpxxxxxx.compsig" 
+    COMPSIG_PATH = "/path/to//cpxxxxxx.compsig"
     # Upload the firmware file to the iLO Repository
     UPDATE_REPO = True
     # Update the system with the firmware file

@@ -1,4 +1,4 @@
- # Copyright 2019 Hewlett Packard Enterprise Development LP
+ # Copyright 2020 Hewlett Packard Enterprise Development LP
  #
  # Licensed under the Apache License, Version 2.0 (the "License"); you may
  # not use this file except in compliance with the License. You may obtain
@@ -15,6 +15,7 @@
 # -*- coding: utf-8 -*-
 """
 An example of configuring SNMP alert for HPE iLO systems
+Usage: python <script>.py <ilo_addr> <ilo_user> <ilo_pass>
 """
 
 import sys
@@ -26,7 +27,7 @@ from ilorest_util import get_resource_directory
 from ilorest_util import get_gen
 
 def configure_snmp(_redfishobj, read_communities, snmp_alertdestinations, DISABLE_RESOURCE_DIR):
-    snmp_service_uri = None    
+    snmp_service_uri = None
     resource_instances = get_resource_directory(_redfishobj)
     if DISABLE_RESOURCE_DIR or not resource_instances:
         #if we do not have a resource directory or want to force it's non use to find the
@@ -61,7 +62,7 @@ def configure_snmp(_redfishobj, read_communities, snmp_alertdestinations, DISABL
         else:
             print("Success!\n")
             print(json.dumps(resp.dict, indent=4, sort_keys=True))
-	
+
 def set_snmp_alert_destination(_redfishobj, snmp_service_uri, alert_destination_list):
     data = _redfishobj.get(snmp_service_uri)
     if data.dict.get("AlertDestinations"):
@@ -99,6 +100,7 @@ if __name__ == "__main__":
     #SYSTEM_URL = "https://15.146.46.45"
     #LOGIN_ACCOUNT = "admin"
     #LOGIN_PASSWORD = "admin123"
+
     SYSTEM_URL = sys.argv[1]
     LOGIN_ACCOUNT = sys.argv[2]
     LOGIN_PASSWORD = sys.argv[3]
@@ -113,7 +115,7 @@ if __name__ == "__main__":
     # flag to force disable resource directory. Resource directory and associated operations are
     # intended for HPE servers.
     DISABLE_RESOURCE_DIR = False
-    snmp_service_uri = "/redfish/v1/Managers/1/SNMPService/"	
+    snmp_service_uri = "/redfish/v1/Managers/1/SNMPService/"
 
     # Number of max alert destination supported on iLO4 and iLO5 is different
     alert_destination_list = ["ILOCN771702NJ", "15.146.46.55" , "15.146.46.58"]

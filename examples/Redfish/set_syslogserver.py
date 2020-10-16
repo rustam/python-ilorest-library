@@ -16,26 +16,30 @@
 """
 An example of set syslog server on HPE iLO Server.
 """
-
 import sys
 import json
-import redfish
-from redfish.rest.v1 import ServerDownOrUnreachableError 
+import argparse
+from redfish import RedfishClient
+from redfish.rest.v1 import ServerDownOrUnreachableError
+global DISABLE_RESOURCE_DIR
+from ilorest_util import get_resource_directory
+from ilorest_util import get_gen
 
 def set_syslog(_redfishobj, syslog_server):
 
     model_uri = "/redfish/v1/Systems/1/"
     model = _redfishobj.get(model_uri).obj['Model']
-    if "Gen9" in model:
+    print (model)
+    if "Gen9" in model or 'Gen8' in model:
         hp = "Hp"
     else:
         hp = "Hpe"
 
-    syslog_uri = "/redfish/v1/Managers/1/NetworkService/" 
+    syslog_uri = "/redfish/v1/Managers/1/NetworkService/"
 
     body = {"Oem": {hp: {"RemoteSyslogServer": syslog_server, "RemoteSyslogEnabled": True}}}
     resp = _redfishobj.patch(syslog_uri, body)
-    ilo_response(_redfishobj, resp) 
+    ilo_response(_redfishobj, resp)
 
 def ilo_response(_redfishobj, resp):
 
@@ -52,19 +56,61 @@ def ilo_response(_redfishobj, resp):
         print("Success")
 
 if __name__ == "__main__":
+    # Initialize parser
+    parser = argparse.ArgumentParser(description = "Script to upload and flash NVMe FW")
 
-    SYSTEM_URL = "https://"+str(sys.argv[1])
-    LOGIN_ACCOUNT = "XXXXXX"
-    LOGIN_PASSWORD = "XXXXXX"
-   
+    parser.add_argument(
+        '-i',
+        '--ilo',
+        dest='ilo_ip',
+        action="store",
+        help="iLO IP of the server",
+        default=None)
+    parser.add_argument(
+        '-u',
+        '--user',
+        dest='ilo_user',
+        action="store",
+        help="iLO username to login",
+        default=None)
+    parser.add_argument(
+        '-p',
+        '--password',
+        dest='ilo_pass',
+        action="store",
+        help="iLO password to log in.",
+        default=None)
+    parser.add_argument(
+        '-s',
+        '--syslog_server',
+        dest='syslog_server',
+        action="store",
+        required=True,
+        help="iLO password to log in.",
+        default=None)
+
+    options = parser.parse_args()
+
+    system_url = "https://" + options.ilo_ip
+    print (system_url)
+
+    # flag to force disable resource directory. Resource directory and associated operations are
+    # intended for HPE servers.
+    DISABLE_RESOURCE_DIR = True
+
     try:
         # Create a Redfish client object
-        REDFISHOBJ = redfish.RedfishClient(base_url=SYSTEM_URL, username=LOGIN_ACCOUNT, password=LOGIN_PASSWORD)
+        redfish_obj = RedfishClient(base_url=system_url, username=options.ilo_user, password=options.ilo_pass)
         # Login with the Redfish client
-        REDFISHOBJ.login()
+        redfish_obj.login()
     except ServerDownOrUnreachableError as excp:
         sys.stderr.write("ERROR: server not reachable or does not support RedFish.\n")
         sys.exit()
 
-    set_syslog(REDFISHOBJ, SYSLOG_SERVER)
-    REDFISHOBJ.logout()
+    (ilogen,_) = get_gen(redfish_obj)
+    print ("Generation is ", ilogen)
+    if int(ilogen) == 5:
+        set_syslog(redfish_obj, options.syslog_server)
+    else:
+        set_syslog(redfish_obj, options.syslog_server)
+    redfish_obj.logout()
