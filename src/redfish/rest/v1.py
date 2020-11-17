@@ -59,8 +59,8 @@ class RestClientBase(object):
     :param biospassword: The iLO Gen9 bios password. See :func:`bios_password`
     :type biospassword: str
     :param \\**client_kwargs: Arguments to pass to the client argument. For possible values see
-                              :mod:`redfish.rest.connections.Blobstore2Connection` for a local 
-                              connection or :mod:`redfish.rest.connections.HttpConnection` 
+                              :mod:`redfish.rest.connections.Blobstore2Connection` for a local
+                              connection or :mod:`redfish.rest.connections.HttpConnection`
                               for remote connection."""
 
     def __init__(self, biospassword=None, **client_kwargs):
@@ -371,21 +371,24 @@ class RestClient(RestClientBase):
 
     def _session_login(self):
         """Login using session authentication"""
-        LOGGER.info('Performing session authentication.')
-        data = dict()
-        data['UserName'] = self.username
-        data['Password'] = self.password
+        if not self.connection.session_key:
+            LOGGER.info('Performing session authentication.')
+            data = dict()
+            data['UserName'] = self.username
+            data['Password'] = self.password
 
-        headers = dict()
-        resp = self.post(self.login_url, body=data, headers=headers)
-        try:
-            LOGGER.info(json.loads('%s'% resp.read))
-        except ValueError:
-            pass
-        LOGGER.info('Login returned code %s: %s', resp.status, resp.read)
 
-        self.session_key = resp.session_key
-        self.session_location = resp.session_location
+            headers = dict()
+            resp = self.post(self.login_url, body=data, headers=headers)
+            try:
+                LOGGER.info(json.loads('%s'% resp.read))
+            except ValueError:
+                pass
+            LOGGER.info('Login returned code %s: %s', resp.status, resp.read)
+            self.session_key = resp.session_key
+            self.session_location = resp.session_location
+        else:
+            self.session_key = self.connection.session_key
 
         if not self.session_key and not resp.status == 200:
             self._credential_err()

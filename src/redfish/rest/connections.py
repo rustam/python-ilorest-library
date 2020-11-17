@@ -82,7 +82,7 @@ class HttpConnection(object):
         self.base_url = base_url
         self._connection_properties = client_kwargs
         self._proxy = self._connection_properties.pop('proxy', None)
-
+        self.session_key = self._connection_properties.pop('session_key', None)
         self._init_connection()
 
     @property
@@ -281,6 +281,7 @@ class Blobstore2Connection(object):
         self._conn = None
         self.base_url = "blobstore://."
         self._connection_properties = conn_kwargs
+        self.session_key = self._connection_properties.pop('session_key', None)
         self._init_connection(**self._connection_properties)
 
     def _init_connection(self, **kwargs):

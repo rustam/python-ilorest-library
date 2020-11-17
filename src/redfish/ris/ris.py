@@ -254,7 +254,7 @@ class RisMonolith(Dictable):
         """The flag to gather information about a tree without downloading every path. Only usable
         on HPE systems with a ResourceDirectory. type"""
         return self._directory_load
-    
+
     @directory_load.setter
     def directory_load(self, dir_load):
         """Set the directory_load flag"""
@@ -394,8 +394,7 @@ class RisMonolith(Dictable):
             if not member.type:
                 member.deftype = 'object'#Hack for general schema with no type
 
-        if member:
-            self.types = member
+        self.types = member
 
         if init:
             self.progress += 1
@@ -464,7 +463,7 @@ class RisMonolith(Dictable):
             #We can't load ref or local client in a threaded manner
             self._load(selectivepath, originaluri=None, crawl=crawl, \
                        includelogs=includelogs, init=init, loadtype=loadtype, \
-                       loadcomplete=loadcomplete, path_refresh=path_refresh, 
+                       loadcomplete=loadcomplete, path_refresh=path_refresh,
                        prevpath=None)
 
         if init:
