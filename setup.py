@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 extras = {'socks': ['pysocks']}
 
 setup(name='python-ilorest-library',
-      version='3.1.0',
+      version='3.1.1',
       description='iLO Restful Python Library',
 	  author = 'Hewlett Packard Enterprise',
 	  author_email = 'rajeevalochana.kallur@hpe.com',
