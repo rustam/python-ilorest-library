@@ -35,7 +35,7 @@ from redfish.ris.rmc_helper import IncorrectPropValue
 
 try:
     #itertools ifilter compatibility for python 2
-    from future_builtins import filter 
+    from future_builtins import filter
 except ImportError:
     #filter function provides the same functionality in python 3
     pass
@@ -158,7 +158,7 @@ def filter_output(output, sel, val):
     return newoutput
 
 def checkallowablevalues(newdict=None, oridict=None):
-    """Validate dictionary changes with Redfish allowable values. This will raise an 
+    """Validate dictionary changes with Redfish allowable values. This will raise an
     :class:`redfish.ris.rmc_helper.IncorrectPropValue` error if the dictionary is not valid.
 
     :param newdict: dictionary with only the properties that have changed.
@@ -296,14 +296,18 @@ def getattributeregistry(instances, adict=None):
     :return: returns a dictionary containing the attribute registry string(s)
     :rtype: dict
     """
+
     if adict:
         return adict.get("AttributeRegistry", None)
     newdict = {}
     for inst in instances:
-        if 'AttributeRegistry' in inst.resp.dict:
-            newdict[inst.maj_type] = inst.resp.obj["AttributeRegistry"]
-    return {inst.maj_type:inst.resp.obj["AttributeRegistry"]\
-            for inst in instances if 'AttributeRegistry' in inst.resp.dict}
+        try:
+            if 'AttributeRegistry' in inst.resp.dict:
+                newdict[inst.maj_type] = inst.resp.obj["AttributeRegistry"]
+        except AttributeError as excp:
+            LOGGER.warn("Invalid/Unpopulated Response: %s\nType:%s\nPath:%s\n" \
+                        % (inst.resp, inst.type, inst.path))
+    return newdict
 
 def diffdict(newdict=None, oridict=None, settingskipped=[False]):
     """Diff two dictionaries, returning only the values that are different between the two.
@@ -328,6 +332,10 @@ def diffdict(newdict=None, oridict=None, settingskipped=[False]):
             pass
 
     newdictkeys = list(newdict.keys())
+    newdictlist = []
+    if type(oridict) is list:
+        oridict = oridict[0]
+        newdictlist.append(newdict)
     oridictkeys = list(oridict.keys())
     newdictkeyslower = [ki.lower() for ki in newdictkeys]
     oridictkeyslower = [ki.lower() for ki in list(oridict.keys())]
@@ -366,17 +374,19 @@ def diffdict(newdict=None, oridict=None, settingskipped=[False]):
         elif isinstance(val, (string_types, int, type(None))):
             if newdict[key] == oridict[key]:
                 del newdict[key]
-
-    return newdict
+    if not newdictlist:
+        return newdict
+    else:
+        return newdictlist
 
 def json_traversal(data, key_to_find, ret_dict=False):
     """
     PENDING MODIFICATION TO MORE GENERALIZED NOTATION
 
     Recursive function to traverse a JSON resposne object and retrieve the array of
-    relevant data (value or full key/value pair). Only a single key needs to be found within the 
+    relevant data (value or full key/value pair). Only a single key needs to be found within the
     dictionary in order to return a valid dictionary or value.
-    
+
     #Intended Usage:
     - Error response message parsing
     - Checkreadunique in Validation
@@ -387,7 +397,7 @@ def json_traversal(data, key_to_find, ret_dict=False):
     :type key_to_find: String
     :param ret_dict: return dictionary instead of just value
     :type ret_dict: boolean
-    :returns: value or dictionary containing 'key_to_find' 
+    :returns: value or dictionary containing 'key_to_find'
                 (and all additional keys at the same level).
     """
 
@@ -436,3 +446,56 @@ def json_traversal(data, key_to_find, ret_dict=False):
                     return _tmp
     except Exception as exp:
         pass
+
+def json_traversal_delete_empty(data, old_key=None, _iter=None, remove_list=None):
+    """
+    Recursive function to traverse a dictionary and delete things which
+    match elements in the remove_list
+    :param data: to be truncated
+    :type data: list or dict
+    :param old_key: key from previous recursive call (higher in stack)
+    :type old_key: dictionary key
+    :param _iter: iterator tracker for list (tracks iteration across
+    recursive calls)
+    :type _iter: numerical iterator
+    :param remove_list: list of items to be removed
+    :type: list
+    :returns: none
+    """
+
+    if not remove_list:
+        remove_list = ["NONE", None, "", {}, [], "::", "0.0.0.0", "Unknown"]
+    list_quick_scan = False
+
+    if isinstance(data, list):
+        if _iter is None:
+            for idx, val in enumerate(data):
+                if idx is (len(data) - 1):
+                    list_quick_scan = True
+
+                json_traversal_delete_empty(val, old_key, idx, remove_list)
+
+            if list_quick_scan:
+                for j in remove_list:
+                    for _ in range(data.count(j)):
+                        data.remove(j)
+
+    elif isinstance(data, dict):
+        delete_list = []
+        for key, value in data.items():
+            if (isinstance(value, dict) and len(value) < 1) or (isinstance(value, list)\
+                    and len(value) < 1) or None or value in remove_list or key in remove_list:
+                delete_list.append(key)
+
+            else:
+                json_traversal_delete_empty(value, key, remove_list=remove_list)
+                #would be great to not need this section; however,
+                #since recursive deletion is not possible, this is needed
+                #if you can figure out how to pass by reference then fix me!
+                if (isinstance(value, dict) and len(value) < 1) or None or value in remove_list:
+                    delete_list.append(key)
+        for dl_entry in delete_list:
+            try:
+                del data[dl_entry]
+            except KeyError:
+                pass

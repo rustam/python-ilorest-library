@@ -21,6 +21,7 @@ import gzip
 import json
 import logging
 import urllib3
+import certifi
 
 from urllib3 import ProxyManager, PoolManager
 from urllib3.exceptions import MaxRetryError, DecodeError
@@ -60,6 +61,10 @@ class InvalidCredentialsError(Exception):
     """Raised when invalid credentials have been provided."""
     pass
 
+class InvalidCertificateError(Exception):
+    """Raised when a invalid certificate has been provided."""
+    pass
+
 class ChifDriverMissingOrNotFound(Exception):
     """Raised when CHIF driver is missing or not found."""
     pass
@@ -97,23 +102,27 @@ class HttpConnection(object):
 
     def _init_connection(self):
         """Function for initiating connection with remote server"""
-        if self._connection_properties.get('ca_certs', None):
+        cert_reqs = 'CERT_NONE'
+        if self._connection_properties.get('ca_cert_data'):
             LOGGER.info('Using CA cert to confirm identity.')
             cert_reqs = 'CERT_REQUIRED'
-        else:
-            LOGGER.info('Not using CA certificate.')
-            cert_reqs = 'CERT_NONE'
+            self._connection_properties.update(self._connection_properties.pop('ca_cert_data'))
+
         if self.proxy:
             if self.proxy.startswith('socks'):
                 LOGGER.info("Initializing a SOCKS proxy.")
                 http = SOCKSProxyManager(self.proxy, cert_reqs=cert_reqs, maxsize=6, \
-                                                                    **self._connection_properties)
+                                                                **self._connection_properties)
             else:
                 LOGGER.info("Initializing a HTTP proxy.")
                 http = ProxyManager(self.proxy, cert_reqs=cert_reqs, maxsize=6, \
                                     **self._connection_properties)
         else:
             LOGGER.info("Initializing no proxy.")
+            try:
+                self._connection_properties.pop('ca_cert_data')
+            except KeyError:
+                pass
             http = PoolManager(cert_reqs=cert_reqs, maxsize=6, **self._connection_properties)
 
         self._conn = http.request
@@ -181,8 +190,8 @@ class HttpConnection(object):
                 body = urlencode(args)
 
         #TODO: ADD to the default headers?
-        headers['Accept-Encoding'] = 'gzip'
-
+        if headers != None:
+            headers['Accept-Encoding'] = 'gzip'
         restreq = RestRequest(path, method, data=files if files else body, url=self.base_url)
 
         if LOGGER.isEnabledFor(logging.DEBUG):
@@ -216,14 +225,15 @@ class HttpConnection(object):
         if isinstance(reqfullpath, six.text_type):
             reqfullpath = str(reqfullpath)
 
-        request_args['headers'] = headers
+        if headers:
+            request_args['headers'] = headers
         if files:
             request_args['fields'] = files
         else:
             request_args['body'] = body
         try:
             resp = self._conn(method, reqfullpath, **request_args)
-        except MaxRetryError:
+        except MaxRetryError as excp:
             #TODO: Update error to be more descriptive
             raise RetriesExhaustedError()
         except DecodeError:
@@ -246,8 +256,7 @@ class HttpConnection(object):
                             '\n%s\nBody Response of %s: %s', restresp.request.path,\
                             str(restresp._http_response.status)+ ' ' + \
                             restresp._http_response.reason, \
-                            headerstr, restresp.request.path, restresp.read\
-                            .encode('ascii', 'ignore'))
+                            headerstr, restresp.request.path, restresp.read)
                 except:
                     LOGGER.debug('HTTP RESPONSE:\nCode:%s', restresp)
             else:
@@ -256,9 +265,15 @@ class HttpConnection(object):
         return restresp
 
     def cert_login(self):
-        """Login using a certificate **NOT IMPLEMENTED**"""
-        #TODO: Implement
-        return self
+        """Login using a certificate."""
+        resp = self.rest_request('/html/login_cert.html', 'GET')
+        if resp.status == 200 or resp.status == 201:
+            token = resp.getheader('X-Auth-Token')
+            location = resp.getheader('Location')
+        else:
+            raise InvalidCertificateError('')
+
+        return token, location
 
 class Blobstore2Connection(object):
     """A connection for communicating locally with HPE servers
@@ -335,6 +350,8 @@ class Blobstore2Connection(object):
         if body is not None:
             if isinstance(body, (dict, list)):
                 headers['Content-Type'] = 'application/json'
+                if isinstance(body, bytes):
+                    body=body.decode('utf-8')
                 body = json.dumps(body)
             else:
                 headers['Content-Type'] = 'application/x-www-form-urlencoded'
@@ -472,6 +489,16 @@ class Blobstore2Connection(object):
         return rest_response
 
     def cert_login(self):
-        """Login using a certificate **NOT IMPLEMENTED**"""
-        #TODO: Implement
-        raise NotImplementedError()
+        """Login using a certificate."""
+        #local cert login is only available on iLO 5
+        token = self.cert_login()
+        resp = self.rest_request('/redfish/v1/SessionService/Sessions/', 'GET')
+        if resp.status == 200:
+            try:
+                location = resp.obj.Oem.Hpe.Links.MySession['@odata.id']
+            except KeyError:
+                raise InvalidCertificateError("")
+        else:
+            raise InvalidCertificateError("")
+
+        return token, location

@@ -233,7 +233,8 @@ class RmcFileCacheManager(RmcCacheManager):
                 LOGGER.warning('Unable to read cache data %s', excp)
 
     def _uncache_client(self, cachefn, creds=None, enc=False):
-        """Complex monolith uncache function
+        """Monolith uncache function for parsing and passing all client data and associated
+           credential attributes.
 
         :param cachefn: The cache file name.
         :type cachefn: str.
@@ -258,8 +259,8 @@ class RmcFileCacheManager(RmcCacheManager):
                 self._rmc.typepath.getgen(login_data.get('ilo'), \
                                  url=login_data.get('url'), \
                                  isredfish=login_data.get('redfish', None), \
-                                 ca_certs=login_data.get('ca_certs', None))
-                #TODO: Add certificate data
+                                 ca_cert_data=login_data.get('ca_cert_data', {}))
+
                 if creds and login_data.get('url', '').startswith('blobstore://'):
                     if enc:
                         creds['username'] = self._rmc._cm.decodefunct(creds['username'])
@@ -275,7 +276,7 @@ class RmcFileCacheManager(RmcCacheManager):
                     is_redfish=login_data.get('redfish', None), \
                     default_prefix=self._rmc.typepath.defs.startpath, \
                     proxy=login_data.get('proxy', None), \
-                    ca_certs=login_data.get('ca_certs', None))
+                    ca_cert_data=login_data.get('ca_cert_data', {}))
                 if login_data.get('authorization_key'):
                     redfishinst.basic_auth = login_data.get('authorization_key')
                 elif login_data.get('session_key'):
@@ -335,7 +336,6 @@ class RmcFileCacheManager(RmcCacheManager):
             indexfh.close()
 
         if self._rmc.redfishinst:
-            #TODO: Add certificate data
             login_data = dict(\
                 username=None, \
                 password=None, url=self._rmc.redfishinst.base_url, \
@@ -346,8 +346,8 @@ class RmcFileCacheManager(RmcCacheManager):
                 redfish=self._rmc.monolith.is_redfish, \
                 ilo=self._rmc.typepath.ilogen,\
                 proxy=self._rmc.redfishinst.proxy,\
-                ca_certs=self._rmc.redfishinst.connection.\
-                                                        _connection_properties.get('ca_certs',None))
+                ca_cert_data= self._rmc.redfishinst.connection._connection_properties if \
+                    self._rmc.redfishinst.connection._connection_properties else dict())
 
             clients_data = dict(selector=self._rmc.selector, login=login_data, \
                      monolith=self._rmc.monolith, get=self._rmc.monolith.paths)

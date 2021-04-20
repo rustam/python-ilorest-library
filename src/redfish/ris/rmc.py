@@ -66,12 +66,12 @@ class RmcApp(object):
         self.logger = LOGGER
         self.redfishinst = None
         self._cm = RmcFileCacheManager(self)
-        self._monolith = None
+        self.monolith = None
         self._iloversion = None
         self._validationmanager = None
         self._selector = None
         self._cachedir = cache_dir
-        self.verbose = False
+        self.verbose = 1
         self.typepath = redfish.ris.gen_compat.Typesandpathdefines()
         Typepathforval(typepathobj=self.typepath)
 
@@ -133,7 +133,7 @@ class RmcApp(object):
     def restore(self, creds=None, enc=False):
         """Restores the monolith from cache. Used to load a monolith data back into a new app
         class. Keyword arguments are only needed in a local client when in a high security mode.
-        
+
         :param creds: Credentials to create the client with.
         :type creds: str
         :param enc: Flag to determine if encoding functions are being used. True if being used false
@@ -166,7 +166,8 @@ class RmcApp(object):
 
     def login(self, username=None, password=None, base_url='blobstore://.', \
               path=None, skipbuild=False, includelogs=False, \
-              biospassword=None, is_redfish=False, proxy=None, ssl_cert=None):
+              biospassword=None, is_redfish=False, proxy=None, ssl_cert=None, \
+              user_ca_cert_data=None):
         """Performs a login on a the server specified by the keyword arguments. Will also create
         a monolith, client, and update the compatibility classes for the app instance. If base_url
         is not included the login is assumed to be locally on the OS.
@@ -182,9 +183,13 @@ class RmcApp(object):
         :type path: str
         :param proxy: The proxy required for connection (if any).
         :type proxy: str
-        :param ssl_cert: The path to the CA bundle or SSL certificate to use with connection 
+        :param ssl_cert: The path to the CA bundle or SSL certificate to use with connection
                         (if any).
         :type ssl_cert: str
+        :param user_ca_cert_data: Dictionary of user certificate data for iLO Certificate-based
+          authentication including iLO User TLS certificate, iLO User CA Root Key, \
+          iLO User CA Root Key Password (for encrypted CAs)
+        :type: user_ca_pass: str
         :param skipbuild: The flag to determine monolith download. If True, monolith will be
                           initiated empty, if False will build the monolith.
         :type skipbuild: bool
@@ -198,7 +203,7 @@ class RmcApp(object):
         """
 
         self.typepath.getgen(url=base_url, username=username, password=password, \
-                                            proxy=proxy, isredfish=is_redfish, ca_certs=ssl_cert)
+                proxy=proxy, isredfish=is_redfish)
         is_redfish = self.typepath.updatedefinesflag(redfishflag=is_redfish)
 
         if self.redfishinst and self.redfishinst.session_key:
@@ -206,11 +211,12 @@ class RmcApp(object):
 
         self.redfishinst = RestClient(base_url=base_url, username=username, password=password, \
             default_prefix=self.typepath.defs.startpath, biospassword=biospassword, \
-            is_redfish=is_redfish, proxy=proxy, ca_certs=ssl_cert)
+            is_redfish=is_redfish, proxy=proxy, ca_cert_data=user_ca_cert_data)
 
-        self.current_client.login()
+        self.current_client.login(self.current_client.auth_type)
 
         inittime = time.time()
+
         self._build_monolith(path=path, includelogs=includelogs, skipbuild=skipbuild)
         endtime = time.time()
 
@@ -276,6 +282,9 @@ class RmcApp(object):
         """
         if not selector:
             selector = self.selector
+        # Still nothing selected and selector is NULL
+        if not selector:
+            raise NothingSelectedError()
         selector = self.typepath.modifyselectorforgen(selector)
         instances = self._getinstances(selector=selector, path_refresh=path_refresh)
         val = fltrvals[1].strip('\'\"') if isinstance(fltrvals[1], \
@@ -303,25 +312,28 @@ class RmcApp(object):
         :rtype: list
         """
         instances = list()
-        monolith = self.monolith
-        rdirtype = next(monolith.gettypename(self.typepath.defs.resourcedirectorytype), None)
 
-        if not rdirtype:
-            for inst in monolith.iter():
-                if not any([x for x in ['ExtendedError', 'object', 'string'] if x in inst.type]):
-                    instances.append(inst.type)
-        else:
-            for instance in monolith.iter(rdirtype):
-                for item in instance.resp.dict["Instances"]:
-                    if item and instance._typestring in list(item.keys()) and \
-                        not 'ExtendedError' in item[instance._typestring]:
-                        if not fulltypes and instance._typestring == '@odata.type':
-                            tval = item["@odata.type"].split('#')
-                            tval = tval[-1].split('.')[:-1]
-                            tval = '.'.join(tval)
-                            instances.append(tval)
-                        elif item:
-                            instances.append(item[instance._typestring])
+        if self.monolith:
+            monolith = self.monolith
+            rdirtype = next(monolith.gettypename(self.typepath.defs.resourcedirectorytype), None)
+
+            if not rdirtype:
+                for inst in monolith.iter():
+                    if not any([x for x in ['ExtendedError', 'object', 'string'] if x in \
+                                                                                    inst.type]):
+                        instances.append(inst.type)
+            else:
+                for instance in monolith.iter(rdirtype):
+                    for item in instance.resp.dict["Instances"]:
+                        if item and instance._typestring in list(item.keys()) and \
+                            not 'ExtendedError' in item[instance._typestring]:
+                            if not fulltypes and instance._typestring == '@odata.type':
+                                tval = item["@odata.type"].split('#')
+                                tval = tval[-1].split('.')[:-1]
+                                tval = '.'.join(tval)
+                                instances.append(tval)
+                            elif item:
+                                instances.append(item[instance._typestring])
         return instances
 
     def getprops(self, selector=None, props=None, nocontent=None, \
@@ -351,12 +363,18 @@ class RmcApp(object):
         results = list()
         nocontent = set() if nocontent is None else nocontent
         if props:
-            noprop = {prop:False for prop in props} if props else {}
+            if isinstance(props, list):
+                noprop = {prop:False for prop in props}
+            else:
+                noprop = {props:False}
+        else:
+            noprop = {}
         instances = insts if insts else self._getinstances(selector=selector)
         instances = skipnonsettingsinst(instances) if skipnonsetting else instances
 
-        if not instances or len(instances) == 0:
-            raise NothingSelectedError()
+        if selector != "UpdateService.":
+            if not instances or len(instances) == 0:
+                raise NothingSelectedError()
 
         for instance in instances:
             currdict = instance.dict
@@ -611,6 +629,8 @@ class RmcApp(object):
             totpayload = dict()
             # apply patches to represent current edits
             for patches in instance.patches:
+                if not self._iloversion:
+                    self._iloversion = self.getiloversion()
                 if self._iloversion < 5.130:
                     self._checkforetagchange(instance=instance)
                 fulldict = jsonpatch.apply_patch(oridict, patches)
@@ -621,7 +641,7 @@ class RmcApp(object):
                     indpayloadcount = 0
                     for item in pobj.parts:
                         payload = pobj.walk(currdict, item)
-                        indpayloadcount = indpayloadcount+1
+                        indpayloadcount = indpayloadcount + 1
                         if isinstance(payload, list):
                             break
                         else:
@@ -629,7 +649,7 @@ class RmcApp(object):
                                 break
                             currdict = copy.deepcopy(payload)
                     indices = pobj.parts[:indpayloadcount]
-                    createdict = lambda x, y: {x:y}
+                    createdict = lambda x, y: {x: y}
                     while len(indices):
                         payload = createdict(indices.pop(), payload)
                     merge_dict(totpayload, payload)
@@ -1034,31 +1054,33 @@ class RmcApp(object):
         self._updatemono(currtype="Manager.", crawl=False)
 
         instances["Comments"] = OrderedDict()
-        try:
-            for instance in monolith.iter("ComputerSystem."):
-                if instance.resp.obj["Manufacturer"]:
-                    instances["Comments"]["Manufacturer"] = \
-                                instance.resp.obj["Manufacturer"]
-
-                if instance.resp.obj["Model"]:
-                    instances["Comments"]["Model"] = instance.resp.obj["Model"]
-
+        for instance in monolith.iter("ComputerSystem."):
+            if instance.resp.obj.get("Manufacturer"):
+                instances["Comments"]["Manufacturer"] = \
+                            instance.resp.obj["Manufacturer"]
+            if instance.resp.obj.get("Model"):
+                instances["Comments"]["Model"] = instance.resp.obj["Model"]
+            try:
                 if instance.resp.obj["Oem"][self.typepath.defs.oemhp]["Bios"]["Current"]:
                     oemjson = instance.resp.obj["Oem"][self.typepath.defs.oemhp]["Bios"]["Current"]
                     instances["Comments"]["BIOSFamily"] = oemjson["Family"]
                     instances["Comments"]["BIOSDate"] = oemjson["Date"]
-            for instance in monolith.iter(self.typepath.defs.biostype):
-                if "Attributes" in list(instance.resp.obj.keys()) and \
-                    instance.resp.obj["Attributes"]["SerialNumber"]:
-                    instances["Comments"]["SerialNumber"] = \
-                                                    instance.resp.obj["Attributes"]["SerialNumber"]
-                elif instance.resp.obj["SerialNumber"]:
+            except KeyError:
+                pass
+        for instance in monolith.iter(self.typepath.defs.biostype):
+            try:
+                if getattr(instance.resp.obj, "Attributes", False):
+                    if instance.resp.obj["Attributes"].get("SerialNumber"):
+                        instances["Comments"]["SerialNumber"] = \
+                                                instance.resp.obj["Attributes"]["SerialNumber"]
+                if instance.resp.obj.get("SerialNumber"):
                     instances["Comments"]["SerialNumber"] = instance.resp.obj["SerialNumber"]
-            for instance in monolith.iter("Manager."):
-                if instance.resp.obj["FirmwareVersion"]:
-                    instances["Comments"]["iLOVersion"] = instance.resp.obj["FirmwareVersion"]
-        except Exception:
-            pass
+            except KeyError as e:
+                pass
+        for instance in monolith.iter("Manager."):
+            if instance.resp.obj.get("FirmwareVersion"):
+                instances["Comments"]["iLOVersion"] = instance.resp.obj["FirmwareVersion"]
+
         return instances
 
     def download_path(self, paths, crawl=True, path_refresh=False):
@@ -1180,7 +1202,7 @@ class RmcApp(object):
             self.monolith.paths[path].patches = []
         if sametag:
             LOGGER.warning('The data in the following paths have been updated. '\
-                    'Recheck the changes made to made. %s', ','.join([str(path) for \
+                    'Recheck the changes made to . %s', ','.join([str(path) for \
                                                                                 path in sametag]))
 
     def _updatemono(self, currtype=None, path=None, crawl=False, path_refresh=False):
@@ -1202,6 +1224,12 @@ class RmcApp(object):
                     continue
                 if path_refresh or not resp:
                     paths.add(path)
+                if resp:
+                    try:
+                        if not resp.dict:
+                            raise AttributeError
+                    except AttributeError:
+                        paths.add(path)
                 if resp.modified:
                     paths.add(path)
                     paths.update(monolith.checkmodified(path) if path in monolith.ctree else set())

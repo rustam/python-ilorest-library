@@ -11,7 +11,7 @@ Examples
 ========
 
 .. note::
-    Successful creation, modification or deletion of a resource will usually result in a response code of 200 or 201. 
+    Successful creation, modification or deletion of a resource will usually result in a response code of 200 or 201.
     An unsuccessful attempt will likely result in a 400 error code with a more detailed error message within the body of
     the response, '@Message.ExtendedInfo'.
 
@@ -46,8 +46,8 @@ contain many examples for performing different iLO tasks using the Redfish API a
 .. _Redfish_get_license_key: https://github.com/HewlettPackard/python-ilorest-library/blob/master/examples/Redfish/get_license_key.py
 .. _Redfish_get_powermetrics_average: https://github.com/HewlettPackard/python-ilorest-library/blob/master/examples/Redfish/get_powermetrics_average.py
 .. _Redfish_get_resource_directory: https://github.com/HewlettPackard/python-ilorest-library/blob/master/examples/Redfish/get_resource_directory.py
-.. _Redfish_get_schema: https://github.com/HewlettPackard/python-ilorest-library/blob/master/examples/Redfish/get_schema.py
 .. _Redfish_ilorest_util: https://github.com/HewlettPackard/python-ilorest-library/blob/master/examples/Redfish/ilorest_util.py
+.. _Redfish_get_schema: https://github.com/HewlettPackard/python-ilorest-library/blob/master/examples/Redfish/get_schema.py
 .. _Redfish_import_ssl: https://github.com/HewlettPackard/python-ilorest-library/blob/master/examples/Redfish/import_ssl.py
 .. _Redfish_modify_user_account: https://github.com/HewlettPackard/python-ilorest-library/blob/master/examples/Redfish/modify_user_account.py
 .. _Redfish_mount_virtual_media_iso: https://github.com/HewlettPackard/python-ilorest-library/blob/master/examples/Redfish/mount_virtual_media_iso.py
@@ -196,12 +196,12 @@ Redfish Example Reference Table
 +----------------------------------------------------+-----------------------------------------------------------+
 | Obtain iLO information.                            |   `Redfish_get_resource_directory`_                       |
 +----------------------------------------------------+-----------------------------------------------------------+
-| Obtain schema data on any BMC with schemas |br|    |   `Redfish_get_schema`_                                   |
-| available.                                         |                                                           |
-+----------------------------------------------------+-----------------------------------------------------------+
-| Obtain the iLO information, such as iLO |br|       |   `Redfish_ilorest_util`_                                 |
+| Obtain iLO utility information, such as iLO |br|   |   `Redfish_ilorest_util`_                                 |
 | generation, version and resource directory for |br||                                                           |
 | HPE iLO systems.                                   |                                                           |
++----------------------------------------------------+-----------------------------------------------------------+
+| Obtain schema data on any BMC with schemas |br|    |   `Redfish_get_schema`_                                   |
+| available.                                         |                                                           |
 +----------------------------------------------------+-----------------------------------------------------------+
 | Import an SSL certificate for HPE iLO systems.     |   `Redfish_import_ssl`_                                   |
 +----------------------------------------------------+-----------------------------------------------------------+
@@ -401,7 +401,7 @@ Add an iLO Manager Account based on permissions (iLO 4 and iLO 5) or role ID (iL
 
 .. code-block:: python
     :linenos:
-    
+
     def add_ilo_user_account(_redfishobj, new_loginname, new_username, new_password, role_id, \
                          privilege_dict):
     resource_instances = get_resource_directory(_redfishobj)
@@ -455,7 +455,7 @@ Set all BIOS attributes to their respective factory default states.
 
 .. code-block:: python
     :linenos:
-    
+
     def bios_revert_default(_redfishobj):
 
         bios_reset_action_uri = None
@@ -568,7 +568,7 @@ Alter the temporary boot order.
 
 .. code-block:: python
     :linenos:
-    
+
     def change_temporary_boot_order(_redfishobj, boottarget):
 
         systems_members_uri = None
@@ -761,7 +761,7 @@ Clear Active Health System log data.
 
 .. code-block:: python
     :linenos:
-    
+
     def clear_ahs_data(_redfishobj):
 
         active_health_system_clear_log_uri = None
@@ -813,14 +813,14 @@ Clear iLO event log and management log data.
 
 .. code-block:: python
     :linenos:
-    
+
     def clear_ilo_event_log(_redfishobj, clear_IML_IEL):
 
     clear_log_services_uri = []
 
     resource_instances = get_resource_directory(_redfishobj)
     if DISABLE_RESOURCE_DIR or not resource_instances:
-        #if we do not have a resource directory or want to force it's non use to find the 
+        #if we do not have a resource directory or want to force it's non use to find the
         #relevant URI
         systems_uri = _redfishobj.root.obj['Systems']['@odata.id']
         systems_response = _redfishobj.get(systems_uri)
@@ -876,7 +876,7 @@ Print computer system JSON data.
 
 .. code-block:: python
     :linenos:
-    
+
     def computer_details(_redfishobj):
         systems_members_uri = None
         systems_members_response = None
@@ -898,7 +898,7 @@ Print computer system JSON data.
 
         print("\n\nPrinting computer system details:\n\n")
         print(json.dumps(systems_members_response.dict, indent=4, sort_keys=True))
-        
+
 ^^^^^^^^^^^^^^^^^^^^
 Computer System Data
 ^^^^^^^^^^^^^^^^^^^^
@@ -912,328 +912,328 @@ The user can preview the data prior:
     :linenos:
 
     {
-        "@odata.context": "/redfish/v1/$metadata#ComputerSystem.ComputerSystem", 
-        "@odata.etag": "W/\"7010F715\"", 
-        "@odata.id": "/redfish/v1/Systems/1/", 
-        "@odata.type": "#ComputerSystem.v1_10_0.ComputerSystem", 
+        "@odata.context": "/redfish/v1/$metadata#ComputerSystem.ComputerSystem",
+        "@odata.etag": "W/\"7010F715\"",
+        "@odata.id": "/redfish/v1/Systems/1/",
+        "@odata.type": "#ComputerSystem.v1_10_0.ComputerSystem",
         "Actions": {
             "#ComputerSystem.Reset": {
                 "ResetType@Redfish.AllowableValues": [
-                    "On", 
-                    "ForceOff", 
-                    "GracefulShutdown", 
-                    "ForceRestart", 
-                    "Nmi", 
+                    "On",
+                    "ForceOff",
+                    "GracefulShutdown",
+                    "ForceRestart",
+                    "Nmi",
                     "PushPowerButton"
-                ], 
+                ],
                 "target": "/redfish/v1/Systems/1/Actions/ComputerSystem.Reset/"
             }
-        }, 
-        "AssetTag": "", 
+        },
+        "AssetTag": "",
         "Bios": {
             "@odata.id": "/redfish/v1/systems/1/bios/"
-        }, 
-        "BiosVersion": "U32 v2.22 (11/13/2019)", 
+        },
+        "BiosVersion": "U32 v2.22 (11/13/2019)",
         "Boot": {
             "BootOptions": {
                 "@odata.id": "/redfish/v1/Systems/1/BootOptions/"
-            }, 
+            },
             "BootOrder": [
-                "Boot0011", 
-                "Boot0019", 
-                "Boot0009", 
-                "Boot0012", 
-                "Boot0010", 
-                "Boot0014", 
-                "Boot000C", 
-                "Boot000E", 
-                "Boot000F", 
-                "Boot0017", 
-                "Boot000D", 
+                "Boot0011",
+                "Boot0019",
+                "Boot0009",
+                "Boot0012",
+                "Boot0010",
+                "Boot0014",
+                "Boot000C",
+                "Boot000E",
+                "Boot000F",
+                "Boot0017",
+                "Boot000D",
                 "Boot0013"
-            ], 
-            "BootSourceOverrideEnabled": "Once", 
-            "BootSourceOverrideMode": "UEFI", 
-            "BootSourceOverrideTarget": "Hdd", 
+            ],
+            "BootSourceOverrideEnabled": "Once",
+            "BootSourceOverrideMode": "UEFI",
+            "BootSourceOverrideTarget": "Hdd",
             "BootSourceOverrideTarget@Redfish.AllowableValues": [
-                "None", 
-                "Cd", 
-                "Hdd", 
-                "Usb", 
-                "SDCard", 
-                "Utilities", 
-                "Diags", 
-                "BiosSetup", 
-                "Pxe", 
-                "UefiShell", 
-                "UefiHttp", 
+                "None",
+                "Cd",
+                "Hdd",
+                "Usb",
+                "SDCard",
+                "Utilities",
+                "Diags",
+                "BiosSetup",
+                "Pxe",
+                "UefiShell",
+                "UefiHttp",
                 "UefiTarget"
-            ], 
-            "UefiTargetBootSourceOverride": "None", 
+            ],
+            "UefiTargetBootSourceOverride": "None",
             "UefiTargetBootSourceOverride@Redfish.AllowableValues": [
-                "HD(1,GPT,0940C33C-EAF1-43CD-8C8F-4426672227FE,0x800,0x4E000)/\\EFI\\sles\\shim.efi", 
-                "HD(1,GPT,22F62F69-47E7-4334-BCE6-A0B321810BA1,0x800,0x64000)/\\EFI\\redhat\\shimx64.efi", 
-                "PciRoot(0x0)/Pci(0x1C,0x0)/Pci(0x0,0x0)/MAC(98F2B32CB4A8,0x0)/IPv4(0.0.0.0)/Uri()", 
-                "PciRoot(0x0)/Pci(0x1C,0x0)/Pci(0x0,0x0)/MAC(98F2B32CB4A8,0x0)/IPv4(0.0.0.0)", 
-                "PciRoot(0x0)/Pci(0x1C,0x0)/Pci(0x0,0x0)/MAC(98F2B32CB4A8,0x0)/IPv6(0000:0000:0000:0000:0000:0000:0000:0000)/Uri()", 
-                "PciRoot(0x0)/Pci(0x1C,0x0)/Pci(0x0,0x0)/MAC(98F2B32CB4A8,0x0)/IPv6(0000:0000:0000:0000:0000:0000:0000:0000)", 
-                "PciRoot(0x3)/Pci(0x0,0x0)/Pci(0x0,0x0)/Scsi(0x0,0x0)", 
-                "PciRoot(0x3)/Pci(0x0,0x0)/Pci(0x0,0x0)/Scsi(0x0,0x1)", 
-                "PciRoot(0x3)/Pci(0x0,0x0)/Pci(0x0,0x0)/Scsi(0x0,0x2)", 
-                "PciRoot(0x3)/Pci(0x0,0x0)/Pci(0x0,0x0)/Scsi(0x0,0x3)", 
-                "PciRoot(0x0)/Pci(0x14,0x0)/USB(0xD,0x0)/USB(0x1,0x0)", 
+                "HD(1,GPT,0940C33C-EAF1-43CD-8C8F-4426672227FE,0x800,0x4E000)/\\EFI\\sles\\shim.efi",
+                "HD(1,GPT,22F62F69-47E7-4334-BCE6-A0B321810BA1,0x800,0x64000)/\\EFI\\redhat\\shimx64.efi",
+                "PciRoot(0x0)/Pci(0x1C,0x0)/Pci(0x0,0x0)/MAC(98F2B32CB4A8,0x0)/IPv4(0.0.0.0)/Uri()",
+                "PciRoot(0x0)/Pci(0x1C,0x0)/Pci(0x0,0x0)/MAC(98F2B32CB4A8,0x0)/IPv4(0.0.0.0)",
+                "PciRoot(0x0)/Pci(0x1C,0x0)/Pci(0x0,0x0)/MAC(98F2B32CB4A8,0x0)/IPv6(0000:0000:0000:0000:0000:0000:0000:0000)/Uri()",
+                "PciRoot(0x0)/Pci(0x1C,0x0)/Pci(0x0,0x0)/MAC(98F2B32CB4A8,0x0)/IPv6(0000:0000:0000:0000:0000:0000:0000:0000)",
+                "PciRoot(0x3)/Pci(0x0,0x0)/Pci(0x0,0x0)/Scsi(0x0,0x0)",
+                "PciRoot(0x3)/Pci(0x0,0x0)/Pci(0x0,0x0)/Scsi(0x0,0x1)",
+                "PciRoot(0x3)/Pci(0x0,0x0)/Pci(0x0,0x0)/Scsi(0x0,0x2)",
+                "PciRoot(0x3)/Pci(0x0,0x0)/Pci(0x0,0x0)/Scsi(0x0,0x3)",
+                "PciRoot(0x0)/Pci(0x14,0x0)/USB(0xD,0x0)/USB(0x1,0x0)",
                 "PciRoot(0x0)/Pci(0x14,0x0)/USB(0xD,0x0)/USB(0x1,0x1)"
             ]
-        }, 
+        },
         "EthernetInterfaces": {
             "@odata.id": "/redfish/v1/Systems/1/EthernetInterfaces/"
-        }, 
-        "HostName": "localhost.americas.hpqcorp.net", 
-        "Id": "1", 
-        "IndicatorLED": "Off", 
+        },
+        "HostName": "localhost.americas.hpqcorp.net",
+        "Id": "1",
+        "IndicatorLED": "Off",
         "Links": {
             "Chassis": [
                 {
                     "@odata.id": "/redfish/v1/Chassis/1/"
                 }
-            ], 
+            ],
             "ManagedBy": [
                 {
                     "@odata.id": "/redfish/v1/Managers/1/"
                 }
             ]
-        }, 
+        },
         "LogServices": {
             "@odata.id": "/redfish/v1/Systems/1/LogServices/"
-        }, 
-        "Manufacturer": "HPE", 
+        },
+        "Manufacturer": "HPE",
         "Memory": {
             "@odata.id": "/redfish/v1/Systems/1/Memory/"
-        }, 
+        },
         "MemoryDomains": {
             "@odata.id": "/redfish/v1/Systems/1/MemoryDomains/"
-        }, 
+        },
         "MemorySummary": {
             "Status": {
                 "HealthRollup": "OK"
-            }, 
-            "TotalSystemMemoryGiB": 32, 
+            },
+            "TotalSystemMemoryGiB": 32,
             "TotalSystemPersistentMemoryGiB": 0
-        }, 
-        "Model": "ProLiant DL360 Gen10", 
-        "Name": "Computer System", 
+        },
+        "Model": "ProLiant DL360 Gen10",
+        "Name": "Computer System",
         "NetworkInterfaces": {
             "@odata.id": "/redfish/v1/Systems/1/NetworkInterfaces/"
-        }, 
+        },
         "Oem": {
             "Hpe": {
-                "@odata.context": "/redfish/v1/$metadata#HpeComputerSystemExt.HpeComputerSystemExt", 
-                "@odata.type": "#HpeComputerSystemExt.v2_9_0.HpeComputerSystemExt", 
+                "@odata.context": "/redfish/v1/$metadata#HpeComputerSystemExt.HpeComputerSystemExt",
+                "@odata.type": "#HpeComputerSystemExt.v2_9_0.HpeComputerSystemExt",
                 "Actions": {
                     "#HpeComputerSystemExt.PowerButton": {
                         "PushType@Redfish.AllowableValues": [
-                            "Press", 
+                            "Press",
                             "PressAndHold"
-                        ], 
+                        ],
                         "target": "/redfish/v1/Systems/1/Actions/Oem/Hpe/HpeComputerSystemExt.PowerButton/"
-                    }, 
+                    },
                     "#HpeComputerSystemExt.SecureSystemErase": {
                         "target": "/redfish/v1/Systems/1/Actions/Oem/Hpe/HpeComputerSystemExt.SecureSystemErase/"
-                    }, 
+                    },
                     "#HpeComputerSystemExt.SystemReset": {
                         "ResetType@Redfish.AllowableValues": [
-                            "ColdBoot", 
+                            "ColdBoot",
                             "AuxCycle"
-                        ], 
+                        ],
                         "target": "/redfish/v1/Systems/1/Actions/Oem/Hpe/HpeComputerSystemExt.SystemReset/"
                     }
-                }, 
+                },
                 "AggregateHealthStatus": {
-                    "AgentlessManagementService": "Unavailable", 
+                    "AgentlessManagementService": "Unavailable",
                     "BiosOrHardwareHealth": {
                         "Status": {
                             "Health": "OK"
                         }
-                    }, 
-                    "FanRedundancy": "Redundant", 
+                    },
+                    "FanRedundancy": "Redundant",
                     "Fans": {
                         "Status": {
                             "Health": "OK"
                         }
-                    }, 
+                    },
                     "Memory": {
                         "Status": {
                             "Health": "OK"
                         }
-                    }, 
+                    },
                     "Network": {
                         "Status": {
                             "Health": "OK"
                         }
-                    }, 
+                    },
                     "PowerSupplies": {
-                        "PowerSuppliesMismatch": false, 
+                        "PowerSuppliesMismatch": false,
                         "Status": {
                             "Health": "OK"
                         }
-                    }, 
+                    },
                     "Processors": {
                         "Status": {
                             "Health": "OK"
                         }
-                    }, 
+                    },
                     "Storage": {
                         "Status": {
                             "Health": "Warning"
                         }
-                    }, 
+                    },
                     "Temperatures": {
                         "Status": {
                             "Health": "OK"
                         }
                     }
-                }, 
+                },
                 "Bios": {
                     "Backup": {
-                        "Date": "11/13/2019", 
-                        "Family": "U32", 
+                        "Date": "11/13/2019",
+                        "Family": "U32",
                         "VersionString": "U32 v2.22 (11/13/2019)"
-                    }, 
+                    },
                     "Current": {
-                        "Date": "11/13/2019", 
-                        "Family": "U32", 
+                        "Date": "11/13/2019",
+                        "Family": "U32",
                         "VersionString": "U32 v2.22 (11/13/2019)"
-                    }, 
+                    },
                     "UefiClass": 2
-                }, 
-                "CriticalTempRemainOff": false, 
-                "CurrentPowerOnTimeSeconds": null, 
+                },
+                "CriticalTempRemainOff": false,
+                "CurrentPowerOnTimeSeconds": null,
                 "DeviceDiscoveryComplete": {
-                    "AMSDeviceDiscovery": "NoAMS", 
-                    "DeviceDiscovery": "vMainDeviceDiscoveryComplete", 
+                    "AMSDeviceDiscovery": "NoAMS",
+                    "DeviceDiscovery": "vMainDeviceDiscoveryComplete",
                     "SmartArrayDiscovery": "Complete"
-                }, 
-                "ElapsedEraseTimeInMinutes": 0, 
-                "EndOfPostDelaySeconds": null, 
-                "EstimatedEraseTimeInMinutes": 0, 
-                "IntelligentProvisioningAlwaysOn": true, 
-                "IntelligentProvisioningIndex": 8, 
-                "IntelligentProvisioningLocation": "System Board", 
-                "IntelligentProvisioningVersion": "3.60.12", 
-                "IsColdBooting": false, 
+                },
+                "ElapsedEraseTimeInMinutes": 0,
+                "EndOfPostDelaySeconds": null,
+                "EstimatedEraseTimeInMinutes": 0,
+                "IntelligentProvisioningAlwaysOn": true,
+                "IntelligentProvisioningIndex": 8,
+                "IntelligentProvisioningLocation": "System Board",
+                "IntelligentProvisioningVersion": "3.60.12",
+                "IsColdBooting": false,
                 "Links": {
                     "EthernetInterfaces": {
                         "@odata.id": "/redfish/v1/Systems/1/EthernetInterfaces/"
-                    }, 
+                    },
                     "HpeIpProvider": {
                         "@odata.id": "/redfish/v1/systems/1/hpeip/"
-                    }, 
+                    },
                     "NetworkAdapters": {
                         "@odata.id": "/redfish/v1/Systems/1/BaseNetworkAdapters/"
-                    }, 
+                    },
                     "PCIDevices": {
                         "@odata.id": "/redfish/v1/Systems/1/PCIDevices/"
-                    }, 
+                    },
                     "PCISlots": {
                         "@odata.id": "/redfish/v1/Systems/1/PCISlots/"
-                    }, 
+                    },
                     "SUT": {
                         "@odata.id": "/redfish/v1/systems/1/hpsut/"
-                    }, 
+                    },
                     "SecureEraseReportService": {
                         "@odata.id": "/redfish/v1/Systems/1/SecureEraseReportService/"
-                    }, 
+                    },
                     "SmartStorage": {
                         "@odata.id": "/redfish/v1/Systems/1/SmartStorage/"
-                    }, 
+                    },
                     "USBDevices": {
                         "@odata.id": "/redfish/v1/Systems/1/USBDevices/"
-                    }, 
+                    },
                     "USBPorts": {
                         "@odata.id": "/redfish/v1/Systems/1/USBPorts/"
-                    }, 
+                    },
                     "WorkloadPerformanceAdvisor": {
                         "@odata.id": "/redfish/v1/Systems/1/WorkloadPerformanceAdvisor/"
                     }
-                }, 
-                "PCAPartNumber": "847479-001", 
-                "PCASerialNumber": "PVZEK0ARHA014I", 
-                "PostDiscoveryCompleteTimeStamp": null, 
-                "PostDiscoveryMode": null, 
-                "PostMode": null, 
-                "PostState": "FinishedPost", 
-                "PowerAllocationLimit": 500, 
-                "PowerAutoOn": "Restore", 
-                "PowerOnDelay": "Minimum", 
-                "PowerOnMinutes": 80051, 
-                "PowerRegulatorMode": "OSControl", 
+                },
+                "PCAPartNumber": "847479-001",
+                "PCASerialNumber": "PVZEK0ARHA014I",
+                "PostDiscoveryCompleteTimeStamp": null,
+                "PostDiscoveryMode": null,
+                "PostMode": null,
+                "PostState": "FinishedPost",
+                "PowerAllocationLimit": 500,
+                "PowerAutoOn": "Restore",
+                "PowerOnDelay": "Minimum",
+                "PowerOnMinutes": 80051,
+                "PowerRegulatorMode": "OSControl",
                 "PowerRegulatorModesSupported": [
-                    "OSControl", 
-                    "Dynamic", 
-                    "Max", 
+                    "OSControl",
+                    "Dynamic",
+                    "Max",
                     "Min"
-                ], 
+                ],
                 "ProcessorJitterControl": {
-                    "ConfiguredFrequencyLimitMHz": 0, 
+                    "ConfiguredFrequencyLimitMHz": 0,
                     "Mode": "Disabled"
-                }, 
+                },
                 "SMBIOS": {
                     "extref": "/smbios"
-                }, 
-                "ServerFQDN": "", 
+                },
+                "ServerFQDN": "",
                 "SmartStorageConfig": [
                     {
                         "@odata.id": "/redfish/v1/systems/1/smartstorageconfig/"
                     }
-                ], 
+                ],
                 "SystemROMAndiLOEraseComponentStatus": {
-                    "BIOSSettingsEraseStatus": "Idle", 
+                    "BIOSSettingsEraseStatus": "Idle",
                     "iLOSettingsEraseStatus": "Idle"
-                }, 
-                "SystemROMAndiLOEraseStatus": "Idle", 
-                "UserDataEraseComponentStatus": {}, 
-                "UserDataEraseStatus": "Idle", 
+                },
+                "SystemROMAndiLOEraseStatus": "Idle",
+                "UserDataEraseComponentStatus": {},
+                "UserDataEraseStatus": "Idle",
                 "VirtualProfile": "Inactive"
             }
-        }, 
-        "PowerState": "On", 
+        },
+        "PowerState": "On",
         "ProcessorSummary": {
-            "Count": 1, 
-            "Model": "Intel(R) Xeon(R) Bronze 3106 CPU @ 1.70GHz", 
+            "Count": 1,
+            "Model": "Intel(R) Xeon(R) Bronze 3106 CPU @ 1.70GHz",
             "Status": {
                 "HealthRollup": "OK"
             }
-        }, 
+        },
         "Processors": {
             "@odata.id": "/redfish/v1/Systems/1/Processors/"
-        }, 
-        "SKU": "DL3000GEN10", 
+        },
+        "SKU": "DL3000GEN10",
         "SecureBoot": {
             "@odata.id": "/redfish/v1/Systems/1/SecureBoot/"
-        }, 
-        "SerialNumber": "TX86NP0121", 
+        },
+        "SerialNumber": "TX86NP0121",
         "Status": {
-            "Health": "Warning", 
-            "HealthRollup": "Warning", 
+            "Health": "Warning",
+            "HealthRollup": "Warning",
             "State": "Enabled"
-        }, 
+        },
         "Storage": {
             "@odata.id": "/redfish/v1/Systems/1/Storage/"
-        }, 
-        "SystemType": "Physical", 
+        },
+        "SystemType": "Physical",
         "TrustedModules": [
             {
                 "Oem": {
                     "Hpe": {
-                        "@odata.context": "/redfish/v1/$metadata#HpeTrustedModuleExt.HpeTrustedModuleExt", 
+                        "@odata.context": "/redfish/v1/$metadata#HpeTrustedModuleExt.HpeTrustedModuleExt",
                         "@odata.type": "#HpeTrustedModuleExt.v2_0_0.HpeTrustedModuleExt"
                     }
-                }, 
+                },
                 "Status": {
                     "State": "Absent"
                 }
             }
-        ], 
+        ],
         "UUID": "30334C44-3030-5854-3836-4E5030313231"
     }
 
@@ -1293,7 +1293,7 @@ In order to configure iLO Network Time Protocol, certain settings must be in-pla
 NIC(s) including settings the value of the OEM/HPE object key-value pair *UseNTPServers* to *True*.
 
 .. note::
-   An iLO Reset will be required in order for the change to be applied. 
+   An iLO Reset will be required in order for the change to be applied.
 
 .. code-block:: python
     :linenos:
@@ -1413,12 +1413,12 @@ Enable/Disable Secure Boot.
 Expand Data
 -----------
 
-JSON data is typically provided in a collapsed/compactted state. Use *$expand* as a query string on the 
+JSON data is typically provided in a collapsed/compactted state. Use *$expand* as a query string on the
 desired URI.
 
 .. code-block:: python
     :linenos:
-    
+
     def expand_data(_redfishobj, expand_url="/redfish/v1/"):
 
         response = _redfishobj.get(expand_url)
@@ -1427,7 +1427,7 @@ desired URI.
         sys.stdout.write('\t'+str(response.dict)+'\n')
         sys.stdout.write('Expanded response:\n')
         sys.stdout.write('\t'+str(exp_response.dict)+'\n')
-        
+
 ^^^^^^^^^^^^^^^^
 Response Example
 ^^^^^^^^^^^^^^^^
@@ -1435,9 +1435,9 @@ Response Example
 Standard response:
 
 .. code-block:: TEXT
-    
+
 	{'@odata.context': '/redfish/v1/$metadata#ComputerSystemCollection.ComputerSystemCollection', '@odata.etag': 'W/"AA6D42B0"', '@odata.id': '/redfish/v1/Systems/', '@odata.type': '#ComputerSystemCollection.ComputerSystemCollection', 'Description': 'Computer Systems view', 'Name': 'Computer Systems', 'Members': [{'@odata.id': '/redfish/v1/Systems/1/'}], 'Members@odata.count': 1}
-    
+
 Expanded response:
 
 .. code-block:: TEXT
@@ -1454,12 +1454,12 @@ Retrieve MAC Addresses for iLO Management Network Interfaces.
     :linenos:
 
     def find_ilo_mac_address(_redfishobj):
-    
+
         ethernet_data = {}
 
         resource_instances = get_resource_directory(_redfishobj)
         if DISABLE_RESOURCE_DIR or not resource_instances:
-            #if we do not have a resource directory or want to force it's non use to find the 
+            #if we do not have a resource directory or want to force it's non use to find the
             #relevant URI
             managers_uri = _redfishobj.root.obj['Managers']['@odata.id']
             managers_response = _redfishobj.get(managers_uri)
@@ -1580,7 +1580,7 @@ Obtain Active Health System Data.
 
 .. note::
    AHS data is saved to a file, the contents of which are encoded. The use of an AHS Viewer to decode and parse
-   is required. Please review Active Health System Viewer Documentation for further details: 
+   is required. Please review Active Health System Viewer Documentation for further details:
    https://support.hpe.com/hpesc/public/docDisplay?docId=c05384164
 
 .. code-block:: python
@@ -1635,7 +1635,7 @@ Obtain Registry Providers. Registry providers allow for the transaction of data 
 
 .. code-block:: python
     :linenos:
-    
+
     def get_base_registry(_redfishobj):
 
     registries_uri = _redfishobj.root.obj['Registries']['@odata.id']
@@ -1653,7 +1653,7 @@ Obtain HPE Enterprise Secure Key Manager Encryption Data.
 
 .. code-block:: python
     :linenos:
-    
+
     def get_ESKM(_redfishobj):
 
         security_service_eskm_uri = None
@@ -1774,9 +1774,9 @@ IP Address, Address Origin (Static/DHCP), Network Gateway, and Network Subnet Ma
     Showing iLO IPv4 Address Info on: /redfish/v1/Managers/1/EthernetInterfaces/1/
     [
         {
-            "Address": "10.0.0.100", 
-            "AddressOrigin": "DHCP", 
-            "Gateway": "10.0.0.1", 
+            "Address": "10.0.0.100",
+            "AddressOrigin": "DHCP",
+            "Gateway": "10.0.0.1",
             "SubnetMask": "255.255.255.0"
         }
     ]
@@ -1785,9 +1785,9 @@ IP Address, Address Origin (Static/DHCP), Network Gateway, and Network Subnet Ma
     Showing iLO IPv4 Address Info on: /redfish/v1/Managers/1/EthernetInterfaces/2/
     [
         {
-            "Address": "0.0.0.0", 
-            "AddressOrigin": "DHCP", 
-            "Gateway": "0.0.0.0", 
+            "Address": "0.0.0.0",
+            "AddressOrigin": "DHCP",
+            "Gateway": "0.0.0.0",
             "SubnetMask": "255.255.255.255"
         }
     ]
@@ -1801,7 +1801,7 @@ relevant desired data or all key-value pairs.
 
 .. code-block:: python
     :linenos:
-    
+
     def get_ilo_nic(_redfishobj, get_enabled):
         ethernet_data = {}
 
@@ -1863,7 +1863,7 @@ Obtain iLO Licensing Key Information.
 
 .. code-block:: python
     :linenos:
-    
+
     def get_license_key(_redfishobj):
         license_uri = None
         license_data = None
@@ -1923,7 +1923,7 @@ List all logical drives associated with a smart array controller.
 
 .. code-block:: python
     :linenos:
-    
+
     def get_SmartArray_LogicalDrives(_redfishobj):
 
         smartstorage_response = []
@@ -1968,7 +1968,7 @@ Logical drives listed
 .. code-block: TEXT
     :linenos:
 
-    Logical Drive URIs for Smart Storage Array Controller '0' : 
+    Logical Drive URIs for Smart Storage Array Controller '0' :
         An associated logical drive: {'@odata.id': '/redfish/v1/Systems/1/SmartStorage/ArrayControllers/0/LogicalDrives/1/'}
         {
             "@odata.context": "/redfish/v1/$metadata#HpeSmartStorageLogicalDrive.HpeSmartStorageLogicalDrive",
@@ -2114,7 +2114,7 @@ Obtain Redfish power metrics.
 
 .. code-block:: python
     :linenos:
-    
+
     def get_powermetrics_average(_redfishobj):
 
         power_metrics_uri = None
@@ -2189,7 +2189,7 @@ Obtain iLO Resource Directory, quick access to all '@odata.type' references and 
 
 .. code-block:: python
     :linenos:
-    
+
     def get_resource_directory(redfishobj):
 
         try:
@@ -2218,7 +2218,7 @@ Snippet of Resource directory
 .. code-block: TEXT
     :linenos:
 
-    
+
 	#ServiceRoot.v1_5_1.ServiceRoot
 		/redfish/v1/
 	#Manager.v1_5_1.Manager
@@ -2243,7 +2243,7 @@ Obtain schema data.
 
 .. code-block:: python
     :linenos:
-    
+
     def get_schema(_redfishobj):
         schema_members_uris = []
         schema_members_expanded = {}
@@ -2559,7 +2559,7 @@ Obtain Smart Array controller encryption property data.
 
 .. code-block:: python
     :linenos:
-    
+
     def get_SmartArray_EncryptionSettings(_redfishobj, desired_properties):
 
         smartstorage_response = []
@@ -3342,7 +3342,7 @@ Configure iSCSI (Internet Small Computer Systems Interface) for ip based network
 
 .. code-block:: python
     :linenos:
-    
+
     def set_bios_iscsi(_redfishobj, iscsi_properties):
 
         iscsi_uri = None
@@ -3418,7 +3418,7 @@ Set BIOS Password.
 
 .. code-block:: python
     :linenos:
-    
+
     def set_bios_password(_redfishobj, new_password, bios_password):
 
         bios_uri = None
@@ -3508,7 +3508,7 @@ Set HPE Enterprise Secure Key Manager Key Manager Config.
 
 .. code-block:: python
     :linenos:
-    
+
     def set_ESKM_PrimaryKeyServer(_redfishobj, primary_key_server_address, primary_key_server_port):
 
         eskm_uri = None
@@ -3735,7 +3735,7 @@ Set Timezone
 Configure Network Time Protocol Time zone.
 
 .. note::
-    DHCP must be disabled. The following is an error message which will occur in the event DHCP is enabled while 
+    DHCP must be disabled. The following is an error message which will occur in the event DHCP is enabled while
     attempting to modify the NTP timezone.
 
     .. code-block:: JSON
@@ -3749,7 +3749,7 @@ Configure Network Time Protocol Time zone.
 
 .. code-block:: python
     :linenos:
-    
+
     def set_timezone(_redfishobj, timezone):
 
         date_time_uri = None
@@ -3825,7 +3825,7 @@ Configure iLO License Key.
 
 .. code-block:: python
     :linenos:
-    
+
     def set_license_key(_redfishobj, ilo_key):
 
         ilo_lic_uri = None
@@ -4315,9 +4315,9 @@ Response of a failed test ESKM connection action. (ESKM not properly configured)
 Update iLO Firmware
 -------------------
 
-Process for a client to invoke a simple update of iLO firmware. Firmware is intended to be hosted 
+Process for a client to invoke a simple update of iLO firmware. Firmware is intended to be hosted
 and gathered by iLO by pointing to a URL for iLO to consume. A valid URL will result in an http 202
-response code; however, this only indicates iLO will separately handle both downloading and processing 
+response code; however, this only indicates iLO will separately handle both downloading and processing
 the firmware update. The client will need to separately poll for status information regarding the update
 progress.
 
@@ -4365,7 +4365,7 @@ progress.
 Upload firmware to iLO Repository
 ---------------------------------
 
-Upload firmware to iLO's Absaroka flash based repository. Firmware can be stored and catalogued, to be 
+Upload firmware to iLO's Absaroka flash based repository. Firmware can be stored and catalogued, to be
 used at a later date or in the need to recover the platform from a failure condition. An http response code
 of 200 will be supplied upon completion of a successful upload; no other extended message information is provided.
 

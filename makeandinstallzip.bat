@@ -1,3 +1,5 @@
-python setup.py sdist --formats=zip
+python3 -m pip install -r requirements.txt
+python3 setup.py sdist --formats=zip
 cd dist
-pip install --upgrade python-ilorest-library-3.1.0.zip[socks]
+
+python3 -m pip install --upgrade python-ilorest-library-3.2.1.zip

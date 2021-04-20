@@ -23,7 +23,7 @@ import logging
 
 from redfish import RedfishClient, LegacyRestClient
 from redfish.rest.v1 import ServerDownOrUnreachableError
-from redfish.ris.rmc_helper import UnableToObtainIloVersionError, UserNotAdminError
+from redfish.ris.rmc_helper import UnableToObtainIloVersionError, NothingSelectedError, UserNotAdminError
 #---------End of imports---------
 
 LOGGER = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class Typesandpathdefines(object):
     creates the correct type strings along with some generic paths. Paths are meant to be used with
     iLO systems. Paths may be different on generic Redfish systems. Self variables are created when
     the `getgen` function is called.
-    
+
     Useful self variables that are created include:
 
     * **url**: The url of the system that the defines were created for.
@@ -54,7 +54,7 @@ class Typesandpathdefines(object):
         self.adminpriv = True
 
     def getgen(self, gen=None, url=None, username=None, password=None, logger=None,\
-                                                    proxy=None, ca_certs=None, isredfish=True):
+                proxy=None, ca_cert_data={}, isredfish=True):
         """Function designed to verify the servers platform. Will generate the `Typeandpathdefines`
         variables based on the system type that is detected.
 
@@ -66,8 +66,9 @@ class Typesandpathdefines(object):
         :type password: str
         :param proxy: The proxy to connect to the system with.
         :type proxy: str
-        :param ca_certs: The location to the certificate bundle or file to use.
-        :type ca_certs: str
+        :param ca_certs: Dictionary including the TLS certificate information of user based
+          authentication
+        :type ca_certs: dict
         :param isredfish: The flag to force redfish conformance on iLO 4 systems. You will still
           need to call `updatedefinesflag` to update the defines to Redfish.
         :type isredfish: bool
@@ -88,28 +89,35 @@ class Typesandpathdefines(object):
         self.schemapath = self.regpath = ''
 
         if not gen:
+            try_count = 0
             try:
                 client = RedfishClient(base_url=self.url, username=username, password=password,\
-                                    proxy=proxy, ca_certs=ca_certs)
+                                    proxy=proxy, ca_cert_data=ca_cert_data)
                 client._get_root()
             except ServerDownOrUnreachableError as excp:
                 if self.is_redfish:
                     raise excp
+                try_count += 1
             if not self.is_redfish:
                 try:
                     restclient = LegacyRestClient(base_url=self.url, username=username, \
-                                    password=password, proxy=proxy, ca_certs=ca_certs)
+                                    password=password, proxy=proxy, ca_cert_data=ca_cert_data)
                     restclient._get_root()
                     #Check that the response is actually legacy rest and not a redirect
                     _ = restclient.root.obj.Type
                     self.is_redfish = False
                     client = restclient
-                except Exception as excep:
+                except Exception as excp:
+                    try_count += 1
                     if not client:
-                        logger.info("Gen get rest error:"+str(excep)+"\n")
-                        raise excep
+                        logger.info("Gen get rest error:"+str(excp)+"\n")
+                        raise excp
                     else:
                         self.is_redfish = True
+
+            if try_count > 1:
+                raise ServerDownOrUnreachableError("Server not reachable or does not support "\
+                                                   "HPRest or Redfish: %s\n" % str(excp))
 
             rootresp = client.root.obj
             self.rootresp = rootresp
@@ -199,6 +207,8 @@ class Typesandpathdefines(object):
         :returns: A modified selector matching the Generation's HP string.
         :rtype: string
         """
+        if not sel:
+            raise NothingSelectedError()
         sel = sel.lower()
         returnval = sel
 

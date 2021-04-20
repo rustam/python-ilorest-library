@@ -51,6 +51,7 @@ class RegistryValidationError(Exception):
         super(RegistryValidationError, self).__init__(msg)
         self.reg = regentry
         self.sel = selector
+        self.message = msg
 
 class UnknownValidatorError(Exception):
     """Raised when we find an attribute type that we don't know how to validate. """
@@ -260,7 +261,7 @@ class ValidationManager(object):
                       if not isinstance(val, (dict, list))}
             results = reg.validate_attribute_values(ttdict)
             self._errors.extend(results)
-            
+
             for ki, val in list(tdict.items()):
                 if ki in ttdict:
                     tdict[ki] = ttdict[ki]
@@ -303,7 +304,7 @@ class ValidationManager(object):
         :returns: returns boolean.
 
         """
-        
+
         if reg.get("ReadOnly") == False or (reg.get(tkey, None)\
                                                         and reg[tkey].get("readonly") == False):
             if unique or not reg.get("IsSystemUniqueProperty", None):
@@ -404,8 +405,7 @@ class ValidationManager(object):
                 arg = next((key for key in list(reg.keys()) if key.lower() == arg.lower()), None)
                 if not arg:
                     return None
-                if 'properties' in six.iterkeys(reg[arg]) and ('patternProperties' in \
-                                        six.iterkeys(reg[arg])):
+                if ('properties' in reg[arg].keys()) and ('patternProperties' in reg[arg].keys()):
                     reg[arg]['properties'].update(reg[arg]['patternProperties'])
                     reg = reg[arg]["properties"]
                 elif 'oneOf' in reg[arg]:
@@ -415,8 +415,8 @@ class ValidationManager(object):
                 elif 'type' in reg[arg] and reg[arg]['type'] == 'array' and \
                     'items' in reg[arg] and "properties" in reg[arg]["items"]:
                     reg = reg[arg]["items"]["properties"]
-                elif not ('properties' in six.iterkeys(reg[arg]) \
-                    or 'patternProperties' in six.iterkeys(reg[arg])):
+                elif (not 'properties' in reg[arg].keys()) or ('patternProperties' in \
+                                                                                reg[arg].keys()):
                     reg = reg[arg]
                 else:
                     reg = reg[arg]["properties"]
@@ -465,7 +465,7 @@ class HpPropertiesRegistry(RisObject):
 
         :param attrname: attribute name to validate. Ex: In A/B/C, this will be A.
         :type attrname: str
-        :param newargs: List of multi level properties to be modified. Ex: In A/B/C this will be 
+        :param newargs: List of multi level properties to be modified. Ex: In A/B/C this will be
                         a list of B and C.
         :type newargs: list
         :param oneof: Special string for "oneof" options within validation.
@@ -685,7 +685,7 @@ class EnumValidator(BaseValidator):
                     elif 'enum' in attrentry and item.lower() == 'string':
                         return True
             elif 'enum' in attrentry and attrentry['type'] == "array":
-                for key, value in six.iteritems(attrentry['items']):
+                for key, value in attrentry['items'].items():
                     if key.lower() == "type" and value.lower() == 'string':
                         return True
             else:
@@ -767,7 +767,7 @@ class BoolValidator(BaseValidator):
                     if item.lower() == 'boolean':
                         return True
             elif attrentry['type'] == "array":
-                for key, value in six.iteritems(attrentry['items']):
+                for key, value in attrentry['items'].items():
                     if key.lower() == "type" and value.lower() == 'boolean':
                         return True
             else:
@@ -830,7 +830,7 @@ class StringValidator(BaseValidator):
                     if item.lower() == 'string':
                         return True
             elif attrentry['type'] == "array":
-                for key, value in six.iteritems(attrentry['items']):
+                for key, value in attrentry['items'].items():
                     if key.lower() == "type" and 'string' in value:
                         return True
             else:
@@ -852,7 +852,7 @@ class StringValidator(BaseValidator):
         newval = newvallist[0]
         result = list()
         namestr = Typepathforval.typepath.defs.attributenametype
-        if not isinstance(newval, basestring):
+        if not isinstance(newval, str):
             result.append(RegistryValidationError("Given value must be a string"))
             return result
         if 'MinLength' in self:
@@ -917,9 +917,9 @@ class IntegerValidator(BaseValidator):
                     if item.lower() == 'integer' or item.lower() == 'number':
                         return True
             elif attrentry['type'] == "array":
-                for key, value in six.iteritems(attrentry['items']):
+                for key, value in attrentry['items'].items():
                     if key.lower() == "type":
-                        if value.lower() == 'interger' or value.lower() == 'number':
+                        if value.lower() == 'integer' or value.lower() == 'number':
                             return True
             else:
                 if attrentry['type'].lower() == 'integer' or \
@@ -995,7 +995,7 @@ class ObjectValidator(BaseValidator):
                     if item.lower() == 'object':
                         return True
             elif attrentry['type'] == "array":
-                for key, value in six.iteritems(attrentry['items']):
+                for key, value in attrentry['items'].items():
                     if key.lower() == "type" and value.lower() == 'object':
                         return True
                     elif key.lower() == "anyof":
@@ -1043,12 +1043,12 @@ class ObjectValidator(BaseValidator):
         outdata = self.common_print_help(name)
         if 'properties' in self:
             outdata += '\nSUB-PROPERTIES\n'
-            propdata = ', '.join(list(six.iterkeys(self.properties)))
+            propdata = ', '.join(self.properties.keys())
             outdata += '%s' % wrapper.fill('%s' % propdata)
             outdata += '\n'
         elif 'items' in self:
             outdata += '\nSUB-PROPERTIES\n'
-            propdata = ', '.join(list(six.iterkeys(self['items'].properties)))
+            propdata = ', '.join(self['items'].properties.keys())
             outdata += '%s' % wrapper.fill('%s' % propdata)
             outdata += '\n'
 
@@ -1073,7 +1073,7 @@ class PasswordValidator(BaseValidator):
                     if item.lower() == 'password':
                         return True
             elif attrentry['type'] == "array":
-                for key, value in six.iteritems(attrentry['items']):
+                for key, value in attrentry['items'].items():
                     if key.lower() == "type" and value.lower() == 'password':
                         return True
             else:
@@ -1098,7 +1098,7 @@ class PasswordValidator(BaseValidator):
         if newval is None:
             return result
 
-        if not isinstance(newval, basestring):
+        if not isinstance(newval, str):
             result.append(RegistryValidationError("Given value must be a string"))
         if 'MinLength' in self:
             if len(newval) < int(self['MinLength']):

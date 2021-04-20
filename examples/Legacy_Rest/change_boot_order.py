@@ -32,7 +32,7 @@ def change_boot_order(restobj, bios_password=None):
     body = dict()
     body["PersistentBootConfigOrder"] = bootorder
 
-    #BIOS password is the password if secondary authentication is
+    #BIOS password is the password if secondary authentication is 
     #required before entering RBSU screen Only required on Gen9 systems
     restobj.bios_password = bios_password
 

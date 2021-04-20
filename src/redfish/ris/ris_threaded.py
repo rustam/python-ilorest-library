@@ -1,5 +1,5 @@
 ###
-# Copyright 2019 Hewlett Packard Enterprise, Inc. All rights reserved.
+# Copyright 2020 Hewlett Packard Enterprise, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import threading
 #Added for py3 compatibility
 import six
 
-from six.moves.queue import Empty
+from queue import Empty
 from six.moves.urllib.parse import urlparse, urlunparse
 
 import jsonpath_rw
@@ -39,7 +39,7 @@ LOGGER = logging.getLogger(__name__)
 #---------End of debug logger---------
 
 class LoadWorker(threading.Thread):
-    """A threaded implementation of _load for quicker crawling""" 
+    """A threaded implementation of _load for quicker crawling"""
     def __init__(self, queue):
         threading.Thread.__init__(self)
         self.queue = queue
@@ -81,7 +81,7 @@ class LoadWorker(threading.Thread):
                         continue
                 LOGGER.debug('_loading %s', path)
 
-                resp = theobj._client().get(path)
+                resp = theobj._client.get(path)
 
                 if resp.status != 200 and path.lower() == theobj.typepath.defs.biospath:
                     self.queue.task_done()
@@ -112,13 +112,13 @@ class LoadWorker(threading.Thread):
                         next_link_uri = originaluri + '?page=' + \
                                         str(resp.dict['links']['NextPage']['page'])
                         href = '%s' % next_link_uri
-    
+
                         theobj.get_queue.put((href, includelogs, loadcomplete, crawl, \
                                    rel, init, None, originaluri, theobj))
                     else:
                         next_link_uri = path + '?page=' + \
                                         str(resp.dict['links']['NextPage']['page'])
-    
+
                         href = '%s' % next_link_uri
                         theobj.get_queue.put((href, includelogs, loadcomplete, crawl, \
                                    rel, init, None, path, theobj))
@@ -159,7 +159,7 @@ class LoadWorker(threading.Thread):
                     matches = matches + smatches
                     for match in matches:
                         if isinstance(match.value, six.string_types):
-                            theobj.get_queue.put((match.value, includelogs, loadcomplete, 
+                            theobj.get_queue.put((match.value, includelogs, loadcomplete,
                                 crawl, rel, init, fpath(str(match.full_path), path), \
                                    originaluri, theobj))
                 self.queue.task_done()

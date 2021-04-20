@@ -22,7 +22,7 @@ import logging
 from redfish.ris.ris import SessionExpired
 from redfish.ris.utils import warning_handler, get_errmsg_type, json_traversal
 from redfish.ris.rmc_helper import IloResponseError, IdTokenError, ValueChangedError, \
-                                    EmptyRaiseForEAFP 
+                                    EmptyRaiseForEAFP
 
 #---------Debug logger---------
 
@@ -44,7 +44,7 @@ class ResponseHandler(object):
         self.validation_mgr = validaition_mgr
         self.msg_reg_type = msg_type
 
-    def output_resp(self, response, dl_reg=False, verbosity=None):
+    def output_resp(self, response, dl_reg=False, verbosity=1):
         """Prints or logs parsed MessageId response. Will raise an IloResponseError or return
         a list of message response data which includes the information returned from
         message_handler.
@@ -66,8 +66,8 @@ class ResponseHandler(object):
             message_text = "The operation completed successfully."
 
         if response.status < 300 and (response._rest_request.method == 'GET' or not response.read):
-            warning_handler(self.verbosity_levels(message=message_text, response_status=\
-                                    response.status, verbosity=verbosity, dl_reg=dl_reg))
+                warning_handler(self.verbosity_levels(message=message_text, response_status=\
+                                        response.status, verbosity=verbosity, dl_reg=dl_reg))
         elif response.status == 401:
             raise SessionExpired()
         elif response.status == 403:
@@ -79,12 +79,12 @@ class ResponseHandler(object):
         else:
             retdata = self.message_handler(response_data=response, verbosity=verbosity, \
                     message_text=message_text, dl_reg=dl_reg)
-        if response.status > 299:   
+        if response.status > 299:
             raise IloResponseError("")
         else:
             return retdata
 
-    def message_handler(self, response_data, verbosity=None, message_text="No Response", \
+    def message_handler(self, response_data, verbosity=0, message_text="No Response", \
                         dl_reg=False):
         """Prints or logs parsed MessageId response based on verbosity level and returns the
         following message information in a list:
@@ -112,10 +112,14 @@ class ResponseHandler(object):
         response_error_str = ""
         try:
             response_status = response_data.status
-        except ValueError:
-            response_status = "???" 
+        except (AttributeError, ValueError):
+            response_status = "???"
         try:
-            for inst in self.get_message_data(response_data.dict, dl_reg):
+            response_data = response_data.dict
+        except (AttributeError, ValueError):
+            pass
+        try:
+            for inst in self.get_message_data(response_data, dl_reg):
                 try:
                     for _key in inst.keys():
                         if 'messageid' in str(_key.lower()):
@@ -129,7 +133,7 @@ class ResponseHandler(object):
                         message_text = inst.get("Message", " ")
                     elif inst.get("Message"):
                         message_text = inst.get("Message", " ")
-                    else:
+                    elif response_status not in [200, 201]:
                         message_text = _tmp_message_id
                     _tmp_resolution = inst.get("Resolution", " ")
                 except (KeyError, ValueError, TypeError):
@@ -137,16 +141,15 @@ class ResponseHandler(object):
                 finally:
                     response_error_str += "[%s] %s\n" % (response_status, message_text)
                     warning_handler(self.verbosity_levels(message_text, _tmp_message_id, \
-                                        _tmp_description, _tmp_resolution, \
-                                        response_status, verbosity, dl_reg))
+                                            _tmp_description, _tmp_resolution, \
+                                            response_status, verbosity, dl_reg))
                     retlist.append(inst)
         except Exception:
             if not message_text:
                 message_text = _tmp_message_id
             response_error_str += "[%s] %s\n" % (response_status, message_text)
             warning_handler(self.verbosity_levels(message_text, _tmp_message_id, \
-                                    _tmp_description, _tmp_resolution, \
-                                    response_status, verbosity, dl_reg))
+                            _tmp_description, _tmp_resolution, response_status, verbosity, dl_reg))
             retlist.append(inst)
         finally:
             return retlist
@@ -158,7 +161,7 @@ class ResponseHandler(object):
         :type resp: :class:`redfish.rest.containers.RestResponse`
         :returns: list of error response dictionaries
         """
-        err_response_keys = ['MessageId', 'Message', 'MessageArgs', 'Resolution'] 
+        err_response_keys = ['MessageId', 'Message', 'MessageArgs', 'Resolution']
         try:
             if 'messageid' in [_key.lower() for _key in resp_data.keys()]:
                 data_extract = [resp_data]
@@ -181,14 +184,14 @@ class ResponseHandler(object):
             return None
 
     def verbosity_levels(self, message, messageid=" ", description=" ", resolution=" ", \
-                         response_status=None, verbosity=None, dl_reg=False):
+                         response_status=None, verbosity=0, dl_reg=False):
         """Formatting based on verbosity level.
-        
+
         :param message: Message from BMC response combined with the registry model/schema.
         :type message: str
         :param messageid: Error code as classified by the BMC's error code registry.
         :type messageid: str
-        :param resolution: Message from BMC registry model/schema with the suggested 
+        :param resolution: Message from BMC registry model/schema with the suggested
                            resolution for the given error.
         :type resolution: str
         :param resposne_status: HTTP response status code.
@@ -201,7 +204,7 @@ class ResponseHandler(object):
         if response_status:
             resp_str = "[" + str(response_status) + "] "
 
-        if (verbosity is 1 or dl_reg) and message:
+        if (verbosity == 1 or dl_reg) and message:
             return resp_str + message + '\n'
         elif verbosity > 1 and messageid and message and resolution:
             if not resp_str:

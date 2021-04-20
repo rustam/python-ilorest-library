@@ -1,7 +1,6 @@
 language: python
 python:
   - "2.7"
-  - "3.6"
 
 # command to install dependencies
 install: "pip install -r requirements.txt"
@@ -13,7 +12,7 @@ deploy:
     # test pypi
   - provider: pypi
     server: https://pypi.python.org/pypi
-    user: "rajeevkg"
+    user: "lumbajack"
     password:
       secure: "o9WW8rsVhjhZNTTvb30ArwnGIbKd1ZQ0KkQkQUIF9cskJxlkVLFQkcE8fCVVMhZ+BTXakHsAQ0nuKq29YB87dk6qf0Gvd3m/AcSjFSSxrtz4BeqA1vy8MmiUIztoJAGfEXaBKp52JnnIUbXuu+xzzOdFxeRul2GfYRT+KDKW/pk="
     on:

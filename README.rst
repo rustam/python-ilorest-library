@@ -18,9 +18,9 @@ python-ilorest-library
 
 Description
 ----------
-The python-ilorest-library is a python library built for interacting with the Redfish API remotely to any BMC that
+The python-ilorest-library is a python library built for interacting with the Redfish API remotely to any BMC that 
 implements a Redfish API or any HPE system locally. The library also supports HPE's legacy REST API. Go to the library
-`documentation <https://hewlettpackard.github.io/python-ilorest-library/>`_ for more details.
+`documentation <https://pages.github.hpe.com/intelligent-provisioning/python-redfish-library/>`_ for more details.
 
 HPE RESTful API for iLO is a RESTful application programming interface for the
 management of iLO and iLO Chassis Manager based HPE servers. REST
@@ -29,7 +29,7 @@ consisting of a set of constraints that focuses on a system's resources. iLO
 REST library performs the basic HTTP operations GET, POST, PUT, PATCH and
 DELETE on resources using the HATEOAS (Hypermedia as the Engine of Application
 State) REST architecture. The API allows the clients to manage and interact
-with iLO through a fixed URL and several URIs. Go to the API
+with iLO through a fixed URL and several URIs. Go to the API 
 `documentation <https://hewlettpackard.github.io/ilo-rest-api-docs/>`_
 for more details.
 
@@ -48,7 +48,7 @@ Building from zip file source
 	python setup.py sdist --formats=zip (this will produce a .zip file)
 	cd dist
 	pip install python-ilorest-library-x.x.x.zip
-
+	
 Including socks support (Version 2.5 or greater)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 .. code-block:: console
@@ -71,20 +71,22 @@ No special requirements.
 Inband communication
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
- To enable support for inband communications, you must download the DLL/SO for your system. By downloading, you agree to the terms and conditions of the `Hewlett Packard Enterprise Software License Agreement`_.
+ To enable support for inband communications, you must download the DLL/SO for your system. By downloading, you agree to the terms and conditions of the `Hewlett Packard Enterprise Software License Agreement`_. 
 It must be placed in your working environment path.
-
+ 
  Windows Download: ilorest_chif.dll_
-
+ 
  Linux Download: ilorest_chif.so_
-
+ 
  .. _`Hewlett Packard Enterprise Software License Agreement` : https://www.hpe.com/us/en/software/licensing.html
  .. _ilorest_chif.dll: https://downloads.hpe.com/pub/softlib2/software1/pubsw-windows/p1463761240/v167985/ilorest_chif.dll
  .. _ilorest_chif.so: https://downloads.hpe.com/pub/softlib2/software1/pubsw-linux/p1093353304/v168967/ilorest_chif.so
 
 Usage
 ----------
-See the documentation at https://hewlettpackard.github.io/python-ilorest-library/
+For 3.x and greater versions of the library see the documentation for usage: https://pages.github.hpe.com/intelligent-provisioning/python-redfish-library/
+
+For 2.x versions of the library documentation is located at the `Wiki <https://github.hpe.com/intelligent-provisioning/python-redfish-library/wiki>`_.
 
 Contributing
 ----------
@@ -120,14 +122,13 @@ History
   * 07/11/2019: Release of v2.5.1
   * 08/13/2019: Release of v2.5.2
   * 11/13/2019: Release of v3.0.0
-  * 10/05/2020: Release of v3.1.0
 
 Copyright and License
 ---------------------
 
 ::
 
- Copyright 2016-2020 Hewlett Packard Enterprise Development LP
+ Copyright 2016 Hewlett Packard Enterprise Development LP
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.

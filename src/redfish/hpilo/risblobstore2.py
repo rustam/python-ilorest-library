@@ -26,7 +26,8 @@ import random
 import string
 import logging
 
-from ctypes import c_char_p, c_ubyte, c_uint, cdll, POINTER, create_string_buffer, c_ushort
+from ctypes import c_char_p, c_ubyte, c_uint, cdll, POINTER, \
+                    create_string_buffer, c_ushort, c_void_p
 
 from redfish.hpilo.rishpilo import HpIlo, HpIloInitialError
 from redfish.hpilo.rishpilo import BlobReturnCodes as hpiloreturncodes
@@ -343,9 +344,12 @@ class BlobStore2(object):
         ptr = lib.write_fragment(offset, count, name, namespace)
         sendpacket = ptr[:lib.size_of_writeRequest()]
 
+        if isinstance(data, str):
+            data = data.encode('utf-8')
+
         dataarr = bytearray(sendpacket)
         dataarr.extend(memoryview(data))
-
+        
         resp = self._send_receive_raw(dataarr)
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
@@ -415,7 +419,7 @@ class BlobStore2(object):
         if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
             raise HpIloError(errorcode)
 
-        resp = resp + "\0" * (lib.size_of_listResponse() - len(resp))
+        resp = resp + b"\0" * (lib.size_of_listResponse() - len(resp))
 
         self.unloadchifhandle(lib)
 
@@ -788,6 +792,14 @@ class BlobStore2(object):
         if excp:
             raise excp
 
+    def cert_login(self, cert_file, priv_key, key_pass):
+        lib = self.gethprestchifhandle()
+        lib.login_cert.argtypes = [c_void_p, c_char_p, c_char_p, c_char_p]
+        lib.login_cert.restype = c_char_p
+
+        token = lib.login_cert(self.channel.fhandle, cert_file, priv_key, key_pass)
+        return token
+
     @staticmethod
     def gethprestchifhandle():
         """Multi platform handle for chif hprest library"""
@@ -833,7 +845,7 @@ class BlobStore2(object):
         if LOGGER.isEnabledFor(logging.DEBUG):
             dll.enabledebugoutput()
         dll.ChifInitialize(None)
-        if dll.ChifIsSecurityRequired() > 0:
+        if dll.ChifIsSecurityRequired() > 0 or username:
             if not username or not password:
                 return False
             dll.initiate_credentials.argtypes = [c_char_p, c_char_p]

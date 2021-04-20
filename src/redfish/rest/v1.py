@@ -221,12 +221,14 @@ class RestClient(RestClientBase):
         self.logout()
 
     def _get_auth_type(self, auth_param, **client_kwargs):
-        """Get the auth type based on key args or positional argument. Defaults to session auth."""
+        """Get the auth type based on key args or positional argument.
+            Defaults to session auth."""
         if not auth_param:
-            if client_kwargs.get('cert_file') and client_kwargs.get('key_file'):
-                auth_param = AuthMethod.CERTIFICATE
-            else:
-                auth_param = AuthMethod.SESSION
+            _ca_cert_data = client_kwargs.get('ca_cert_data')
+            if _ca_cert_data:
+                if _ca_cert_data.get('cert_file') and _ca_cert_data.get('key_file'):
+                    return AuthMethod.CERTIFICATE
+            return AuthMethod.SESSION
 
         return auth_param
 
@@ -299,6 +301,7 @@ class RestClient(RestClientBase):
         """The login URI from the root response. This is where we post the
         credentials for a login."""
         login_url = None
+
         try:
             login_url = self.root.obj.Links.Sessions['@odata.id']
         except KeyError:
@@ -318,18 +321,19 @@ class RestClient(RestClientBase):
         :param auth: The auth type to login with.
         :type auth: str or :class:`AuthMethod` class variable
         """
-        self._get_root()
-
         if auth:
             auth = self._get_auth_type(auth)
             self.auth_type = auth
 
         if self.auth_type is AuthMethod.BASIC:
+            self._get_root()
             self._basic_login()
         elif self.auth_type is AuthMethod.SESSION:
+            self._get_root()
             self._session_login()
         elif self.auth_type is AuthMethod.CERTIFICATE:
-            self.connection.cert_login()
+            self._cert_login()
+            self._get_root()
 
     def logout(self):
         """ Logout of session.
@@ -377,7 +381,6 @@ class RestClient(RestClientBase):
             data['UserName'] = self.username
             data['Password'] = self.password
 
-
             headers = dict()
             resp = self.post(self.login_url, body=data, headers=headers)
             try:
@@ -385,6 +388,7 @@ class RestClient(RestClientBase):
             except ValueError:
                 pass
             LOGGER.info('Login returned code %s: %s', resp.status, resp.read)
+
             self.session_key = resp.session_key
             self.session_location = resp.session_location
         else:
@@ -394,6 +398,10 @@ class RestClient(RestClientBase):
             self._credential_err()
         else:
             self._user_pass = (None, None)
+
+    def _cert_login(self):
+        """Login using certificate authentication"""
+        self.session_key, self.session_location = self.connection.cert_login()
 
     def _credential_err(self):
         """Return credential error based on delay"""

@@ -35,7 +35,7 @@ def change_temporary_boot_order(restobj, boottarget, bios_password=None):
     body["Boot"] = dict()
     body["Boot"]["BootSourceOverrideTarget"] = boottarget
 
-    #BIOS password is the password if secondary authentication is
+    #BIOS password is the password if secondary authentication is 
     #required before entering RBSU screen Only required on Gen9 systems
     restobj.bios_password = bios_password
 

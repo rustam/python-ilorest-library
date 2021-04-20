@@ -1,6 +1,6 @@
 .. image:: /images/hpe_logo2.png
    :width: 150pt
-
+   
 |
 
 .. toctree::
@@ -49,7 +49,7 @@ today’s enterprise, hyperscale, and cloud infrastructures. Redfish defines the
 and the effort to modernize heterogeneous data centers.
 
 HPE ProLiant servers provide iLO RESTful API extensions to Redfish, allowing you to take advantage of the full range of value-added API
-features. You can now benefit from adopting the Redfish standard into HPE ProLiant Gen8, Gen9, and Gen10 servers, as well as on other non-HPE server products that implement to the standard.
+features. You can now benefit from adopting the Redfish standard into HPE ProLiant Gen8, Gen9, and Gen10 servers, as well as on other non-HPE server products that implement to the standard. 
 
 More information on Redfish can be found on the `DMTF Redfish Website <https://www.dmtf.org/standards/redfish>`_.
 

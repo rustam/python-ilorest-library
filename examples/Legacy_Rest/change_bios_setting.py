@@ -28,7 +28,7 @@ def change_bios_setting(restobj, bios_property, property_value, bios_password=No
 
     body = {bios_property: property_value}
 
-    #BIOS password is the password if secondary authentication is
+    #BIOS password is the password if secondary authentication is 
     #required before entering RBSU screen Only required on Gen9 systems
     restobj.bios_password = bios_password
 

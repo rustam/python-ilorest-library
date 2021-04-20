@@ -209,31 +209,10 @@ class RestResponse(object):
         try:
             return json.loads(self.read)
         except ValueError as exp:
-            sys.stderr.write("An invalid response body was returned: %s" % exp)
+            if self.path != '/smbios':
+                sys.stderr.write("An invalid response body was returned: %s" % exp)
             return None
-            #iLO is sending back garbage response messages. They need to fix these.
-            #(possible ris or maybe http libs are destroying formatting/delimiting on occassion).
-            #JSON parsing errors appear here.
-            '''
-            brace_inner_pos = {'smallest': 0, 'count_pair': 0}
-            brace_outer_pos = {'larget': 0, 'count_pair': 0}
-            brace_inner_lock = False
-            for indx, pos in enumerate(self.read):
-                if pos == '{':
-                    if brace_inner_lock:
-                        brace_inner_pos['smallest'] = indx
-                        brace_inner_lock = True
-                    brace_inner_pos['count_pair'] += 1
-                elif pos == '}':
-                    brace_outer_pos['largest'] = indx
-                    brace_outer_pos['count_pair'] += 1
-            if brace_inner_pos['count_pair'] == brace_outer_pos['count_pair']:
-                _tmp_str = self.read[brace_inner_pos['smallest']:brace_outer_pos['largest']]
-                try:
-                    return json.loads((_tmp_str).replace("'", "\""))
-                except ValueError:
-                    return json.loads((_tmp_str + '}').replace("'", "\""))
-            '''
+
     @property
     def obj(self):
         """The response body data as an object"""
