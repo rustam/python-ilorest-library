@@ -2,10 +2,10 @@
    sphinx-quickstart on Fri Mar 11 11:34:15 2016.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
-   
+
 .. image:: /images/hpe_logo2.png
    :width: 150pt
-   
+
 |
 |
 
@@ -27,7 +27,7 @@ Documentation
 
 .. toctree::
    :maxdepth: 1
-   
+
    API-Overview
    Installation-Guide
    Client-Quick-Start
@@ -43,10 +43,9 @@ Get in touch with the team
 
 If you have further questions, please contact the team:
 
-* `Matthew Kocurek <https://github.com/Yergidy>`_
-* `Tony Wang <https://github.com/injan0913>`_
-* `Grant O'Connor <https://github.com/KeepSummerSaf3>`_
-* `Matthew Whiteside <https://github.com/mwside>`_
+* `Rajeevalochana Kallur <https://github.com/rajeevkallur>`_
+* `iLORESTeam <https://github.com/iLORESTeam>`_
+* `Hewlett Packard <https://github.com/HewlettPackard>`_
 
 Contributors
 -------------
