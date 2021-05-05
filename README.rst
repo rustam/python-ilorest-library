@@ -82,9 +82,9 @@ It must be placed in your working environment path.
 
 Usage
 ----------
-For 3.x and greater versions of the library see the documentation for usage: https://pages.github.hpe.com/intelligent-provisioning/python-redfish-library/
+For 3.x and greater versions of the library see the documentation for usage: https://hewlettpackard.github.io/python-ilorest-library/
 
-For 2.x versions of the library documentation is located at the `Wiki <https://github.hpe.com/intelligent-provisioning/python-redfish-library/wiki>`_.
+For 2.x versions of the library documentation is located at the `Wiki <https://github.com/HewlettPackard/python-ilorest-library/wiki>`_.
 
 Contributing
 ----------
