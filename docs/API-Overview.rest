@@ -1,6 +1,6 @@
 .. image:: /images/hpe_logo2.png
    :width: 150pt
-   
+
 |
 
 .. toctree::
@@ -19,8 +19,8 @@ For complete documentation of the iLO 4 and iLO 5 REST APIs see the `documentati
 Why iLO RESTful API?
 ====================
 
-This HPE RESTful API for iLO will become the main management API for iLO and iLO Chassis Manager
-based HPE servers. Its feature set will become larger than the existing iLO XML API (RIBCL) and IPMI
+This HPE RESTful API for iLO is the main management API for iLO and iLO Chassis Manager
+based HPE servers. Its feature set is becoming larger than the existing iLO XML API (RIBCL) and IPMI
 interfaces. Using this API, you can take full inventory of the server, control power and reset, configure
 BIOS and iLO settings, fetch event logs, as well as many other functions.
 
@@ -37,7 +37,7 @@ blades, as well as newer types of systems like Moonshot. This advantage comes be
 model is designed to self-describe the service’s capabilities to the client and has room for flexibility
 designed in from the start.
 
-For full documentation on the iLO 4 and iLO 5 implementations of the API click `here <https://hewlettpackard.github.io/ilo-rest-api-docs/>`_.
+For full documentation on the iLO 4 and iLO 5 implementations of the API, click `here <https://hewlettpackard.github.io/ilo-rest-api-docs/>`_.
 
 Redfish
 ===================
@@ -49,7 +49,7 @@ today’s enterprise, hyperscale, and cloud infrastructures. Redfish defines the
 and the effort to modernize heterogeneous data centers.
 
 HPE ProLiant servers provide iLO RESTful API extensions to Redfish, allowing you to take advantage of the full range of value-added API
-features. You can now benefit from adopting the Redfish standard into HPE ProLiant Gen8, Gen9, and Gen10 servers, as well as on other non-HPE server products that implement to the standard. 
+features. You can now benefit from adopting the Redfish standard into HPE ProLiant Gen8, Gen9, and Gen10 servers, as well as on other non-HPE server products that implement to the standard.
 
 More information on Redfish can be found on the `DMTF Redfish Website <https://www.dmtf.org/standards/redfish>`_.
 
@@ -87,5 +87,3 @@ Return codes
 +------------------------+---------------------------------+-----------------------------------------------------------+
 | 5xx                    | iLO error with error message returned.                                                      |
 +------------------------+---------------------------------+-----------------------------------------------------------+
-
-

@@ -82,10 +82,12 @@ class HttpConnection(object):
     "passed to a urllib3 `PoolManager <https://urllib3.readthedocs.io/en/latest/reference/"\
     "index.html?highlight=PoolManager#urllib3.PoolManager>`_. All arguments that can be passed to "\
     "a PoolManager are valid arguments."
-    def __init__(self, base_url, **client_kwargs):
+    def __init__(self, base_url, cert_data, **client_kwargs):
         self._conn = None
         self.base_url = base_url
         self._connection_properties = client_kwargs
+        if 'cert_file' in cert_data and cert_data['cert_file']:
+            self._connection_properties.update({'ca_cert_data':cert_data})
         self._proxy = self._connection_properties.pop('proxy', None)
         self.session_key = self._connection_properties.pop('session_key', None)
         self._init_connection()
@@ -105,17 +107,17 @@ class HttpConnection(object):
         cert_reqs = 'CERT_NONE'
         if self._connection_properties.get('ca_cert_data'):
             LOGGER.info('Using CA cert to confirm identity.')
-            cert_reqs = 'CERT_REQUIRED'
+            cert_reqs = 'CERT_NONE'
             self._connection_properties.update(self._connection_properties.pop('ca_cert_data'))
 
         if self.proxy:
             if self.proxy.startswith('socks'):
                 LOGGER.info("Initializing a SOCKS proxy.")
-                http = SOCKSProxyManager(self.proxy, cert_reqs=cert_reqs, maxsize=6, \
-                                                                **self._connection_properties)
+                http = SOCKSProxyManager(self.proxy, cert_reqs=cert_reqs, maxsize=6,
+                                         **self._connection_properties)
             else:
                 LOGGER.info("Initializing a HTTP proxy.")
-                http = ProxyManager(self.proxy, cert_reqs=cert_reqs, maxsize=6, \
+                http = ProxyManager(self.proxy, cert_reqs=cert_reqs, maxsize=6,
                                     **self._connection_properties)
         else:
             LOGGER.info("Initializing no proxy.")
@@ -211,12 +213,12 @@ class HttpConnection(object):
                     if 'NewPassword' in debugjson.keys():
                         debugjson['NewPassword'] = '******'
                     logbody = json.dumps(debugjson)
-                LOGGER.debug('HTTP REQUEST: %s\n\tPATH: %s\n\t'\
-                            'HEADERS: %s\n\tBODY: %s', restreq.method, restreq.path, headers, \
+                LOGGER.debug('HTTP REQUEST: %s\n\tPATH: %s\n\t'
+                             'HEADERS: %s\n\tBODY: %s', restreq.method, restreq.path, headers,
                              logbody)
             except:
-                LOGGER.debug('HTTP REQUEST: %s\n\tPATH: %s\n\tBODY: %s', restreq.method, \
-                                                            restreq.path, 'binary body')
+                LOGGER.debug('HTTP REQUEST: %s\n\tPATH: %s\n\tBODY: %s', restreq.method,
+                             restreq.path, 'binary body')
 
         inittime = time.time()
         reqfullpath = self.base_url+reqpath if not external_uri else reqpath
@@ -252,11 +254,11 @@ class HttpConnection(object):
                 for kiy, headerval in respheader.items():
                     headerstr += '\t' + kiy + ': ' + headerval + '\n'
                 try:
-                    LOGGER.debug('HTTP RESPONSE for %s:\nCode:%s\nHeaders:'\
-                            '\n%s\nBody Response of %s: %s', restresp.request.path,\
-                            str(restresp._http_response.status)+ ' ' + \
-                            restresp._http_response.reason, \
-                            headerstr, restresp.request.path, restresp.read)
+                    LOGGER.debug('HTTP RESPONSE for %s:\nCode:%s\nHeaders:'
+                                 '\n%s\nBody Response of %s: %s', restresp.request.path,
+                                 str(restresp._http_response.status)+ ' ' +
+                                 restresp._http_response.reason,
+                                 headerstr, restresp.request.path, restresp.read)
                 except:
                     LOGGER.debug('HTTP RESPONSE:\nCode:%s', restresp)
             else:
@@ -343,7 +345,8 @@ class Blobstore2Connection(object):
             headers = {}
         else:
             headers.update(Blobstore2Connection.blobstore_headers)
-
+        if isinstance(path, bytes):
+            path = path.decode('utf-8')
         reqpath = path.replace('//', '/')
 
         oribody = body
@@ -424,10 +427,10 @@ class Blobstore2Connection(object):
                         debugjson['NewPassword'] = '******'
                     logbody = json.dumps(debugjson)
 
-                LOGGER.debug('Blobstore REQUEST: %s\n\tPATH: %s\n\tHEADERS: '\
+                LOGGER.debug('Blobstore REQUEST: %s\n\tPATH: %s\n\tHEADERS: '
                              '%s\n\tBODY: %s', method, str(headers), path, logbody)
             except:
-                LOGGER.debug('Blobstore REQUEST: %s\n\tPATH: %s\n\tHEADERS: '\
+                LOGGER.debug('Blobstore REQUEST: %s\n\tPATH: %s\n\tHEADERS: '
                              '%s\n\tBODY: %s', method, str(headers), path, 'binary body')
 
         inittime = time.time()
@@ -478,13 +481,13 @@ class Blobstore2Connection(object):
             for header in headerget:
                 headerstr += '\t' + header + ': ' + headerget[header] + '\n'
             try:
-                LOGGER.debug('Blobstore RESPONSE for %s:\nCode: %s\nHeaders:'\
-                            '\n%s\nBody of %s: %s', rest_response.request.path,\
-                            str(rest_response._http_response.status)+ ' ' + \
-                            rest_response._http_response.reason, \
-                            headerstr, rest_response.request.path, rest_response.read)
+                LOGGER.debug('Blobstore RESPONSE for %s:\nCode: %s\nHeaders:'
+                             '\n%s\nBody of %s: %s', rest_response.request.path,
+                             str(rest_response._http_response.status)+ ' ' +
+                             rest_response._http_response.reason,
+                             headerstr, rest_response.request.path, rest_response.read)
             except:
-                LOGGER.debug('Blobstore RESPONSE for %s:\nCode:%s', \
+                LOGGER.debug('Blobstore RESPONSE for %s:\nCode:%s',
                              rest_response.request.path, rest_response)
         return rest_response
 

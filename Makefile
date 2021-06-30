@@ -204,12 +204,16 @@ bdist-rpm:
 	tar xfz ./packaging/ext/PySocks-1.6.8.tar.gz
 	cd ./PySocks-1.6.8 && \
 	$(PYTHON) setup.py install
+	tar xfz ./packaging/ext/wheel-0.36.1.tar.gz
+	cd ./wheel-0.36.1 && \
+	$(PYTHON) setup.py install
 	unzip ./packaging/ext/recordtype-1.1.zip
 	cd ./recordtype-1.1 && \
 	$(PYTHON) setup.py bdist_rpm --dist-dir ${MTX_COLLECTION_PATH}/python2/
 	tar xfz ./packaging/ext/pypandoc-1.4.tar.gz
 	cd ./pypandoc-1.4 && \
 	$(PYTHON) setup.py install
+	$(PYTHON) setup.py bdist_rpm --dist-dir ${MTX_COLLECTION_PATH}/python2/
 	tar xfz ./packaging/ext/jsonpointer-1.10.tar.gz
 	cd ./jsonpointer-1.10 && \
 	iconv -f 'UTF-8' -t 'ASCII//TRANSLIT//IGNORE' jsonpointer.py > jp && \
@@ -240,7 +244,6 @@ bdist-rpm:
 	$(PYTHON) setup.py bdist_rpm --dist-dir ${MTX_COLLECTION_PATH}/python2/
 	tar xfz ./packaging/ext/ply-3.10.tar.gz
 	cd ./ply-3.10 && \
-	$(PYTHON) setup.py bdist_rpm --dist-dir ${MTX_COLLECTION_PATH}/python2/
 	$(PYTHON) setup.py bdist_rpm --dist-dir ${MTX_COLLECTION_PATH}/python2/
 	rm -rf ${MTX_COLLECTION_PATH}/*.src.rpm
 	rm -rf ${MTX_COLLECTION_PATH}/python2/*.src.rpm

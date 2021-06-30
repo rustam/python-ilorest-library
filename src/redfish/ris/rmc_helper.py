@@ -198,9 +198,9 @@ class RmcFileCacheManager(RmcCacheManager):
                                         loc = data['login']['session_location']\
                                                 .split(data['login']['url'])[-1]
                                         sesurl = data['login']['url']
-                                    sessionlocs.append((loc, sesurl,\
-                                                self._rmc._cm.decodefunct\
-                                                (data['login']['session_key'])))
+                                    sessionlocs.append((loc, sesurl,
+                                                        self._rmc._cm.decodefunct
+                                                        (data['login']['session_key'])))
 
                         os.remove(os.path.join(cachedir, index['href']))
             except BaseException as excp:
@@ -256,10 +256,10 @@ class RmcFileCacheManager(RmcCacheManager):
                 if 'url' not in login_data:
                     return
 
-                self._rmc.typepath.getgen(login_data.get('ilo'), \
-                                 url=login_data.get('url'), \
-                                 isredfish=login_data.get('redfish', None), \
-                                 ca_cert_data=login_data.get('ca_cert_data', {}))
+                self._rmc.typepath.getgen(login_data.get('ilo'),
+                                          url=login_data.get('url'),
+                                          isredfish=login_data.get('redfish', None),
+                                          ca_cert_data=login_data.get('ca_cert_data', {}))
 
                 if creds and login_data.get('url', '').startswith('blobstore://'):
                     if enc:
@@ -268,24 +268,27 @@ class RmcFileCacheManager(RmcCacheManager):
                     login_data['username'] = creds['username']
                     login_data['password'] = creds['password']
 
-                redfishinst = RestClient(\
-                    username=login_data.get('username', 'Administrator'), \
-                    password=login_data.get('password', None), \
-                    base_url=login_data.get('url', None), \
-                    biospassword=login_data.get('bios_password', None), \
-                    is_redfish=login_data.get('redfish', None), \
-                    default_prefix=self._rmc.typepath.defs.startpath, \
-                    proxy=login_data.get('proxy', None), \
+                redfishinst = RestClient(
+                    username=login_data.get('username', 'Administrator'),
+                    password=login_data.get('password', None),
+                    base_url=login_data.get('url', None),
+                    biospassword=login_data.get('bios_password', None),
+                    is_redfish=login_data.get('redfish', None),
+                    default_prefix=self._rmc.typepath.defs.startpath,
+                    proxy=login_data.get('proxy', None),
                     ca_cert_data=login_data.get('ca_cert_data', {}))
                 if login_data.get('authorization_key'):
                     redfishinst.basic_auth = login_data.get('authorization_key')
                 elif login_data.get('session_key'):
                     redfishinst.session_key = \
                                             self._rmc._cm.decodefunct(login_data.get('session_key'))
+                    if isinstance(redfishinst.session_key, bytes):
+                        redfishinst.session_key = redfishinst.session_key.decode('utf-8')
                     redfishinst.session_location = login_data.get('session_location')
-
                 if 'selector' in client:
                     self._rmc.selector = client['selector']
+                if login_data.get('iloversion'):
+                    redfishinst.iloversion = login_data.get('iloversion')
 
                 getdata = client['get']
                 for key in list(getdata.keys()):
@@ -336,24 +339,25 @@ class RmcFileCacheManager(RmcCacheManager):
             indexfh.close()
 
         if self._rmc.redfishinst:
-            login_data = dict(\
-                username=None, \
-                password=None, url=self._rmc.redfishinst.base_url, \
-                session_key=self._rmc._cm.encodefunct(self._rmc.redfishinst.session_key), \
-                session_location=self._rmc.redfishinst.session_location, \
-                authorization_key=self._rmc.redfishinst.basic_auth, \
-                bios_password=self._rmc.redfishinst.bios_password, \
-                redfish=self._rmc.monolith.is_redfish, \
-                ilo=self._rmc.typepath.ilogen,\
-                proxy=self._rmc.redfishinst.proxy,\
-                ca_cert_data= self._rmc.redfishinst.connection._connection_properties if \
-                    self._rmc.redfishinst.connection._connection_properties else dict())
+            login_data = dict(
+                username=None,
+                password=None, url=self._rmc.redfishinst.base_url,
+                session_key=self._rmc._cm.encodefunct(self._rmc.redfishinst.session_key),
+                session_location=self._rmc.redfishinst.session_location,
+                authorization_key=self._rmc.redfishinst.basic_auth,
+                bios_password=self._rmc.redfishinst.bios_password,
+                redfish=self._rmc.monolith.is_redfish,
+                ilo=self._rmc.typepath.ilogen,
+                iloversion=self._rmc.typepath.iloversion,
+                proxy=self._rmc.redfishinst.proxy,
+                ca_cert_data= self._rmc.redfishinst.connection._connection_properties if
+                self._rmc.redfishinst.connection._connection_properties else dict())
 
-            clients_data = dict(selector=self._rmc.selector, login=login_data, \
-                     monolith=self._rmc.monolith, get=self._rmc.monolith.paths)
+            clients_data = dict(selector=self._rmc.selector, login=login_data,
+                                monolith=self._rmc.monolith, get=self._rmc.monolith.paths)
 
-            clientsfh = open('%s/%s' % (cachedir, \
-                                     index_map[self._rmc.redfishinst.base_url]), 'w')
+            clientsfh = open('%s/%s' % (cachedir,
+                                        index_map[self._rmc.redfishinst.base_url]), 'w')
 
             json.dump(clients_data, clientsfh, indent=2, cls=JSONEncoder)
             clientsfh.close()

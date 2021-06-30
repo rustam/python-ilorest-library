@@ -342,7 +342,7 @@ class RisMonolith(Dictable):
         :rtype: RisMonolithMemberv100
         """
         if not typeval:
-            for _, val in self.paths.items():
+            for _, val in list(self.paths.items()):
                 yield val
         else:
             for typename in self.gettypename(typeval):
@@ -354,7 +354,7 @@ class RisMonolith(Dictable):
 #                     yield self.paths[item]
 #             else:
 #                 raise RisInstanceNotFoundError("Unable to locate instance for" \
-#                                                             " '%s'" % typeval)
+#                                                             " '%s'\n" % typeval)
 
     def itertype(self, typeval):
         """Iterator that yields member(s) of given type in the monolith and raises an error if no
@@ -372,7 +372,7 @@ class RisMonolith(Dictable):
                     yield self.paths[item]
                 types = next(typeiter, None)
         else:
-            raise RisInstanceNotFoundError("Unable to locate instance for '%s'" % typeval)
+            raise RisInstanceNotFoundError("Unable to locate instance for '%s'\n" % typeval)
 
     def typecheck(self, types):
         """Check if a member of given type exists in the monolith
@@ -427,8 +427,8 @@ class RisMonolith(Dictable):
             if LOGGER.getEffectiveLevel() == 40:
                 self._update_progress()
 
-    def load(self, path=None, includelogs=False, init=False, \
-            crawl=True, loadtype='href', loadcomplete=False, path_refresh=False):
+    def load(self, path=None, includelogs=False, init=False,
+             crawl=True, loadtype='href', loadcomplete=False, path_refresh=False):
         """Walks the entire data model and caches all responses or loads an individual path into
         the monolith. Supports both threaded and sequential crawling.
 
@@ -470,8 +470,8 @@ class RisMonolith(Dictable):
                     workhand.start()
                     self.threads.append(workhand)
 
-            self.get_queue.put((selectivepath, includelogs, loadcomplete, crawl, \
-                                   path_refresh, init, None, None, self))
+            self.get_queue.put((selectivepath, includelogs, loadcomplete, crawl,
+                                path_refresh, init, None, None, self))
             self.get_queue.join()
 
             #Raise any errors from threads, and set them back to None after
@@ -487,8 +487,8 @@ class RisMonolith(Dictable):
             #self.member_queue.join()
         else:
             #We can't load ref or local client in a threaded manner
-            self._load(selectivepath, originaluri=None, crawl=crawl, \
-                       includelogs=includelogs, init=init, loadtype=loadtype, \
+            self._load(selectivepath, originaluri=None, crawl=crawl,
+                       includelogs=includelogs, init=init, loadtype=loadtype,
                        loadcomplete=loadcomplete, path_refresh=path_refresh,
                        prevpath=None)
 
@@ -500,9 +500,9 @@ class RisMonolith(Dictable):
         if self.directory_load and init:
             self._populatecollections()
 
-    def _load(self, path, crawl=True, originaluri=None, includelogs=False,\
-                        init=True, loadtype='href', loadcomplete=False, \
-                                                path_refresh=False, prevpath=None):
+    def _load(self, path, crawl=True, originaluri=None, includelogs=False,
+              init=True, loadtype='href', loadcomplete=False,
+              path_refresh=False, prevpath=None):
         """Sequential version of loading monolith and parsing schemas.
 
         :param path: path to start load from.
@@ -550,8 +550,8 @@ class RisMonolith(Dictable):
         if resp.status != 200 and path.lower() == self.typepath.defs.biospath:
             raise BiosUnregisteredError()
         elif resp.status == 401:
-            raise SessionExpired("Invalid session. Please logout and "\
-                                    "log back in or include credentials.")
+            raise SessionExpired("Invalid session. Please logout and "
+                                 "log back in or include credentials.")
         elif resp.status not in (201, 200):
             self.removepath(path)
             return
@@ -583,15 +583,15 @@ class RisMonolith(Dictable):
                                     str(resp.dict['links']['NextPage']['page'])
                     href = '%s' % next_link_uri
 
-                    self._load(href, originaluri=originaluri, \
-                               includelogs=includelogs, crawl=crawl, \
+                    self._load(href, originaluri=originaluri,
+                               includelogs=includelogs, crawl=crawl,
                                init=init, prevpath=None, loadcomplete=loadcomplete)
                 else:
                     next_link_uri = path + '?page=' + str(resp.dict['links']['NextPage']['page'])
 
                     href = '%s' % next_link_uri
-                    self._load(href, originaluri=path, includelogs=includelogs,\
-                        crawl=crawl, init=init, prevpath=None, loadcomplete=loadcomplete)
+                    self._load(href, originaluri=path, includelogs=includelogs,
+                               crawl=crawl, init=init, prevpath=None, loadcomplete=loadcomplete)
 
             #Only use monolith if we are set to
             matchrdirpath = next((match for match in matches if match.value == \
@@ -613,14 +613,14 @@ class RisMonolith(Dictable):
                         continue
 
                     href = '%s' % match.value
-                    self._load(href, crawl=crawl, \
-                       originaluri=originaluri, includelogs=includelogs, \
-                       init=init, prevpath=fpath(str(match.full_path), path), \
-                       loadcomplete=loadcomplete)
+                    self._load(href, crawl=crawl,
+                               originaluri=originaluri, includelogs=includelogs,
+                               init=init, prevpath=fpath(str(match.full_path), path),
+                               loadcomplete=loadcomplete)
             elif crawl:
                 href = '%s' % matchrdirpath.value
-                self._load(href, crawl=crawl, originaluri=originaluri, \
-                    includelogs=includelogs, init=init, prevpath=path, loadcomplete=loadcomplete)
+                self._load(href, crawl=crawl, originaluri=originaluri,
+                           includelogs=includelogs, init=init, prevpath=path, loadcomplete=loadcomplete)
             if loadcomplete:
                 if path == '/rest/v1':
                     schemamatch = jsonpath_rw.parse('$..extref')
@@ -630,9 +630,9 @@ class RisMonolith(Dictable):
                 matches = matches + smatches
                 for match in matches:
                     if isinstance(match.value, six.string_types):
-                        self._load(match.value, crawl=crawl, originaluri=originaluri,\
-                        includelogs=includelogs, init=init, loadcomplete=loadcomplete,\
-                                     prevpath=fpath(str(match.full_path), path))
+                        self._load(match.value, crawl=crawl, originaluri=originaluri,
+                                   includelogs=includelogs, init=init, loadcomplete=loadcomplete,
+                                   prevpath=fpath(str(match.full_path), path))
 
     def _parse_schema(self, resp):
         """Function to get and replace schema $ref with data
@@ -657,8 +657,8 @@ class RisMonolith(Dictable):
 
                 if 'redfish.dmtf.org' in jsonfile:
                     if 'odata' in jsonfile:
-                        jsonpath = jsonpath.replace(jsonpath.split('/')[-1], \
-                                            'odata' + jsonpath.split('/')[-1])
+                        jsonpath = jsonpath.replace(jsonpath.split('/')[-1],
+                                                    'odata' + jsonpath.split('/')[-1])
                     jsonfile = 'Resource.json'
 
                 found = re.search(typeregex, fullpath)
@@ -686,8 +686,8 @@ class RisMonolith(Dictable):
                         continue
 
                     if newpath.lower() not in self.visited_urls:
-                        self.load(newpath, crawl=False, includelogs=False, \
-                                                init=False, loadtype='ref')
+                        self.load(newpath, crawl=False, includelogs=False,
+                                  init=False, loadtype='ref')
 
                     instance = list()
 
@@ -814,8 +814,8 @@ class RisMonolith(Dictable):
                 newval = newsc[0] if newsc else None
                 if not newval:
                     schlist = [ele["$ref"] for ele in list(schlist) if "$ref" in ele.keys() and \
-                       (ele["$ref"].split('#')[0].endswith('.json') and 'odata' not in \
-                       ele["$ref"].split('#')[0])]
+                       (ele["$ref"].split('#')[0].endswith('.json') and 'odata' not in
+                        ele["$ref"].split('#')[0])]
                     maxsch = max(schlist)
                     newval = {"$ref":maxsch}
 
@@ -844,8 +844,8 @@ class RisMonolith(Dictable):
                         jsonfile = '/'.join(resp.request.path.split('/')[:inds]) \
                                     + '/' + jsonfile + '/'
                     if jsonfile not in self.paths:
-                        self.load(jsonfile, crawl=False, includelogs=False, \
-                                                init=False, loadtype='ref')
+                        self.load(jsonfile, crawl=False, includelogs=False,
+                                  init=False, loadtype='ref')
                     item = self.paths[jsonfile] if jsonfile in self.paths else None
 
                     if not item:
@@ -1005,16 +1005,16 @@ class RisMonolith(Dictable):
         :rtype: dict
         """
         self.load(includelogs=True, crawl=True, loadcomplete=True, path_refresh=True, init=True)
-        return self.to_dict() if not redmono else {x:{"Headers":v.resp.getheaders(), \
-                "Response":v.resp.dict} for x, v in list(self.paths.items()) if v}
+        return self.to_dict() if not redmono else {x:{"Headers":v.resp.getheaders(),
+                                                      "Response":v.resp.dict} for x, v in list(self.paths.items()) if v}
 
     def killthreads(self):
         """Function to kill threads on logout"""
         threads = []
         for thread in threading.enumerate():
             if isinstance(thread, LoadWorker):
-                self.get_queue.put(('KILL', 'KILL', 'KILL', 'KILL',\
-                                'KILL', 'KILL', 'KILL', 'KILL', 'KILL', 'KILL'))
+                self.get_queue.put(('KILL', 'KILL', 'KILL', 'KILL',
+                                    'KILL', 'KILL', 'KILL', 'KILL', 'KILL', 'KILL'))
                 threads.append(thread)
 
         for thread in threads:

@@ -311,9 +311,9 @@ class BlobStore2(object):
 
                 write_blob_size = bytes_written
 
-                self.write_fragment(key, namespace=namespace, \
-                            data=data[write_blob_size:write_blob_size+count], \
-                            offset=write_blob_size, count=count)
+                self.write_fragment(key, namespace=namespace,
+                                    data=data[write_blob_size:write_blob_size+count],
+                                    offset=write_blob_size, count=count)
 
                 bytes_written += count
 
@@ -455,8 +455,8 @@ class BlobStore2(object):
 
         return errorcode
 
-    def rest_immediate(self, req_data, rqt_key="RisRequest", \
-            rsp_key="RisResponse", rsp_namespace="volatile"):
+    def rest_immediate(self, req_data, rqt_key="RisRequest",
+                       rsp_key="RisResponse", rsp_namespace="volatile"):
         """Read/write blob via immediate operation
 
         :param req_data: The blob data to be read/written.
@@ -806,8 +806,8 @@ class BlobStore2(object):
         excp = None
         libhandle = None
         libnames = ["ilorest_chif.dll", "hprest_chif.dll"] if os.name == \
-                    'nt' else ["ilorest_chif_dev.so", "hprest_chif_dev.so", \
-                                        "ilorest_chif.so", "hprest_chif.so"]
+                    'nt' else ["ilorest_chif_dev.so", "hprest_chif_dev.so",
+                               "ilorest_chif.so", "hprest_chif.so"]
         for libname in libnames:
             try:
                 libpath = BlobStore2.checkincurrdirectory(libname)

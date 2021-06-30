@@ -87,7 +87,7 @@ class RestClientBase(object):
         else:
             _ = conn_kwargs.pop('username', None)
             _ = conn_kwargs.pop('password', None)
-            self.connection = HttpConnection(base_url, **conn_kwargs)
+            self.connection = HttpConnection(base_url, self._cert_data, **conn_kwargs)
 
     def _get_req_headers(self, headers=None):
         """Base _get_req_headers function"""
@@ -105,8 +105,8 @@ class RestClientBase(object):
         :returns: A :class:`redfish.rest.containers.RestResponse` object
         """
         try:
-            return self.connection.rest_request(path, method='GET', args=args, \
-                                                 headers=self._get_req_headers(headers=headers))
+            return self.connection.rest_request(path, method='GET', args=args,
+                                                headers=self._get_req_headers(headers=headers))
         except ValueError:
             LOGGER.debug("Error in json object getting path: %s", path)
             raise JsonDecodingError('Error in json decoding.')
@@ -124,8 +124,8 @@ class RestClientBase(object):
         :type headers: dict
         :returns: A :class:`redfish.rest.containers.RestResponse` object
         """
-        return self.connection.rest_request(path, body=body, \
-                        method='PATCH', args=args, headers=self._get_req_headers(headers=headers))
+        return self.connection.rest_request(path, body=body,
+                                            method='PATCH', args=args, headers=self._get_req_headers(headers=headers))
 
     def post(self, path, body, args=None, headers=None):
         """Perform a POST request
@@ -140,8 +140,8 @@ class RestClientBase(object):
         :type headers: dict
         :returns: A :class:`redfish.rest.containers.RestResponse` object
         """
-        return self.connection.rest_request(path, body=body, \
-                        method='POST', args=args, headers=self._get_req_headers(headers=headers))
+        return self.connection.rest_request(path, body=body,
+                                            method='POST', args=args, headers=self._get_req_headers(headers=headers))
 
     def put(self, path, body, args=None, headers=None):
         """Perform a PUT request
@@ -156,8 +156,8 @@ class RestClientBase(object):
         :type headers: dict
         :returns: A :class:`redfish.rest.containers.RestResponse` object
         """
-        return self.connection.rest_request(path, body=body, \
-                        method='PUT', args=args, headers=self._get_req_headers(headers=headers))
+        return self.connection.rest_request(path, body=body,
+                                            method='PUT', args=args, headers=self._get_req_headers(headers=headers))
 
     def head(self, path, headers=None):
         """Perform a HEAD request
@@ -168,7 +168,7 @@ class RestClientBase(object):
         :type headers: dict
         :returns: A :class:`redfish.rest.containers.RestResponse` object
         """
-        return self.connection.rest_request(path, method='HEAD', \
+        return self.connection.rest_request(path, method='HEAD',
                                             headers=self._get_req_headers(headers=headers))
 
     def delete(self, path, headers=None):
@@ -180,7 +180,7 @@ class RestClientBase(object):
         :type args: dict
         :returns: A :class:`redfish.rest.containers.RestResponse` object
         """
-        return self.connection.rest_request(path, method='DELETE', \
+        return self.connection.rest_request(path, method='DELETE',
                                             headers=self._get_req_headers(headers=headers))
 
 class RestClient(RestClientBase):
@@ -196,19 +196,23 @@ class RestClient(RestClientBase):
     :type password: str
     :param auth: The authentication type to force.
     :type auth: str or :class:`AuthMethod` class variable.
+    :param ca_cert_data: Dictionary containing the certificate authority data (user CA, \
+                         user root CA, user root CA key
+    :type ca_cert_data: dict
     :param \\**client_kwargs: Arguments to create a :class:`RestClientBase` instance.
     """
-    def __init__(self, default_prefix='/redfish/v1/', is_redfish=True,\
-                 username=None, password=None, auth=None, **client_kwargs):
+    def __init__(self, default_prefix='/redfish/v1/', is_redfish=True,
+                 username=None, password=None, auth=None, ca_cert_data=None, **client_kwargs):
         """Create a Rest Client object"""
         self.default_prefix = default_prefix
         self.is_redfish = is_redfish
 
         self.root = None
-        self.auth_type = self._get_auth_type(auth, **client_kwargs)
+        self.auth_type = self._get_auth_type(auth, ca_cert_data=ca_cert_data, **client_kwargs)
         self._auth_key = None
         self._user_pass = (username, password)
         self._session_location = None
+        self._cert_data = ca_cert_data
         super(RestClient, self).__init__(username=username, password=password, **client_kwargs)
 
     def __enter__(self):
@@ -220,13 +224,13 @@ class RestClient(RestClientBase):
         """Close the connection"""
         self.logout()
 
-    def _get_auth_type(self, auth_param, **client_kwargs):
+    def _get_auth_type(self, auth_param, ca_cert_data=None, **client_kwargs):
         """Get the auth type based on key args or positional argument.
             Defaults to session auth."""
         if not auth_param:
-            _ca_cert_data = client_kwargs.get('ca_cert_data')
-            if _ca_cert_data:
-                if _ca_cert_data.get('cert_file') and _ca_cert_data.get('key_file'):
+            #_ca_cert_data = client_kwargs.get('ca_cert_data')
+            if 'cert_file' in ca_cert_data and ca_cert_data['cert_file']:
+                if ca_cert_data.get('cert_file') and ca_cert_data.get('key_file'):
                     return AuthMethod.CERTIFICATE
             return AuthMethod.SESSION
 
@@ -308,7 +312,7 @@ class RestClient(RestClientBase):
             login_url = self.root.obj.links.Sessions.href
         finally:
             if not login_url:
-                raise ServerDownOrUnreachableError("Cannot locate the login url. Is this a Rest or"\
+                raise ServerDownOrUnreachableError("Cannot locate the login url. Is this a Rest or"
                                                    " Redfish server?")
         return login_url
 
@@ -359,8 +363,8 @@ class RestClient(RestClientBase):
         """ Login using basic authentication """
         LOGGER.info('Performing basic authentication.')
         if not self.basic_auth:
-            auth_key = base64.b64encode(('{}:{}'.format(self.username, \
-                            self.password)).encode('utf-8')).decode('utf-8')
+            auth_key = base64.b64encode(('{}:{}'.format(self.username,
+                                                        self.password)).encode('utf-8')).decode('utf-8')
             self.basic_auth = 'Basic {}'.format(auth_key)
 
         headers = dict()
@@ -430,7 +434,7 @@ class RestClient(RestClientBase):
 
         token = self._biospassword if self._biospassword else optionalpassword
         if token:
-            token = optionalpassword.encode('utf-8') if type(\
+            token = optionalpassword.encode('utf-8') if type(
                 optionalpassword).__name__ in 'basestr' else token
             hash_object = hashlib.new('SHA256')
             hash_object.update(token)
@@ -459,8 +463,8 @@ class LegacyRestClient(RestClient):
 
     For full description of the arguments allowed see :class:`RestClient`"""
     def __init__(self, **client_kwargs):
-        super(LegacyRestClient, self).__init__(default_prefix='/rest/v1', is_redfish=False, \
-                                         **client_kwargs)
+        super(LegacyRestClient, self).__init__(default_prefix='/rest/v1', is_redfish=False,
+                                               **client_kwargs)
 class RedfishClient(RestClient):
     """Class for a **Redfish** client instance.
     Instantiates appropriate Redfish object based on existing configuration.
@@ -474,5 +478,5 @@ class RedfishClient(RestClient):
 
     For full description of the arguments allowed see :class:`RestClient`"""
     def __init__(self, **client_kwargs):
-        super(RedfishClient, self).__init__(default_prefix='/redfish/v1/', is_redfish=True, \
-                                         **client_kwargs)
+        super(RedfishClient, self).__init__(default_prefix='/redfish/v1/', is_redfish=True,
+                                            **client_kwargs)

@@ -64,7 +64,7 @@ def get_SmartArray_LogicalDrives(_redfishobj):
         if not logicaldrives_resp.dict['Members']:
             sys.stderr.write("\tLogical drives are not available for this controller.\n")
         for lds in logicaldrives_resp.dict['Members']:
-            sys.stdout.write("\t An associated logical drive: %s\n" % drives)
+            sys.stdout.write("\t An associated logical drive: %s\n" % logicaldrives_resp.dict['Name'])
             drive_data = _redfishobj.get(lds['@odata.id']).dict
             print(json.dumps(drive_data, indent=4, sort_keys=True))
 
@@ -89,7 +89,7 @@ def get_SmartArray_LogicalDrives_gen9(_redfishobj):
             sys.stderr.write("\tLogical drives are not available for this controller.\n")
         else:
             for lds in logicaldrives_resp.dict['Members']:
-                sys.stdout.write("\t An associated logical drive: %s\n" % drives)
+                sys.stdout.write("\t An associated logical drive: %s\n" % logicaldrives_resp.dict['Name'])
                 drive_data = _redfishobj.get(lds['@odata.id']).dict
                 print(json.dumps(drive_data, indent=4, sort_keys=True))
 

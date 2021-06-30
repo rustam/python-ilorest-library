@@ -164,9 +164,9 @@ class RmcApp(object):
         """Updates the cache with the latest monolith data."""
         self._cm.cache_rmc()
 
-    def login(self, username=None, password=None, base_url='blobstore://.', \
-              path=None, skipbuild=False, includelogs=False, \
-              biospassword=None, is_redfish=False, proxy=None, ssl_cert=None, \
+    def login(self, username=None, password=None, base_url='blobstore://.',
+              path=None, skipbuild=False, includelogs=False,
+              biospassword=None, is_redfish=False, proxy=None, ssl_cert=None,
               user_ca_cert_data=None):
         """Performs a login on a the server specified by the keyword arguments. Will also create
         a monolith, client, and update the compatibility classes for the app instance. If base_url
@@ -202,16 +202,16 @@ class RmcApp(object):
         :type is_redfish: bool
         """
 
-        self.typepath.getgen(url=base_url, username=username, password=password, \
-                proxy=proxy, isredfish=is_redfish)
+        self.typepath.getgen(url=base_url, username=username, password=password,
+                             ca_cert_data=user_ca_cert_data, proxy=proxy, isredfish=is_redfish)
         is_redfish = self.typepath.updatedefinesflag(redfishflag=is_redfish)
 
         if self.redfishinst and self.redfishinst.session_key:
             self.logout()
 
-        self.redfishinst = RestClient(base_url=base_url, username=username, password=password, \
-            default_prefix=self.typepath.defs.startpath, biospassword=biospassword, \
-            is_redfish=is_redfish, proxy=proxy, ca_cert_data=user_ca_cert_data)
+        self.redfishinst = RestClient(base_url=base_url, username=username, password=password,
+                                      default_prefix=self.typepath.defs.startpath, biospassword=biospassword,
+                                      is_redfish=is_redfish, proxy=proxy, ca_cert_data=user_ca_cert_data)
 
         self.current_client.login(self.current_client.auth_type)
 
@@ -224,7 +224,7 @@ class RmcApp(object):
             sys.stdout.write("Monolith build process time: %s\n" % (endtime - inittime))
         self.save()
         if not self.monolith:
-            self.monolith.update_member(resp=self.current_client.root, \
+            self.monolith.update_member(resp=self.current_client.root,
                                         path=self.typepath.defs.startpath, init=False)
 
     def logout(self, url=None):
@@ -287,8 +287,8 @@ class RmcApp(object):
             raise NothingSelectedError()
         selector = self.typepath.modifyselectorforgen(selector)
         instances = self._getinstances(selector=selector, path_refresh=path_refresh)
-        val = fltrvals[1].strip('\'\"') if isinstance(fltrvals[1], \
-                                        six.string_types) else fltrvals[1]
+        val = fltrvals[1].strip('\'\"') if isinstance(fltrvals[1],
+                                                      six.string_types) else fltrvals[1]
         instances = [inst for inst in instances if not fltrvals[0] or \
                     navigatejson(fltrvals[0].split('/'), copy.deepcopy(inst.dict), val)]
         if any(instances):
@@ -298,7 +298,7 @@ class RmcApp(object):
 
         errmsg = "Unable to locate instance for '{0}' and filter '{1}={2}'". \
                     format(selector, fltrvals[0], fltrvals[1]) if fltrvals[0] \
-                    and fltrvals[1] else "Unable to locate instance for {}".format(selector)
+                    and fltrvals[1] else "Unable to locate instance for {}\n".format(selector)
 
         raise InstanceNotFoundError(errmsg)
 
@@ -336,8 +336,8 @@ class RmcApp(object):
                                 instances.append(item[instance._typestring])
         return instances
 
-    def getprops(self, selector=None, props=None, nocontent=None, \
-                            skipnonsetting=True, remread=False, insts=None):
+    def getprops(self, selector=None, props=None, nocontent=None,
+                 skipnonsetting=True, remread=False, insts=None):
         """Gets properties from a specified selector. If no selector is specified, uses the selector
         property in the app class. Instead of a selector a list of instances to search can be used
         instead. If both **selector** and **insts** are passed, **insts** is used.
@@ -374,7 +374,8 @@ class RmcApp(object):
 
         if selector != "UpdateService.":
             if not instances or len(instances) == 0:
-                raise NothingSelectedError()
+                if not selector:
+                    raise NothingSelectedError()
 
         for instance in instances:
             currdict = instance.dict
@@ -440,7 +441,7 @@ class RmcApp(object):
                     if inst.resp.getheader('Link') else None
             seldict = {}
             if not props:
-                model, bsmodel = self.get_model(currdict, attributeregistry, \
+                model, bsmodel = self.get_model(currdict, attributeregistry,
                                                 latestschema, proppath=proppath)
                 results = model
                 break
@@ -453,9 +454,9 @@ class RmcApp(object):
                     continue
             if self.typepath.defs.typestring in currdict:
                 seldict[typestring] = currdict[typestring]
-                model, bsmodel = self.get_model(currdict, \
-                                  attributeregistry, latestschema, newarg=props[:-1], \
-                                  proppath=proppath)
+                model, bsmodel = self.get_model(currdict,
+                                                attributeregistry, latestschema, newarg=props[:-1],
+                                                proppath=proppath)
             if not model and not bsmodel:
                 errmsg = "/".join(props)
                 warning_handler("Unable to locate registry model or "\
@@ -474,8 +475,8 @@ class RmcApp(object):
             " selection\n".format("/".join(props))
         warning_handler(errmsg)
 
-    def loadset(self, seldict=None, fltrvals=(None, None), diffonly=False,\
-            latestschema=False, uniqueoverride=False, selector=None):
+    def loadset(self, seldict=None, fltrvals=(None, None), diffonly=False,
+                latestschema=False, uniqueoverride=False, selector=None):
         """Creates json patches in monolith if the supplied dictionary passes schema validation.
         In the event schemas are unavailable the patches are always added. Patches that are created
         this way are not sent to the server until the :meth:`commit` function is called, sending the
@@ -520,8 +521,8 @@ class RmcApp(object):
                 nochangesmade = True
 
             currdict = instance.resp.dict
-            diff_resp = diffdict(newdict=copy.deepcopy(seldict),\
-                 oridict=copy.deepcopy(currdict), settingskipped=settingskipped)
+            diff_resp = diffdict(newdict=copy.deepcopy(seldict),
+                                 oridict=copy.deepcopy(currdict), settingskipped=settingskipped)
 
             iloversion = self.getiloversion()
             if iloversion:
@@ -529,10 +530,10 @@ class RmcApp(object):
                             strip('<>') if instance.resp.getheader('Link') \
                             else None
                 try:
-                    self._validatechanges(instance=instance, attributeregistry=attributeregistry,\
-                            newdict=diff_resp, oridict=currdict, \
-                            unique=uniqueoverride, latestschema=latestschema, \
-                            proppath=proppath)
+                    self._validatechanges(instance=instance, attributeregistry=attributeregistry,
+                                          newdict=diff_resp, oridict=currdict,
+                                          unique=uniqueoverride, latestschema=latestschema,
+                                          proppath=proppath)
                 except SchemaValidationError:
                     LOGGER.error("Cannot validate changes, error found in schema.")
 
@@ -669,8 +670,8 @@ class RmcApp(object):
                 else:
                     yield False #Success
 
-    def patch_handler(self, put_path, body, headers=None, silent=False, service=False, \
-                  optionalpassword=None):
+    def patch_handler(self, put_path, body, headers=None, silent=False, service=False,
+                      optionalpassword=None):
         """Performs the client HTTP PATCH operation with monolith and response handling support.
         Response handling will output to logger or string depending on showmessages app argument.
 
@@ -736,6 +737,9 @@ class RmcApp(object):
         """
         results = self.current_client.get(put_path, headers=headers)
 
+        if results and getattr(results, "status", None) and results.status == 404:
+            return results
+
         if not uncache and results.status == 200:
             self.monolith.update_member(resp=results, path=put_path, init=False)
 
@@ -783,8 +787,8 @@ class RmcApp(object):
 
         return results
 
-    def put_handler(self, put_path, body, headers=None, silent=False, \
-                optionalpassword=None, service=False):
+    def put_handler(self, put_path, body, headers=None, silent=False,
+                    optionalpassword=None, service=False):
         """Performs the client HTTP PUT operation with monolith and response handling support.
         Response handling will output to logger or string depending on showmessages app argument.
 
@@ -877,7 +881,7 @@ class RmcApp(object):
 
         return results
 
-    def removereadonlyprops(self, currdict, emptyraise=False, \
+    def removereadonlyprops(self, currdict, emptyraise=False,
                             removeunique=True, specify_props=None):
         """Remove read only properties from a dictionary. Requires schemas to be available.
 
@@ -897,18 +901,18 @@ class RmcApp(object):
             if specify_props:
                 templist = specify_props
             else:
-                templist = ["Modified", "Type", "Description", "Status",\
-                            "links", "SettingsResult", "Attributes", \
-                            "@odata.context", "@odata.type", "@odata.id",\
-                            "@odata.etag", "Links", "Actions", \
+                templist = ["Modified", "Type", "Description", "Status",
+                            "links", "SettingsResult", "Attributes",
+                            "@odata.context", "@odata.type", "@odata.id",
+                            "@odata.etag", "Links", "Actions",
                             "AvailableActions", "BiosVersion"]
             #Attributes removed and readded later as a validation workaround
             currdict = iterateandclear(currdict, templist)
             iloversion = self.getiloversion()
             if not iloversion:
                 return currdict
-            self.validationmanager.validatedict(currdict, currtype=currtype, \
-                   monolith=self.monolith, unique=removeunique, searchtype=None)
+            self.validationmanager.validatedict(currdict, currtype=currtype,
+                                                monolith=self.monolith, unique=removeunique, searchtype=None)
             if oridict.get("Attributes", None):
                 currdict["Attributes"] = oridict["Attributes"]
             return currdict
@@ -984,6 +988,9 @@ class RmcApp(object):
         """
         iloversion = self._iloversion = self._iloversion if self._iloversion \
                                         else self.typepath.iloversion
+
+        if not iloversion and hasattr(self.redfishinst, 'iloversion'):
+            iloversion = self._iloversion = self.typepath.iloversion = self.redfishinst.iloversion
 
         if self.typepath.gencompany and not self._iloversion and not self.typepath.noschemas:
             self.monolith.load(self.typepath.defs.managerpath, crawl=False)
@@ -1096,8 +1103,8 @@ class RmcApp(object):
         if not paths:
             return
         try:
-            list(map(lambda x: self.monolith.load(path=x, init=False, path_refresh=path_refresh,\
-                  crawl=crawl, includelogs=True), paths))
+            list(map(lambda x: self.monolith.load(path=x, init=False, path_refresh=path_refresh,
+                                                  crawl=crawl, includelogs=True), paths))
         except Exception as excp:
             try:
                 if excp.errno == 10053:
@@ -1128,20 +1135,20 @@ class RmcApp(object):
         type_str = self.typepath.defs.typestring
         bsmodel = None
         valobj = self.validationmanager
-        model = valobj.get_registry_model(currtype=currdict[type_str], \
-                newarg=newarg, latestschema=latestschema, proppath=proppath)
+        model = valobj.get_registry_model(currtype=currdict[type_str],
+                                          newarg=newarg, latestschema=latestschema, proppath=proppath)
         if not attributeregistry and model:
             return model, bsmodel
         if not model and not attributeregistry:
-            LOGGER.warning("Unable to locate registry/schema for %s", currdict[type_str])
+            LOGGER.warning("Unable to locate registry/schema for %s\n", currdict[type_str])
             return None, None
         attrval = currdict.get("AttributeRegistry", None)
         attrval = list(attributeregistry.values())[0] if not attrval and \
                                         attributeregistry else attrval
-        bsmodel = valobj.get_registry_model(currtype=attrval if attrval else \
-                                    currdict[type_str], newarg=newarg, \
-                                    latestschema=latestschema, searchtype=\
-                                    self.typepath.defs.attributeregtype)
+        bsmodel = valobj.get_registry_model(currtype=attrval if attrval else
+        currdict[type_str], newarg=newarg,
+                                            latestschema=latestschema, searchtype=
+                                            self.typepath.defs.attributeregtype)
         return model, bsmodel
 
     def _build_monolith(self, path=None, includelogs=False, skipbuild=False):
@@ -1158,8 +1165,8 @@ class RmcApp(object):
         if not skipbuild:
             self.monolith.load(path=path, includelogs=includelogs, init=True)
         else:
-            self.monolith.update_member(resp=self.current_client.root, \
-                                        path=self.current_client.default_prefix,\
+            self.monolith.update_member(resp=self.current_client.root,
+                                        path=self.current_client.default_prefix,
                                         init=False)
 
     def _modifiedpath(self, results, delete=False, replace=False):
@@ -1201,9 +1208,9 @@ class RmcApp(object):
         for path in sametag:
             self.monolith.paths[path].patches = []
         if sametag:
-            LOGGER.warning('The data in the following paths have been updated. '\
-                    'Recheck the changes made to . %s', ','.join([str(path) for \
-                                                                                path in sametag]))
+            LOGGER.warning('The data in the following paths have been updated. '
+                           'Recheck the changes made to . %s', ','.join([str(path) for
+                                                                         path in sametag]))
 
     def _updatemono(self, currtype=None, path=None, crawl=False, path_refresh=False):
         """Check if type/path exists in current monolith
@@ -1234,7 +1241,7 @@ class RmcApp(object):
                     paths.add(path)
                     paths.update(monolith.checkmodified(path) if path in monolith.ctree else set())
         elif path:
-            if monolith.paths and not monolith.paths.keys()[0][-1] == '/':
+            if monolith.paths and not list(monolith.paths)[0][-1] == '/':
                 path = path[:-1] if path[-1] == '/' else path
             if path_refresh or not monolith.path(path):
                 paths.add(path)
@@ -1263,8 +1270,8 @@ class RmcApp(object):
                                  monolith.paths[paths] \
                for paths in monolith.typesadded[schemacoll]):
             self.download_path([schemaid], crawl=False)
-            schemacoll = next(monolith.gettypename(\
-                        self.typepath.defs.schemafilecollectiontype), None)
+            schemacoll = next(monolith.gettypename(
+                self.typepath.defs.schemafilecollectiontype), None)
 
         regcoll = next(monolith.gettypename(self.typepath.defs.regfilecollectiontype), None)
         if not regcoll or any(paths.lower() == regid and monolith.paths[paths] \
@@ -1275,8 +1282,8 @@ class RmcApp(object):
         return any(paths.lower() in (schemaid.lower(), regid.lower()) and \
             monolith.paths[paths] for paths in monolith.paths)
 
-    def _validatechanges(self, instance=None, attributeregistry=None, latestschema=None, \
-                        proppath=None, newdict=None, oridict=None, unique=False):
+    def _validatechanges(self, instance=None, attributeregistry=None, latestschema=None,
+                         proppath=None, newdict=None, oridict=None, unique=False):
         """Validate the changes that are requested by the user.
 
         :param newdict: dictionary with only the properties that have changed
@@ -1295,12 +1302,12 @@ class RmcApp(object):
         entrymono = self.monolith
         currtype = oridict[self.typepath.defs.typestring]
         validation_manager = self.validationmanager
-        validation_manager.validatedict(newdict, \
-            currtype=attributeregistry[instance.maj_type]\
-            if attributeregistry else currtype, monolith=entrymono, \
-            unique=unique, searchtype=self.typepath.defs.attributeregtype\
-            if attributeregistry else None, latestschema=latestschema, \
-            proppath=proppath)
+        validation_manager.validatedict(newdict,
+                                        currtype=attributeregistry[instance.maj_type]
+                                        if attributeregistry else currtype, monolith=entrymono,
+                                        unique=unique, searchtype=self.typepath.defs.attributeregtype
+            if attributeregistry else None, latestschema=latestschema,
+                                        proppath=proppath)
 
         validation_errors = validation_manager.errors
         for warninngs in validation_manager.warnings:
@@ -1417,9 +1424,9 @@ class RmcApp(object):
             (newtag, _) = self._gettypeswithetag()
             if (oldtag[path] != newtag[path]) and \
                         not self.typepath.defs.hpilodatetimetype in instance.maj_type:
-                warning_handler("The property you are trying to change " \
-                                 "has been updated. Please check entry again " \
-                                 " before manipulating it.\n")
+                warning_handler("The property you are trying to change "
+                                "has been updated. Please check entry again "
+                                " before manipulating it.\n")
                 raise ValueChangedError()
 
     def _gettypeswithetag(self):

@@ -94,9 +94,9 @@ class ValidationManager(object):
         """Loads the types into the validation manager from monolith."""
         monolith = self.monolith
         for instance in monolith.iter():
-            if (x.lower() in instance.maj_type.lower() for x in (self.defines.defs.\
-                schemafilecollectiontype,\
-                "Collection.", self.defines.defs.regfilecollectiontype)) and any(x.lower() in \
+            if (x.lower() in instance.maj_type.lower() for x in (self.defines.defs.
+                                                                         schemafilecollectiontype,
+                                                                 "Collection.", self.defines.defs.regfilecollectiontype)) and any(x.lower() in \
                     instance.path.lower() for x in (self._schemaid, self._regid))\
                     and instance and instance.path not in self._classpaths:
                 self._classpaths.append(instance.path)
@@ -224,8 +224,8 @@ class ValidationManager(object):
             except KeyError:
                 raise InvalidPathsError("Error accessing extref path!/n")
 
-    def validatedict(self, tdict, currtype=None, proppath=None, latestschema=False, \
-            searchtype=None, monolith=None, reg=None, unique=None):
+    def validatedict(self, tdict, currtype=None, proppath=None, latestschema=False,
+                     searchtype=None, monolith=None, reg=None, unique=None):
         """Load the schema file and validate tdict against it.
 
         :param tdict: the dictionary to test against.
@@ -250,12 +250,12 @@ class ValidationManager(object):
         :returns: returns an error list.
         """
         if not reg:
-            reg = self.get_registry_model(currtype=currtype, searchtype=searchtype, \
-                                    proppath=proppath, latestschema=latestschema)
+            reg = self.get_registry_model(currtype=currtype, searchtype=searchtype,
+                                          proppath=proppath, latestschema=latestschema)
 
         if reg:
-            list(map(lambda x: self.checkreadunique(tdict, x, reg=reg, searchtype=searchtype, \
-                            warnings=self._warnings, unique=unique), list(tdict.keys())))
+            list(map(lambda x: self.checkreadunique(tdict, x, reg=reg, searchtype=searchtype,
+                                                    warnings=self._warnings, unique=unique), list(tdict.keys())))
             orireg = reg.copy()
             ttdict = {key:val for key, val in list(tdict.items()) \
                       if not isinstance(val, (dict, list))}
@@ -273,15 +273,15 @@ class ValidationManager(object):
                     #TODO: only validates if its a single dict within list
                     if len(val) == 1 and isinstance(val[0], dict):
                         treg = self.nestedreg(reg=reg, args=[ki])
-                        self.validatedict(val[0], unique=unique, monolith=monolith, reg=treg,\
-                              currtype=currtype, searchtype=searchtype)
+                        self.validatedict(val[0], unique=unique, monolith=monolith, reg=treg,
+                                          currtype=currtype, searchtype=searchtype)
                     else:
                         continue
                 elif val and isinstance(val, dict):
                     valexists = True
                     treg = self.nestedreg(reg=reg, args=[ki])
-                    self.validatedict(val, monolith=monolith, reg=treg, unique=unique, \
-                                  searchtype=searchtype)
+                    self.validatedict(val, monolith=monolith, reg=treg, unique=unique,
+                                      searchtype=searchtype)
                 if not val and valexists:
                     del tdict[ki]
 
@@ -305,18 +305,18 @@ class ValidationManager(object):
 
         """
 
-        if reg.get("ReadOnly") == False or (reg.get(tkey, None)\
-                                                        and reg[tkey].get("readonly") == False):
+        if reg.get("ReadOnly") == False or (reg.get(tkey, None)
+                                            and reg[tkey].get("readonly") == False):
             if unique or not reg.get("IsSystemUniqueProperty", None):
                 return
-        if not searchtype or (reg.get("ReadOnly") == True or (reg.get(tkey) \
-                                                    and reg[tkey].get("readonly") == True)):
+        if not searchtype or (reg.get("ReadOnly") == True or (reg.get(tkey)
+                                                              and reg[tkey].get("readonly") == True)):
             warnings.append("Property is read-only skipping '%s'\n" % str(tkey))
             del tdict[tkey]
             return True
 
-    def get_registry_model(self, currtype=None, proppath=None, \
-           getmsg=False, searchtype=None, newarg=None, latestschema=False):
+    def get_registry_model(self, currtype=None, proppath=None,
+                           getmsg=False, searchtype=None, newarg=None, latestschema=False):
         """Loads the schema file and find the registry model if available. A registry model is a
         object built for schema/bios registry data.
 
@@ -339,8 +339,8 @@ class ValidationManager(object):
         monolith = self.monolith
         currtype = currtype.split('#')[-1].split('.')[0] +\
                 '.' if currtype and latestschema else currtype
-        if (not currtype or not self.find_prop(currtype, latestschema=latestschema, \
-               proppath=proppath if not searchtype else None)) and (not searchtype):
+        if (not currtype or not self.find_prop(currtype, latestschema=latestschema,
+                                               proppath=proppath if not searchtype else None)) and (not searchtype):
             self._errors.append(RegistryValidationError('Location info is missing.'))
             return None
         if not searchtype:
@@ -349,11 +349,11 @@ class ValidationManager(object):
         try:
             for instance in monolith.iter(searchtype):
                 if (searchtype == Typepathforval.typepath.defs.attributeregtype) or\
-                    (searchtype == "object" and any(currtype in \
-                       xtitle for xtitle in (instance.resp.dict.get("title", ""), \
-                                   instance.resp.dict.get("oldtitle", "")))) \
-                   or (searchtype != "object" and currtype.split('#')[-1].split('.')[0] \
-                            == instance.dict.get("RegistryPrefix", "")):
+                    (searchtype == "object" and any(currtype in
+                                                    xtitle for xtitle in (instance.resp.dict.get("title", ""),
+                                                                          instance.resp.dict.get("oldtitle", "")))) \
+                   or (searchtype != "object" and currtype.split('#')[-1].split('.')[0]
+                       == instance.dict.get("RegistryPrefix", "")):
                     regdict = instance.resp.dict
                     break
         except BaseException:
@@ -415,8 +415,8 @@ class ValidationManager(object):
                 elif 'type' in reg[arg] and reg[arg]['type'] == 'array' and \
                     'items' in reg[arg] and "properties" in reg[arg]["items"]:
                     reg = reg[arg]["items"]["properties"]
-                elif (not 'properties' in reg[arg].keys()) or ('patternProperties' in \
-                                                                                reg[arg].keys()):
+                elif (not 'properties' in reg[arg].keys()) or ('patternProperties' in
+                                                               reg[arg].keys()):
                     reg = reg[arg]
                 else:
                     reg = reg[arg]["properties"]
@@ -505,8 +505,8 @@ class HpPropertiesRegistry(RisObject):
             validator = PasswordValidator.parse(self[attrname])
         elif 'oneOf' in list(self[attrname].keys()):
             for item in self[attrname]['oneOf']:
-                validator = self.get_validator(attrname, newargs, \
-                                        HpPropertiesRegistry({attrname:item}))
+                validator = self.get_validator(attrname, newargs,
+                                               HpPropertiesRegistry({attrname:item}))
                 if validator:
                     break
         return validator
@@ -713,9 +713,9 @@ class EnumValidator(BaseValidator):
 
         try:
             for possibleval in self.enum:
-                if possibleval and (isinstance(possibleval, type(newval)) or \
-                             (isinstance(possibleval, six.string_types) and \
-                             isinstance(newval, six.string_types))) and \
+                if possibleval and (isinstance(possibleval, type(newval)) or
+                                    (isinstance(possibleval, six.string_types) and
+                                     isinstance(newval, six.string_types))) and \
                              possibleval.lower() == str(newval).lower():
                     keyval[0] = possibleval
                     return result
@@ -955,14 +955,14 @@ class IntegerValidator(BaseValidator):
         if 'LowerBound' in self:
             if intval < int(self['LowerBound']):
                 result.append(RegistryValidationError("'%s' must be greater" \
-                                      " than or equal to '%s'" % (self.Name, \
-                                      int(self['LowerBound'])), regentry=self))
+                                      " than or equal to '%s'" % (self.Name,
+                                                                  int(self['LowerBound'])), regentry=self))
 
         if 'UpperBound' in self:
             if intval > int(self['UpperBound']):
                 result.append(RegistryValidationError("'%s' must be less " \
-                                      "than or equal to '%s'" % (self.Name, \
-                                     int(self['LowerBound'])), regentry=self))
+                                      "than or equal to '%s'" % (self.Name,
+                                                                 int(self['LowerBound'])), regentry=self))
 
         return result
 
@@ -1025,9 +1025,9 @@ class ObjectValidator(BaseValidator):
         #TODO: need to add logic for true postive and false negatives.
         result = list()
         if isinstance(newval[0], (dict, six.string_types, int)):
-            result.append(\
-                    RegistryValidationError("'%s' is not a valid setting for '%s'" % \
-                                                                (newval[0], name), regentry=self))
+            result.append(
+                RegistryValidationError("'%s' is not a valid setting for '%s'" %
+                                        (newval[0], name), regentry=self))
         return result
 
     def print_help(self, name):
@@ -1103,14 +1103,14 @@ class PasswordValidator(BaseValidator):
         if 'MinLength' in self:
             if len(newval) < int(self['MinLength']):
                 result.append(RegistryValidationError("'%s' must be at least" \
-                                      " '%s' characters long" % (self.Name, \
-                                     int(self['MinLength'])), regentry=self))
+                                      " '%s' characters long" % (self.Name,
+                                                                 int(self['MinLength'])), regentry=self))
 
         if 'MaxLength' in self:
             if len(newval) > int(self['MaxLength']):
                 result.append(RegistryValidationError("'%s' must be less " \
-                                  "than '%s' characters long" % (self.Name, \
-                                     int(self['MaxLength'])), regentry=self))
+                                  "than '%s' characters long" % (self.Name,
+                                                                 int(self['MaxLength'])), regentry=self))
 
         if 'ValueExpression' in self:
             if self['ValueExpression']:

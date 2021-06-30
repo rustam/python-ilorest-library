@@ -49,7 +49,7 @@ class LoadWorker(threading.Thread):
         """Main worker function"""
         try:
             while True:
-                (path, includelogs, loadcomplete, crawl, rel,\
+                (path, includelogs, loadcomplete, crawl, rel,
                  init, prevpath, originaluri, theobj) = self.queue.get()
                 if path == includelogs == loadcomplete == crawl == rel == init == \
                     prevpath == originaluri == theobj =='KILL':
@@ -88,8 +88,8 @@ class LoadWorker(threading.Thread):
                     raise redfish.ris.ris.BiosUnregisteredError()
                 elif resp.status == 401:
                     self.queue.task_done()
-                    raise redfish.ris.ris.SessionExpired("Invalid session. Please logout and "\
-                                            "log back in or include credentials.")
+                    raise redfish.ris.ris.SessionExpired("Invalid session. Please logout and "
+                                                         "log back in or include credentials.")
                 elif resp.status not in (201, 200):
                     theobj.removepath(path)
                     self.queue.task_done()
@@ -113,15 +113,15 @@ class LoadWorker(threading.Thread):
                                         str(resp.dict['links']['NextPage']['page'])
                         href = '%s' % next_link_uri
 
-                        theobj.get_queue.put((href, includelogs, loadcomplete, crawl, \
-                                   rel, init, None, originaluri, theobj))
+                        theobj.get_queue.put((href, includelogs, loadcomplete, crawl,
+                                              rel, init, None, originaluri, theobj))
                     else:
                         next_link_uri = path + '?page=' + \
                                         str(resp.dict['links']['NextPage']['page'])
 
                         href = '%s' % next_link_uri
-                        theobj.get_queue.put((href, includelogs, loadcomplete, crawl, \
-                                   rel, init, None, path, theobj))
+                        theobj.get_queue.put((href, includelogs, loadcomplete, crawl,
+                                              rel, init, None, path, theobj))
 
                 #Only use monolith if we are set to
                 matchrdirpath = next((match for match in matches if match.value == \
@@ -143,13 +143,13 @@ class LoadWorker(threading.Thread):
                             continue
 
                         href = '%s' % match.value
-                        theobj.get_queue.put((href, includelogs, loadcomplete, crawl, \
-                                   rel, init, fpath(str(match.full_path), path), \
-                                   originaluri, theobj))
+                        theobj.get_queue.put((href, includelogs, loadcomplete, crawl,
+                                              rel, init, fpath(str(match.full_path), path),
+                                              originaluri, theobj))
                 elif crawl:
                     href = '%s' % matchrdirpath.value
-                    theobj.get_queue.put((href, includelogs, loadcomplete, crawl, \
-                                   rel, init, path, originaluri, theobj))
+                    theobj.get_queue.put((href, includelogs, loadcomplete, crawl,
+                                          rel, init, path, originaluri, theobj))
                 if loadcomplete:
                     if path == '/rest/v1':
                         schemamatch = jsonpath_rw.parse('$..extref')
@@ -160,8 +160,8 @@ class LoadWorker(threading.Thread):
                     for match in matches:
                         if isinstance(match.value, six.string_types):
                             theobj.get_queue.put((match.value, includelogs, loadcomplete,
-                                crawl, rel, init, fpath(str(match.full_path), path), \
-                                   originaluri, theobj))
+                                crawl, rel, init, fpath(str(match.full_path), path),
+                                                  originaluri, theobj))
                 self.queue.task_done()
         except Empty:
             pass

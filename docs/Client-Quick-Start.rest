@@ -8,7 +8,6 @@
    :maxdepth: 1
 
 
-==================
 Client Quick Start
 ==================
 
@@ -24,7 +23,7 @@ For more elaborate examples that use the Redfish API and the python-ilorest-libr
 The python-ilorest-library provides support for communication using both remote using HTTPS and local in-band using CHIF.
 
 Importing the Redfish Library
-==================
+=============================
 
 Import the Redfish library.
 

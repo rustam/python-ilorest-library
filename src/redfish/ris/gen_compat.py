@@ -53,8 +53,8 @@ class Typesandpathdefines(object):
         self.flagiften = False
         self.adminpriv = True
 
-    def getgen(self, gen=None, url=None, username=None, password=None, logger=None,\
-                proxy=None, ca_cert_data={}, isredfish=True):
+    def getgen(self, gen=None, url=None, username=None, password=None, logger=None,
+               proxy=None, ca_cert_data={}, isredfish=True):
         """Function designed to verify the servers platform. Will generate the `Typeandpathdefines`
         variables based on the system type that is detected.
 
@@ -91,8 +91,8 @@ class Typesandpathdefines(object):
         if not gen:
             try_count = 0
             try:
-                client = RedfishClient(base_url=self.url, username=username, password=password,\
-                                    proxy=proxy, ca_cert_data=ca_cert_data)
+                client = RedfishClient(base_url=self.url, username=username, password=password,
+                                       proxy=proxy, ca_cert_data=ca_cert_data)
                 client._get_root()
             except ServerDownOrUnreachableError as excp:
                 if self.is_redfish:
@@ -100,8 +100,8 @@ class Typesandpathdefines(object):
                 try_count += 1
             if not self.is_redfish:
                 try:
-                    restclient = LegacyRestClient(base_url=self.url, username=username, \
-                                    password=password, proxy=proxy, ca_cert_data=ca_cert_data)
+                    restclient = LegacyRestClient(base_url=self.url, username=username,
+                                                  password=password, proxy=proxy, ca_cert_data=ca_cert_data)
                     restclient._get_root()
                     #Check that the response is actually legacy rest and not a redirect
                     _ = restclient.root.obj.Type

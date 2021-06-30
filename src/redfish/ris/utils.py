@@ -217,8 +217,8 @@ def navigatejson(selector, currdict, val=None):
                 return None
             if val and ind == len(selector)-1:
                 cval = ",".join(seldict) if isinstance(seldict, (list, tuple)) else seldict
-                if not ((val[-1] == '*' and str(cval).lower().startswith(val[:-1].lower())) or \
-                                                        str(cval).lower() == val.lower()):
+                if not ((val[-1] == '*' and str(cval).lower().startswith(val[:-1].lower())) or
+                        str(cval).lower() == val.lower()):
                     fullbreak = True
         elif isinstance(seldict, (list, tuple)):
             returndict = []
@@ -305,7 +305,7 @@ def getattributeregistry(instances, adict=None):
             if 'AttributeRegistry' in inst.resp.dict:
                 newdict[inst.maj_type] = inst.resp.obj["AttributeRegistry"]
         except AttributeError as excp:
-            LOGGER.warn("Invalid/Unpopulated Response: %s\nType:%s\nPath:%s\n" \
+            LOGGER.warning("Invalid/Unpopulated Response: %s\nType:%s\nPath:%s\n" \
                         % (inst.resp, inst.type, inst.path))
     return newdict
 
@@ -483,8 +483,8 @@ def json_traversal_delete_empty(data, old_key=None, _iter=None, remove_list=None
     elif isinstance(data, dict):
         delete_list = []
         for key, value in data.items():
-            if (isinstance(value, dict) and len(value) < 1) or (isinstance(value, list)\
-                    and len(value) < 1) or None or value in remove_list or key in remove_list:
+            if (isinstance(value, dict) and len(value) < 1) or (isinstance(value, list)
+                                                                and len(value) < 1) or None or value in remove_list or key in remove_list:
                 delete_list.append(key)
 
             else:
