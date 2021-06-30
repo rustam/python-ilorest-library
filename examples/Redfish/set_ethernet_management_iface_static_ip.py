@@ -88,7 +88,7 @@ def set_ilo_static_ipv4(_redfishobj, ipv4_dict, dns_dict):
                 resp = _redfishobj.patch(ethernet, {"DHCPv4": {"UseDNSServers": False}})
                 ilo_response(_redfishobj, resp)
             if ethernet_data[ethernet]['DHCPv4'].get('UseGateway'):
-                resp = _redfishobj.pathc(ethernet, {"DHCPv4": {"UseGateway": False}})
+                resp = _redfishobj.patch(ethernet, {"DHCPv4": {"UseGateway": False}})
                 ilo_response(_redfishobj, resp)
         if 'IPv4StaticAddresses' in ethernet_data[ethernet]:
             body.update({"IPv4Addresses": [ipv4_dict]})
