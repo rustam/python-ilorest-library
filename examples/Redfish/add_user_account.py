@@ -131,12 +131,22 @@ if __name__ == "__main__":
     # intended for HPE servers.
     DISABLE_RESOURCE_DIR = False
 
+    ca_cert_data = {}
+    ca_cert_data["cert_file"] = "c:\\test\\ppcacuser.crt"
+    ca_cert_data["key_file"] = "c:\\test\\ppcacuserpriv.key"
+    ca_cert_data["key_password"] = "password"
+    LOGIN_ACCOUNT = None
+    LOGIN_PASSWORD = None
+
     try:
         # Create a Redfish client object
-        REDFISHOBJ = RedfishClient(base_url=SYSTEM_URL, username=LOGIN_ACCOUNT, \
-                                                                            password=LOGIN_PASSWORD)
+        REDFISHOBJ = RedfishClient(base_url=SYSTEM_URL, username=LOGIN_ACCOUNT, password=LOGIN_PASSWORD, ca_cert_data=ca_cert_data)
+        #REDFISHOBJ = RedfishClient(base_url=SYSTEM_URL, ca_cert_data=ca_cert_data)
         # Login with the Redfish client
-        REDFISHOBJ.login()
+        if ca_cert_data is None:
+            REDFISHOBJ.login()
+        else:
+            REDFISHOBJ.login(auth='certificate')
     except ServerDownOrUnreachableError as excp:
         sys.stderr.write("ERROR: server not reachable or does not support RedFish.\n")
         sys.exit()
