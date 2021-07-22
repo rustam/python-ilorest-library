@@ -229,7 +229,7 @@ class RestClient(RestClientBase):
             Defaults to session auth."""
         if not auth_param:
             #_ca_cert_data = client_kwargs.get('ca_cert_data')
-            if 'cert_file' in ca_cert_data and ca_cert_data['cert_file']:
+            if ca_cert_data and 'cert_file' in ca_cert_data and ca_cert_data['cert_file']:
                 if ca_cert_data.get('cert_file') and ca_cert_data.get('key_file'):
                     return AuthMethod.CERTIFICATE
             return AuthMethod.SESSION

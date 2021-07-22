@@ -86,7 +86,7 @@ class HttpConnection(object):
         self._conn = None
         self.base_url = base_url
         self._connection_properties = client_kwargs
-        if 'cert_file' in cert_data and cert_data['cert_file']:
+        if cert_data and 'cert_file' in cert_data and cert_data['cert_file']:
             self._connection_properties.update({'ca_cert_data':cert_data})
         self._proxy = self._connection_properties.pop('proxy', None)
         self.session_key = self._connection_properties.pop('session_key', None)
