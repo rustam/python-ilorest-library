@@ -40,7 +40,7 @@ For maximum compatibility between iLOs and other vendor hardware that implements
 .. note::  HPE's Legacy Rest API is available starting in **iLO 4 2.00**. iLO 4 is Redfish conformant starting with **iLO 4 2.30**. In iLO 5 and above the iLO RESTful API is Redfish only.
 
 Creating a Remote Object
-============================
+========================
 
 Creating a remote client requires including the iLO hostname or IP address and credentials.
 
@@ -106,7 +106,7 @@ Some reasons credentials may be required locally:
    REST_OBJ = redfish.RedfishClient()
 
 Create a login session
-============================
+======================
 
 Next the rest object's **login** method is called to initiate a rest session. The login method takes the credentials specified in the REST object we created.
 Login also takes an authentication type optional parameter, if the argument is not included the Client will choose an authentication type for you based on the arguments given with `session` being the default.
@@ -184,7 +184,7 @@ The formated Response body (Truncated for size):
 A full description of the Response Object is available in the reference `here <Reference.html#redfish.rest.containers.RestResponse>`_.
 
 Other HTTP Requests
-============================
+===================
 Other HTTP Requests **HEAD**, **PATCH**, **POST**, **DELETE**, and **PUT** are just as simple to use as **GET**.
 
 >>> response = REST_OBJ.head('/redfish/v1/systems/1')
@@ -194,7 +194,7 @@ Other HTTP Requests **HEAD**, **PATCH**, **POST**, **DELETE**, and **PUT** are j
 >>> response = REST_OBJ.put('<uri>', 'data')
 
 Close the login session
-============================
+=======================
 
 Logout of the current session. This is only required for `session` based authentication.
 

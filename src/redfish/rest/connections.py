@@ -40,54 +40,66 @@ from redfish.hpilo.rishpilo import HpIloChifPacketExchangeError
 from redfish.hpilo.risblobstore2 import BlobStore2, Blob2OverrideError, Blob2SecurityError
 from redfish.rest.containers import RestRequest, RestResponse, RisRestResponse
 
-#---------End of imports---------
+# ---------End of imports---------
 
 
-#---------Debug logger---------
+# ---------Debug logger---------
 
 LOGGER = logging.getLogger(__name__)
 
-#---------End of debug logger---------
+
+# ---------End of debug logger---------
 
 class RetriesExhaustedError(Exception):
     """Raised when retry attempts have been exhausted."""
+    pass
+
+class VnicNotEnabledError(Exception):
+    """Raised when retry attempts have been exhausted when VNIC is not enabled."""
     pass
 
 class DecompressResponseError(Exception):
     """Raised when decompressing the response failed."""
     pass
 
+
 class InvalidCredentialsError(Exception):
     """Raised when invalid credentials have been provided."""
     pass
+
 
 class InvalidCertificateError(Exception):
     """Raised when a invalid certificate has been provided."""
     pass
 
+
 class ChifDriverMissingOrNotFound(Exception):
     """Raised when CHIF driver is missing or not found."""
     pass
 
+
 class SecurityStateError(Exception):
     """Raised when there is a strict security state without authentication."""
     pass
+
 
 class HttpConnection(object):
     """HTTP connection capable of authenticating with HTTPS and Http/Socks Proxies
 
     :param base_url: The URL to make HTTP calls against
     :type base_url: str
-    :param \\**client_kwargs: Arguments to pass to the connection initialization. These are """\
-    "passed to a urllib3 `PoolManager <https://urllib3.readthedocs.io/en/latest/reference/"\
-    "index.html?highlight=PoolManager#urllib3.PoolManager>`_. All arguments that can be passed to "\
+    :param \\**client_kwargs: Arguments to pass to the connection initialization. These are """ \
+    "passed to a urllib3 `PoolManager <https://urllib3.readthedocs.io/en/latest/reference/" \
+    "index.html?highlight=PoolManager#urllib3.PoolManager>`_. All arguments that can be passed to " \
     "a PoolManager are valid arguments."
+
     def __init__(self, base_url, cert_data, **client_kwargs):
         self._conn = None
         self.base_url = base_url
         self._connection_properties = client_kwargs
-        if cert_data and 'cert_file' in cert_data and cert_data['cert_file']:
-            self._connection_properties.update({'ca_cert_data':cert_data})
+        if cert_data:
+            if ('cert_file' in cert_data and cert_data['cert_file']) or ('ca_certs' in cert_data and cert_data['ca_certs']):
+                self._connection_properties.update({'ca_cert_data': cert_data})
         self._proxy = self._connection_properties.pop('proxy', None)
         self.session_key = self._connection_properties.pop('session_key', None)
         self._init_connection()
@@ -125,7 +137,8 @@ class HttpConnection(object):
                 self._connection_properties.pop('ca_cert_data')
             except KeyError:
                 pass
-            http = PoolManager(cert_reqs=cert_reqs, maxsize=6, **self._connection_properties)
+            timeout = urllib3.util.Timeout(connect=40.0, read=None)
+            http = PoolManager(cert_reqs=cert_reqs, maxsize=6, timeout=timeout, **self._connection_properties)
 
         self._conn = http.request
 
@@ -144,10 +157,14 @@ class HttpConnection(object):
         :type headers: dict
         :returns: A :class:`redfish.rest.containers.RestResponse` object
         """
-        #TODO: Need to remove redfish.dmtf.org calls from here, add to their own HttpConnection
+        # TODO: Need to remove redfish.dmtf.org calls from here, add to their own HttpConnection
         files = None
         request_args = {}
-        external_uri = True if 'redfish.dmtf.org' in path else False
+        if isinstance(path, bytes):
+            path = str(path, "utf-8")
+            external_uri = True if 'redfish.dmtf.org' in path else False
+        else:
+            external_uri = True if 'redfish.dmtf.org' in path else False
         headers = {} if external_uri else headers
         reqpath = path.replace('//', '/') if not external_uri else path
 
@@ -171,7 +188,7 @@ class HttpConnection(object):
 
                         try:
                             gfile.write(str(body).encode('utf-8') if six.PY3 \
-                                        else str(body))
+                                            else str(body))
                         finally:
                             gfile.close()
 
@@ -191,7 +208,7 @@ class HttpConnection(object):
                 headers['Content-Type'] = 'application/x-www-form-urlencoded'
                 body = urlencode(args)
 
-        #TODO: ADD to the default headers?
+        # TODO: ADD to the default headers?
         if headers != None:
             headers['Accept-Encoding'] = 'gzip'
         restreq = RestRequest(path, method, data=files if files else body, url=self.base_url)
@@ -221,9 +238,9 @@ class HttpConnection(object):
                              restreq.path, 'binary body')
 
         inittime = time.time()
-        reqfullpath = self.base_url+reqpath if not external_uri else reqpath
+        reqfullpath = self.base_url + reqpath if not external_uri else reqpath
 
-        #To ensure we don't have unicode/string merging issues in httplib of Python 2
+        # To ensure we don't have unicode/string merging issues in httplib of Python 2
         if isinstance(reqfullpath, six.text_type):
             reqfullpath = str(reqfullpath)
 
@@ -236,14 +253,15 @@ class HttpConnection(object):
         try:
             resp = self._conn(method, reqfullpath, **request_args)
         except MaxRetryError as excp:
-            #TODO: Update error to be more descriptive
+            vnic_url = "16.1.15.1"
+            if reqfullpath.find(vnic_url) != -1:
+                raise VnicNotEnabledError()
             raise RetriesExhaustedError()
         except DecodeError:
-            #TODO: Update to be more descriptive or replace with DecodeError
             raise DecompressResponseError()
 
         endtime = time.time()
-        LOGGER.info('Response Time to %s: %s seconds.', restreq.path, str(endtime-inittime))
+        LOGGER.info('Response Time to %s: %s seconds.', restreq.path, str(endtime - inittime))
 
         restresp = RestResponse(restreq, resp)
 
@@ -256,7 +274,7 @@ class HttpConnection(object):
                 try:
                     LOGGER.debug('HTTP RESPONSE for %s:\nCode:%s\nHeaders:'
                                  '\n%s\nBody Response of %s: %s', restresp.request.path,
-                                 str(restresp._http_response.status)+ ' ' +
+                                 str(restresp._http_response.status) + ' ' +
                                  restresp._http_response.reason,
                                  headerstr, restresp.request.path, restresp.read)
                 except:
@@ -276,6 +294,7 @@ class HttpConnection(object):
             raise InvalidCertificateError('')
 
         return token, location
+
 
 class Blobstore2Connection(object):
     """A connection for communicating locally with HPE servers
@@ -298,7 +317,7 @@ class Blobstore2Connection(object):
         self._conn = None
         self.base_url = "blobstore://."
         self._connection_properties = conn_kwargs
-        self.session_key = self._connection_properties.pop('session_key', None)
+        self.session_key = self._connection_properties.pop('sessionid', None)
         self._init_connection(**self._connection_properties)
 
     def _init_connection(self, **kwargs):
@@ -354,7 +373,7 @@ class Blobstore2Connection(object):
             if isinstance(body, (dict, list)):
                 headers['Content-Type'] = 'application/json'
                 if isinstance(body, bytes):
-                    body=body.decode('utf-8')
+                    body = body.decode('utf-8')
                 body = json.dumps(body)
             else:
                 headers['Content-Type'] = 'application/x-www-form-urlencoded'
@@ -370,7 +389,7 @@ class Blobstore2Connection(object):
 
                         try:
                             gfile.write(str(body).encode('utf-8') if six.PY3 \
-                                        else str(body))
+                                            else str(body))
                         finally:
                             gfile.close()
 
@@ -447,53 +466,55 @@ class Blobstore2Connection(object):
 
         endtime = time.time()
 
-        LOGGER.info("iLO Response Time to %s: %s secs.", path, str(endtime-inittime))
-        #Dummy response to support a bad host response
-        if len(resp_txt) == 0:
-            resp_txt = "HTTP/1.1 500 Not Found\r\nAllow: " \
-            "GET\r\nCache-Control: no-cache\r\nContent-length: " \
-            "0\r\nContent-type: text/html\r\nDate: Tues, 1 Apr 2025 " \
-            "00:00:01 GMT\r\nServer: " \
-            "HP-iLO-Server/1.30\r\nX_HP-CHRP-Service-Version: 1.0.3\r\n\r\n\r\n"
+        LOGGER.info("iLO Response Time to %s: %s secs.", path, str(endtime - inittime))
 
-        restreq = RestRequest(path, method, data=body, url=self.base_url)
-        rest_response = RisRestResponse(restreq, resp_txt)
+        if resp_txt is not None:
+            # Dummy response to support a bad host response
+            if len(resp_txt) == 0:
+                resp_txt = "HTTP/1.1 500 Not Found\r\nAllow: " \
+                           "GET\r\nCache-Control: no-cache\r\nContent-length: " \
+                           "0\r\nContent-type: text/html\r\nDate: Tues, 1 Apr 2025 " \
+                           "00:00:01 GMT\r\nServer: " \
+                           "HP-iLO-Server/1.30\r\nX_HP-CHRP-Service-Version: 1.0.3\r\n\r\n\r\n"
 
-        if rest_response.status in range(300, 399) and rest_response.status != 304:
-            newloc = rest_response.getheader("location")
-            newurl = urlparse(newloc)
+            restreq = RestRequest(path, method, data=body, url=self.base_url)
+            rest_response = RisRestResponse(restreq, resp_txt)
 
-            rest_response = self.rest_request(newurl.path, method, args, oribody, headers)
+            if rest_response.status in range(300, 399) and rest_response.status != 304:
+                newloc = rest_response.getheader("location")
+                newurl = urlparse(newloc)
 
-        try:
-            if rest_response.getheader('content-encoding') == 'gzip':
-                if hasattr(gzip, "decompress"):
-                    rest_response.read = gzip.decompress(rest_response.ori)
-                else:
-                    compressedfile = BytesIO(rest_response.ori)
-                    decompressedfile = gzip.GzipFile(fileobj=compressedfile)
-                    rest_response.read = decompressedfile.read()
-        except Exception:
-            pass
-        if LOGGER.isEnabledFor(logging.DEBUG):
-            headerstr = ''
-            headerget = rest_response.getheaders()
-            for header in headerget:
-                headerstr += '\t' + header + ': ' + headerget[header] + '\n'
+                rest_response = self.rest_request(newurl.path, method, args, oribody, headers)
+
             try:
-                LOGGER.debug('Blobstore RESPONSE for %s:\nCode: %s\nHeaders:'
-                             '\n%s\nBody of %s: %s', rest_response.request.path,
-                             str(rest_response._http_response.status)+ ' ' +
-                             rest_response._http_response.reason,
-                             headerstr, rest_response.request.path, rest_response.read)
-            except:
-                LOGGER.debug('Blobstore RESPONSE for %s:\nCode:%s',
-                             rest_response.request.path, rest_response)
-        return rest_response
+                if rest_response.getheader('content-encoding') == 'gzip':
+                    if hasattr(gzip, "decompress"):
+                        rest_response.read = gzip.decompress(rest_response.ori)
+                    else:
+                        compressedfile = BytesIO(rest_response.ori)
+                        decompressedfile = gzip.GzipFile(fileobj=compressedfile)
+                        rest_response.read = decompressedfile.read()
+            except Exception:
+                pass
+            if LOGGER.isEnabledFor(logging.DEBUG):
+                headerstr = ''
+                headerget = rest_response.getheaders()
+                for header in headerget:
+                    headerstr += '\t' + header + ': ' + headerget[header] + '\n'
+                try:
+                    LOGGER.debug('Blobstore RESPONSE for %s:\nCode: %s\nHeaders:'
+                                 '\n%s\nBody of %s: %s', rest_response.request.path,
+                                 str(rest_response._http_response.status) + ' ' +
+                                 rest_response._http_response.reason,
+                                headerstr, rest_response.request.path, rest_response.read)
+                except:
+                    LOGGER.debug('Blobstore RESPONSE for %s:\nCode:%s',
+                                 rest_response.request.path, rest_response)
+            return rest_response
 
     def cert_login(self):
         """Login using a certificate."""
-        #local cert login is only available on iLO 5
+        # local cert login is only available on iLO 5
         token = self.cert_login()
         resp = self.rest_request('/redfish/v1/SessionService/Sessions/', 'GET')
         if resp.status == 200:

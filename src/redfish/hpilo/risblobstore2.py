@@ -17,7 +17,7 @@
 # -*- coding: utf-8 -*-
 """Base implementation for interaction with blob store interface"""
 
-#---------Imports---------
+# ---------Imports---------
 
 import os
 import sys
@@ -27,9 +27,9 @@ import string
 import logging
 
 from ctypes import c_char_p, c_ubyte, c_uint, cdll, POINTER, \
-                    create_string_buffer, c_ushort, c_void_p
+    create_string_buffer, c_ushort, c_void_p
 
-from redfish.hpilo.rishpilo import HpIlo, HpIloInitialError
+from redfish.hpilo.rishpilo import HpIlo, HpIloInitialError, HpIloChifPacketExchangeError
 from redfish.hpilo.rishpilo import BlobReturnCodes as hpiloreturncodes
 
 if os.name == 'nt':
@@ -37,77 +37,93 @@ if os.name == 'nt':
 else:
     from _ctypes import dlclose
 
-#---------End of imports---------
-#---------Debug logger---------
+# ---------End of imports---------
+# ---------Debug logger---------
 
 LOGGER = logging.getLogger(__name__)
 
-#---------End of debug logger---------
-#-----------------------Error Returns----------------------
+
+# ---------End of debug logger---------
+# -----------------------Error Returns----------------------
 
 class UnexpectedResponseError(Exception):
     """Raise when we get data that we don't expect from iLO"""
     pass
 
+
 class HpIloError(Exception):
     """Raised when iLO returns non-zero error code"""
     pass
+
 
 class Blob2CreateError(Exception):
     """Raised when create operation fails"""
     pass
 
+
 class Blob2InfoError(Exception):
     """Raised when create operation fails"""
     pass
+
 
 class Blob2ReadError(Exception):
     """Raised when read operation fails"""
     pass
 
+
 class Blob2WriteError(Exception):
     """Raised when write operation fails"""
     pass
+
 
 class Blob2DeleteError(Exception):
     """Raised when delete operation fails"""
     pass
 
+
 class Blob2OverrideError(Exception):
     """Raised when delete operation fails because of it been overwritten"""
     pass
+
 
 class BlobRetriesExhaustedError(Exception):
     """Raised when max retries have been attempted for same operation"""
     pass
 
+
 class Blob2FinalizeError(Exception):
     """Raised when finalize operation fails"""
     pass
+
 
 class Blob2ListError(Exception):
     """Raised when list operation fails"""
     pass
 
+
 class Blob2SecurityError(Exception):
     """Raised when there is an issue with security"""
     pass
+
 
 class BlobNotFoundError(Exception):
     """Raised when blob not found in key/namespace"""
     pass
 
+
 class ChifDllMissingError(Exception):
     """Raised when unable to obtain ilorest_chif dll handle"""
     pass
+
 
 class EncryptionEnabledError(Exception):
     """Raised when high security encryption is enabled"""
     pass
 
-#----------------------------------------------------------
 
-#-------------------Helper functions-------------------------
+# ----------------------------------------------------------
+
+# -------------------Helper functions-------------------------
 
 class BlobReturnCodes(object):
     """Blob store return codes.
@@ -124,8 +140,10 @@ class BlobReturnCodes(object):
     NOTFOUND = 12
     NOTMODIFIED = 20
 
+
 class BlobStore2(object):
     """Blob store 2 class"""
+
     def __init__(self):
         lib = self.gethprestchifhandle()
         self.channel = HpIlo(dll=lib)
@@ -191,7 +209,7 @@ class BlobStore2(object):
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
         if errorcode == BlobReturnCodes.BADPARAMETER:
             if retries < self.max_retries:
-                self.get_info(key=key, namespace=namespace, retries=retries+1)
+                self.get_info(key=key, namespace=namespace, retries=retries + 1)
             else:
                 raise Blob2OverrideError(errorcode)
         elif errorcode == BlobReturnCodes.NOTFOUND:
@@ -242,7 +260,7 @@ class BlobStore2(object):
 
             if bytesread == 0:
                 if retries < self.max_retries:
-                    data = self.read(key=key, namespace=namespace, retries=retries+1)
+                    data = self.read(key=key, namespace=namespace, retries=retries + 1)
                     return data
                 else:
                     raise BlobRetriesExhaustedError()
@@ -312,7 +330,7 @@ class BlobStore2(object):
                 write_blob_size = bytes_written
 
                 self.write_fragment(key, namespace=namespace,
-                                    data=data[write_blob_size:write_blob_size+count],
+                                    data=data[write_blob_size:write_blob_size + count],
                                     offset=write_blob_size, count=count)
 
                 bytes_written += count
@@ -349,7 +367,7 @@ class BlobStore2(object):
 
         dataarr = bytearray(sendpacket)
         dataarr.extend(memoryview(data))
-        
+
         resp = self._send_receive_raw(dataarr)
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
@@ -385,8 +403,8 @@ class BlobStore2(object):
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
         if errorcode == BlobReturnCodes.BADPARAMETER:
             if retries < self.max_retries:
-                self.delete(key=key, namespace=namespace, retries=\
-                                                    retries+1)
+                self.delete(key=key, namespace=namespace, retries= \
+                    retries + 1)
             else:
                 raise Blob2OverrideError(errorcode)
         elif not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
@@ -541,6 +559,8 @@ class BlobStore2(object):
             try:
                 self.delete(rsp_key, rsp_namespace)
             except Blob2OverrideError as excp:
+                pass
+            except HpIloChifPacketExchangeError as excp:
                 pass
             except Exception as excp:
                 raise excp
@@ -780,7 +800,7 @@ class BlobStore2(object):
 
         """
         excp = None
-        for _ in range(0, 3): # channel loop for iLO
+        for _ in range(0, 3):  # channel loop for iLO
             try:
                 resp = self.channel.send_receive_raw(indata, 10)
                 return resp
@@ -806,8 +826,8 @@ class BlobStore2(object):
         excp = None
         libhandle = None
         libnames = ["ilorest_chif.dll", "hprest_chif.dll"] if os.name == \
-                    'nt' else ["ilorest_chif_dev.so", "hprest_chif_dev.so",
-                               "ilorest_chif.so", "hprest_chif.so"]
+                                                              'nt' else ["ilorest_chif_dev.so", "hprest_chif_dev.so",
+                                                                         "ilorest_chif.so", "hprest_chif.so"]
         for libname in libnames:
             try:
                 libpath = BlobStore2.checkincurrdirectory(libname)
@@ -840,7 +860,7 @@ class BlobStore2(object):
         :param password: The password to login.
         :type password: str.
         """
-        #TODO: initialize credentials for certificate
+        # TODO: initialize credentials for certificate
         dll = BlobStore2.gethprestchifhandle()
         if LOGGER.isEnabledFor(logging.DEBUG):
             dll.enabledebugoutput()
@@ -861,9 +881,9 @@ class BlobStore2(object):
                     raise Blob2SecurityError()
                 else:
                     raise HpIloInitialError("Error %s occurred while trying " \
-                                        "to open a channel to iLO" % credreturn)
+                                            "to open a channel to iLO" % credreturn)
         else:
-            #so we don't have extra overhead if we don't have to
+            # so we don't have extra overhead if we don't have to
             dll.ChifDisableSecurity()
         BlobStore2.unloadchifhandle(dll)
 
@@ -883,7 +903,7 @@ class BlobStore2(object):
         elif os.environ.get("LD_LIBRARY_PATH"):
             paths = os.getenv("LD_LIBRARY_PATH", libpath).split(';')
             libpath = [os.path.join(pat, libname) for pat in paths if \
-                                                        os.path.isfile(os.path.join(pat, libname))]
+                       os.path.isfile(os.path.join(pat, libname))]
             libpath = libpath[0] if libpath else libname
 
         return libpath

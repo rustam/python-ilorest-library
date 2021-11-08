@@ -17,7 +17,7 @@
 # -*- coding: utf-8 -*-
 """RMC helper file. Includes RMC errors and caching functionality for monolith."""
 
-#---------Imports---------
+# ---------Imports---------
 
 import os
 import json
@@ -31,86 +31,109 @@ from redfish.rest.containers import StaticRestResponse, RestRequest
 from .ris import (RisMonolith)
 from .sharedtypes import (JSONEncoder)
 
-#---------End of imports---------
+# ---------End of imports---------
 
-#---------Debug logger---------
+# ---------Debug logger---------
 
 LOGGER = logging.getLogger(__name__)
 
-#---------End of debug logger---------
+
+# ---------End of debug logger---------
 
 class RdmcError(Exception):
     """Base class for all RDMC Exceptions"""
     errcode = 1
+
     def __init__(self, message):
         Exception.__init__(self, message)
+
 
 class InvalidCommandLineError(RdmcError):
     """Raised when user enter incorrect command line arguments"""
     pass
 
+
 class FailureDuringCommitError(RdmcError):
     """Raised when there is an error while committing."""
     pass
 
+
 class UserNotAdminError(RdmcError):
     """Raised when user doesn't have admin priviledges, but they are required."""
+    pass
+
+class IncompatibleiLOVersionError(RdmcError):
+    """Raised when iLO version is incompatible."""
     pass
 
 class UndefinedClientError(Exception):
     """Raised when there are no clients active (usually when user hasn't logged in)."""
     pass
 
+
 class InstanceNotFoundError(Exception):
     """Raised when attempting to select an instance that does not exist."""
     pass
+
 
 class CurrentlyLoggedInError(Exception):
     """Raised when attempting to select an instance that does not exist"""
     pass
 
+
 class NothingSelectedError(Exception):
     """Raised when attempting to access an object without first selecting it."""
     pass
+
 
 class NothingSelectedFilterError(Exception):
     """Raised when the filter applied doesn't match any selection (general)."""
     pass
 
+
 class NothingSelectedSetError(Exception):
     """Raised when attempting to access an object without first selecting it (In set)."""
     pass
+
 
 class InvalidSelectionError(Exception):
     """Raised when selection argument fails to match anything."""
     pass
 
+
 class IdTokenError(Exception):
     """Raised when user is not authorized to complete the operation."""
     pass
+
 
 class ValueChangedError(Exception):
     """Raised if user tries to set/commit a value when monolith has older data."""
     pass
 
+
 class LoadSkipSettingError(Exception):
     """Raised when one or more settings are absent in given server."""
     pass
+
 
 class InvalidPathError(Exception):
     """Raised when requested path is not found."""
     pass
 
+
 class UnableToObtainIloVersionError(Exception):
     """Raised when iloversion is missing from default path."""
     pass
+
 
 class IncompatibleiLOVersionError(Exception):
     """Raised when the iLO version is above or below the required version."""
     pass
 
+
 class ValidationError(Exception):
     """Raised when there is a problem with user input."""
+
     def __init__(self, errlist):
         super(ValidationError, self).__init__(errlist)
         self._errlist = errlist
@@ -119,17 +142,21 @@ class ValidationError(Exception):
         """Returns error list."""
         return self._errlist
 
+
 class IloResponseError(Exception):
     """Raised when iLO returns with a non 2XX response."""
     pass
+
 
 class EmptyRaiseForEAFP(Exception):
     """Raised when you need to check for issues and take different action."""
     pass
 
+
 class IncorrectPropValue(Exception):
     """Raised when you pass an incorrect value to for the associated property."""
     pass
+
 
 class RmcCacheManager(object):
     """Manages caching/uncaching of data for RmcApp.
@@ -137,6 +164,7 @@ class RmcCacheManager(object):
     :param rmc: RmcApp to be managed
     :type rmc: :class:`redfish.ris.rmc.RmcApp`
     """
+
     def __init__(self, rmc):
         """Initialize RmcCacheManager
 
@@ -149,12 +177,14 @@ class RmcCacheManager(object):
         self.encodefunct = lambda data: data
         self.decodefunct = lambda data: data
 
+
 class RmcFileCacheManager(RmcCacheManager):
     """RMC file cache manager.
 
     :param rmc: RmcApp to be managed
     :type rmc: :class:`redfish.ris.rmc.RmcApp`
     """
+
     def __init__(self, rmc):
         super(RmcFileCacheManager, self).__init__(rmc)
 
@@ -167,7 +197,7 @@ class RmcFileCacheManager(RmcCacheManager):
         """
         if self._rmc.cache:
             cachedir = self._rmc.cachedir
-            indexfn = os.path.join(cachedir, "index") #%s\\index' % cachedir
+            indexfn = os.path.join(cachedir, "index")  # %s\\index' % cachedir
         else:
             indexfn = ''
         sessionlocs = []
@@ -191,12 +221,12 @@ class RmcFileCacheManager(RmcCacheManager):
                             for item in data:
                                 if 'login' in item and 'session_location' in data['login']:
                                     if 'blobstore' in data['login']['url']:
-                                        loc = data['login']['session_location']\
-                                                .split('//')[-1]
+                                        loc = data['login']['session_location'] \
+                                            .split('//')[-1]
                                         sesurl = None
                                     else:
-                                        loc = data['login']['session_location']\
-                                                .split(data['login']['url'])[-1]
+                                        loc = data['login']['session_location'] \
+                                            .split(data['login']['url'])[-1]
                                         sesurl = data['login']['url']
                                     sessionlocs.append((loc, sesurl,
                                                         self._rmc._cm.decodefunct
@@ -280,8 +310,8 @@ class RmcFileCacheManager(RmcCacheManager):
                 if login_data.get('authorization_key'):
                     redfishinst.basic_auth = login_data.get('authorization_key')
                 elif login_data.get('session_key'):
-                    redfishinst.session_key = \
-                                            self._rmc._cm.decodefunct(login_data.get('session_key'))
+                    redfishinst.session_key = self._rmc._cm.decodefunct(login_data.get('session_key'))
+                    # redfishinst.session_key = login_data.get('session_key')
                     if isinstance(redfishinst.session_key, bytes):
                         redfishinst.session_key = redfishinst.session_key.decode('utf-8')
                     redfishinst.session_location = login_data.get('session_location')
@@ -289,6 +319,9 @@ class RmcFileCacheManager(RmcCacheManager):
                     self._rmc.selector = client['selector']
                 if login_data.get('iloversion'):
                     redfishinst.iloversion = login_data.get('iloversion')
+                else:
+                    redfishinst.iloversion = None
+                self._rmc.typepath.iloversion = redfishinst.iloversion
 
                 getdata = client['get']
                 for key in list(getdata.keys()):
@@ -301,7 +334,7 @@ class RmcFileCacheManager(RmcCacheManager):
                 self._rmc.monolith = RisMonolith(redfishinst, self._rmc.typepath)
                 self._rmc.monolith.load_from_dict(client['monolith'])
                 self._rmc.redfishinst = redfishinst
-                #make sure root is there
+                # make sure root is there
                 _ = redfishinst.root
                 self._rmc.typepath.defineregschemapath(redfishinst.root.dict)
             except BaseException as excp:
@@ -331,7 +364,7 @@ class RmcFileCacheManager(RmcCacheManager):
             md5str = shaobj.hexdigest()
 
             index_map[self._rmc.redfishinst.base_url] = md5str
-            index_data = dict(url=self._rmc.redfishinst.base_url, href='%s' % md5str,)
+            index_data = dict(url=self._rmc.redfishinst.base_url, href='%s' % md5str, )
             index_cache.append(index_data)
 
             indexfh = open('%s/index' % cachedir, 'w')
@@ -350,7 +383,7 @@ class RmcFileCacheManager(RmcCacheManager):
                 ilo=self._rmc.typepath.ilogen,
                 iloversion=self._rmc.typepath.iloversion,
                 proxy=self._rmc.redfishinst.proxy,
-                ca_cert_data= self._rmc.redfishinst.connection._connection_properties if
+                ca_cert_data=self._rmc.redfishinst.connection._connection_properties if
                 self._rmc.redfishinst.connection._connection_properties else dict())
 
             clients_data = dict(selector=self._rmc.selector, login=login_data,

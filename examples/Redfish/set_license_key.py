@@ -40,10 +40,8 @@ def set_license_key(_redfishobj, ilo_key):
     else:
         #Use Resource directory to find the relevant URI
         for instance in resource_instances:
-        if '#Manager.' in instance['@odata.type']:
-            manager_uri = instance['@odata.id']
-            mager_data = _redfishobj.get(manager_uri)
-            ilo_lic_uri = mager_data.obj['Oem']['Hpe']['Links']['LicenseService']['@odata.id']
+            if '#HpeiLOLicense.' in instance['@odata.type']:
+                ilo_lic_uri = instance['@odata.id']
 
     if ilo_lic_uri:
         ilo_license_collection = _redfishobj.get(ilo_lic_uri)

@@ -1,7 +1,5 @@
-queue
 jsonpatch
 jsonpath_rw
 jsonpointer
 urllib3
 six
-certifi

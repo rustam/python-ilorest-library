@@ -18,17 +18,19 @@
 """Compatibility functionality in between iLO versions and generic Redfish/LegacyRest servers.
 Used to provide convenient string variables that are usable on any iLO irrespective of version or
 API type."""
-#---------Imports---------
+# ---------Imports---------
 import logging
 
 from redfish import RedfishClient, LegacyRestClient
 from redfish.rest.v1 import ServerDownOrUnreachableError
 from redfish.ris.rmc_helper import UnableToObtainIloVersionError, NothingSelectedError, UserNotAdminError
-#---------End of imports---------
+
+# ---------End of imports---------
 
 LOGGER = logging.getLogger(__name__)
 
-#TODO: This will be a part of the compatability class
+
+# TODO: This will be a part of the compatability class
 class Typesandpathdefines(object):
     """The global types and path definitions class. Holds information on a system and automatically
     creates the correct type strings along with some generic paths. Paths are meant to be used with
@@ -45,6 +47,7 @@ class Typesandpathdefines(object):
     * **iloversion**: The iLO version of the system that the defines were created for.
     * **flagiften**: Flag is set to true if the system is Gen 10 or a non-iLO Redfish system.
     """
+
     def __init__(self):
         self.url = None
         self.defs = None
@@ -82,7 +85,7 @@ class Typesandpathdefines(object):
         self.url = url
         self.is_redfish = isredfish
         self.gencompany = self.rootresp = False
-        self.ilogen = 5 # If no iLO or Anonymous data , default to iLO 5 types
+        self.ilogen = 5  # If no iLO or Anonymous data , default to iLO 5 types
         logger = logger if not logger else LOGGER
         client = None
         self.noschemas = False
@@ -103,20 +106,20 @@ class Typesandpathdefines(object):
                     restclient = LegacyRestClient(base_url=self.url, username=username,
                                                   password=password, proxy=proxy, ca_cert_data=ca_cert_data)
                     restclient._get_root()
-                    #Check that the response is actually legacy rest and not a redirect
+                    # Check that the response is actually legacy rest and not a redirect
                     _ = restclient.root.obj.Type
                     self.is_redfish = False
                     client = restclient
                 except Exception as excp:
                     try_count += 1
                     if not client:
-                        logger.info("Gen get rest error:"+str(excp)+"\n")
+                        logger.info("Gen get rest error:" + str(excp) + "\n")
                         raise excp
                     else:
                         self.is_redfish = True
 
             if try_count > 1:
-                raise ServerDownOrUnreachableError("Server not reachable or does not support "\
+                raise ServerDownOrUnreachableError("Server not reachable or does not support " \
                                                    "HPRest or Redfish: %s\n" % str(excp))
 
             rootresp = client.root.obj
@@ -126,19 +129,19 @@ class Typesandpathdefines(object):
             self.gencompany = next(iter(self.rootresp.get("Oem", {}).keys()), None) in ('Hpe', 'Hp')
             comp = 'Hp' if self.gencompany else None
             comp = 'Hpe' if rootresp.get("Oem", {}).get('Hpe', None) else comp
-            if comp and next(iter(rootresp.get("Oem", {}).get(comp, {}).get("Manager", {}))).\
-                                                                        get('ManagerType', None):
-                self.ilogen = next(iter(rootresp.get("Oem", {}).get(comp, {}).get("Manager", {})))\
-                                                                                .get("ManagerType")
-                self.ilover = next(iter(rootresp.get("Oem", {}).get(comp, {}).get("Manager", {}))).\
-                                                                      get("ManagerFirmwareVersion")
+            if comp and next(iter(rootresp.get("Oem", {}).get(comp, {}).get("Manager", {}))). \
+                    get('ManagerType', None):
+                self.ilogen = next(iter(rootresp.get("Oem", {}).get(comp, {}).get("Manager", {}))) \
+                    .get("ManagerType")
+                self.ilover = next(iter(rootresp.get("Oem", {}).get(comp, {}).get("Manager", {}))). \
+                    get("ManagerFirmwareVersion")
                 if self.ilogen.split(' ')[-1] == "CM":
                     # Assume iLO 4 types in Moonshot
                     self.ilogen = 4
                     self.iloversion = None
                 else:
                     self.iloversion = float(self.ilogen.split(' ')[-1] + '.' + \
-                                                    ''.join(self.ilover.split('.')))
+                                            ''.join(self.ilover.split('.')))
         else:
             self.ilogen = int(gen)
 
@@ -150,7 +153,7 @@ class Typesandpathdefines(object):
             raise UnableToObtainIloVersionError("Unable to find the iLO generation.")
 
         self.noschemas = True if self.rootresp and "JsonSchemas" in self.rootresp and not \
-                                        self.rootresp.get("JsonSchemas", None) else False
+            self.rootresp.get("JsonSchemas", None) else False
         if self.noschemas:
             self.ilogen = self.ilover = self.iloversion = None
         if self.rootresp and not self.noschemas:
@@ -168,15 +171,16 @@ class Typesandpathdefines(object):
         :type rootobj: dict.
         """
         self.gencompany = next(iter(rootobj.get("Oem", {}).keys()), None) in ('Hpe', 'Hp')
-        self.schemapath = rootobj["JsonSchemas"]["@odata.id"] if rootobj.\
+        self.schemapath = rootobj["JsonSchemas"]["@odata.id"] if rootobj. \
             get("JsonSchemas", None) else rootobj["links"]["Schemas"]["href"]
-        self.schemapath = self.schemapath.rstrip('/')+"/?$expand=." if \
-                self.is_redfish and self.flagiften and self.gencompany else self.schemapath
-        self.regpath = rootobj["Registries"]["@odata.id"] if rootobj.get\
+        self.schemapath = self.schemapath.rstrip('/') + "/?$expand=." if \
+            self.is_redfish and self.flagiften and self.gencompany else self.schemapath
+        self.regpath = rootobj["Registries"]["@odata.id"] if rootobj.get \
             ("Registries", None) else rootobj["links"]["Registries"]["href"]
-        self.regpath = self.regpath.rstrip('/')+"/?$expand=." if \
-                self.is_redfish and self.flagiften and self.gencompany else self.regpath
-    #TODO: Move these to a compatability class
+        self.regpath = self.regpath.rstrip('/') + "/?$expand=." if \
+            self.is_redfish and self.flagiften and self.gencompany else self.regpath
+
+    # TODO: Move these to a compatability class
     def updatedefinesflag(self, redfishflag=None):
         """Updates the redfish and rest flag depending on system and redfishflag input. On an iLO 5
         system or another Redfish system, this will do nothing. On an iLO 4 system with both Redfish
@@ -216,20 +220,24 @@ class Typesandpathdefines(object):
             returnval = self.defs.hpeskmtype
         elif 'bios.' in sel[:9].lower():
             returnval = self.defs.biostype
-        elif sel.startswith(("hpe", "#hpe")) and self.defs.isgen9:
-            returnval = sel[:4].replace("hpe", "hp")+sel[4:]
-        elif not sel.startswith(("hpe", "#hpe")) and self.defs.isgen10:
-            returnval = sel[:3].replace("hp", "hpe")+sel[3:]
+        elif sel.startswith(("hpe", "#hpe")) and self.defs and self.defs.isgen9:
+            returnval = sel[:4].replace("hpe", "hp") + sel[4:]
+        elif not sel.startswith(("hpe", "#hpe")) and self.defs and self.defs.isgen10:
+            returnval = sel[:3].replace("hp", "hpe") + sel[3:]
 
         return returnval
 
+
 class Definevals(object):
     """Base class for setting platform dependent variables."""
+
     def __init__(self):
         pass
 
+
 class Definevalstenplus(Definevals):
     """Platform dependent variables for iLO 5+ (Gen 10)."""
+
     # pylint: disable=too-many-instance-attributes
     # As a defines class this will need all the attributes
     def __init__(self):
@@ -289,8 +297,10 @@ class Definevalstenplus(Definevals):
         """
         pass
 
+
 class DefinevalsNine(Definevals):
     """Platform dependent variables for iLO 4 LegacyRest (Gen 9)."""
+
     # pylint: disable=too-many-instance-attributes
     # As a defines class this will need all the attributes
     def __init__(self):

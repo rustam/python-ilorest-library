@@ -17,7 +17,7 @@
 # -*- coding: utf-8 -*-
 """Base implementation for interaction with the iLO interface"""
 
-#---------Imports---------
+# ---------Imports---------
 
 import os
 import time
@@ -26,12 +26,13 @@ import logging
 
 from ctypes import c_void_p, c_uint32, byref, create_string_buffer
 
-#---------End of imports---------
-#---------Debug logger---------
+# ---------End of imports---------
+# ---------Debug logger---------
 
 LOGGER = logging.getLogger(__name__)
 
-#---------End of debug logger---------
+
+# ---------End of debug logger---------
 
 class BlobReturnCodes(object):
     """Blob store return codes.
@@ -48,26 +49,49 @@ class BlobReturnCodes(object):
         CHIFERR_NoDriver = 2
         CHIFERR_AccessDenied = 5
 
+
 class HpIloInitialError(Exception):
     """Raised when error during initialization of iLO Chif channel"""
     pass
 
-class HpIloReadError(Exception):
-    """Raised when errors encountered when reading from iLO"""
+
+class HpIloNoChifDriverError(Exception):
+    """Raised when error during initialization of iLO Chif channel"""
     pass
 
-class HpIloWriteError(Exception):
-    """Raised when errors encountered when writing to iLO"""
+
+class HpIloChifAccessDeniedError(Exception):
+    """Raised when error during initialization of iLO Chif channel"""
     pass
 
-class HpIloSendReceiveError(Exception):
-    """Raised when errors encountered when reading form iLO after sending"""
+
+class HpIloPrepareAndCreateChannelError(Exception):
+    """Raised when error during initialization of iLO Chif channel"""
     pass
+
 
 class HpIloChifPacketExchangeError(Exception):
     """Raised when errors encountered when exchanging chif packet"""
     pass
 
+
+class HpIloReadError(Exception):
+    """Raised when errors encountered when reading from iLO"""
+    pass
+
+
+class HpIloWriteError(Exception):
+    """Raised when errors encountered when writing to iLO"""
+    pass
+
+
+class HpIloSendReceiveError(Exception):
+    """Raised when errors encountered when reading form iLO after sending"""
+    pass
+
+class HpIloNoDriverError(Exception):
+    """Raised when errors encountered when there is no ilo driver"""
+    pass
 
 class HpIlo(object):
     """Base class of interaction with iLO"""
@@ -93,8 +117,8 @@ class HpIlo(object):
             if not "skip_ping" in os.environ:
                 status = self.dll.ChifPing(self.fhandle)
                 if status != BlobReturnCodes.SUCCESS:
-                    errmsg = "Error {0} occurred while trying to open a "\
-                                        "channel to iLO".format(status)
+                    errmsg = "Error {0} occurred while trying to open a " \
+                             "channel to iLO".format(status)
                     if status == BlobReturnCodes.CHIFERR_NoDriver:
                         errmsg = "chif"
                     elif status == BlobReturnCodes.CHIFERR_AccessDenied:
@@ -119,7 +143,7 @@ class HpIlo(object):
 
         error = self.dll.ChifPacketExchange(self.fhandle, byref(buff), byref(recbuff), datarecv)
         if error != BlobReturnCodes.SUCCESS:
-            raise HpIloChifPacketExchangeError("Error %s occurred while "\
+            raise HpIloChifPacketExchangeError("Error %s occurred while " \
                                                "exchange chif packet" % error)
 
         pkt = bytearray()
@@ -149,7 +173,7 @@ class HpIlo(object):
 
                 if sequence != struct.unpack("<H", bytes(resp[2:4]))[0]:
                     if LOGGER.isEnabledFor(logging.DEBUG):
-                        LOGGER.debug('Attempt %s has a bad sequence number.\n', tries+1)
+                        LOGGER.debug('Attempt %s has a bad sequence number.\n', tries + 1)
                     continue
 
                 return resp

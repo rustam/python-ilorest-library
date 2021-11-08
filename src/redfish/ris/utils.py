@@ -34,29 +34,33 @@ from six import iterkeys, string_types
 from redfish.ris.rmc_helper import IncorrectPropValue
 
 try:
-    #itertools ifilter compatibility for python 2
+    # itertools ifilter compatibility for python 2
     from future_builtins import filter
 except ImportError:
-    #filter function provides the same functionality in python 3
+    # filter function provides the same functionality in python 3
     pass
 
-#---------Debug logger---------
+# ---------Debug logger---------
 
 LOGGER = logging.getLogger()
 
-#---------End of debug logger---------
 
-def warning_handler(msg):
+# ---------End of debug logger---------
+
+def warning_handler(msg, override=False):
     """Helper function for handling warning messages appropriately. If LOGGER level is set to 40
     print out the warnings, else log them as a warning.
 
     :param msg: The warning message.
     :type msg: str
     """
-    if LOGGER.getEffectiveLevel() == 40:
+    if override:
+        sys.stderr.write(msg)
+    if LOGGER.getEffectiveLevel() > 40:
         sys.stderr.write(msg)
     else:
         LOGGER.warning(msg)
+
 
 def validate_headers(instance, verbose=False):
     """Validates an instance is patchable.
@@ -75,11 +79,12 @@ def validate_headers(instance, verbose=False):
                 if not "PATCH" in val:
                     if verbose:
                         warning_handler('Skipping read-only path: %s\n' % \
-                                             instance.resp.request.path)
+                                        instance.resp.request.path)
                     skip = True
     except:
         pass
     return skip
+
 
 def merge_dict(currdict, newdict):
     """Merges dictionaries together.
@@ -96,6 +101,7 @@ def merge_dict(currdict, newdict):
             merge_dict(itemv1, itemv2)
         else:
             currdict[k] = itemv2
+
 
 def get_errmsg_type(results):
     """Return the registry type of a response.
@@ -121,6 +127,7 @@ def get_errmsg_type(results):
 
     return message_type
 
+
 def filter_output(output, sel, val):
     """Filters a list of dictionaries based on a key:value pair only returning the dictionaries
     that include the key and value.
@@ -134,7 +141,7 @@ def filter_output(output, sel, val):
     :returns: A filtered list from output parameter
     :rtype: list
     """
-    #TODO: check if this can be replaced by navigatejson
+    # TODO: check if this can be replaced by navigatejson
     newoutput = []
     if isinstance(output, list):
         for entry in output:
@@ -156,6 +163,7 @@ def filter_output(output, sel, val):
                 return output
 
     return newoutput
+
 
 def checkallowablevalues(newdict=None, oridict=None):
     """Validate dictionary changes with Redfish allowable values. This will raise an
@@ -183,10 +191,11 @@ def checkallowablevalues(newdict=None, oridict=None):
                     for mat in valmatches:
                         res = [val for val in match.value if mat.value.lower() == val.lower()]
                         if not res:
-                            raise IncorrectPropValue("Incorrect Value "\
-                                "entered. Please enter one of the below "\
-                                "values for {0}:\n{1}".format \
-                                ('/'.join(checkpath.split('.')), str(match.value)[1:-1]))
+                            raise IncorrectPropValue("Incorrect Value " \
+                                                     "entered. Please enter one of the below " \
+                                                     "values for {0}:\n{1}".format \
+                                                         ('/'.join(checkpath.split('.')), str(match.value)[1:-1]))
+
 
 def navigatejson(selector, currdict, val=None):
     """Function for navigating the json dictionary. Searches a dictionary for specific keys
@@ -200,13 +209,13 @@ def navigatejson(selector, currdict, val=None):
     :type currdict: json dictionary/list
     :returns: returns a dictionary of selected items
     """
-    #TODO: Check for val of different types(bool, int, etc)
+    # TODO: Check for val of different types(bool, int, etc)
     temp_dict = dict()
-    createdict = lambda y, x: {x:y}
+    createdict = lambda y, x: {x: y}
     getkey = lambda cdict, sel: next((item for item in iterkeys(cdict) \
                                       if sel.lower() == item.lower()), sel)
     getval = lambda cdict, sele: [cdict[sel] if sel in \
-                            cdict else '~!@#$%^&*)()' for sel in [getkey(cdict, sele)]][0]
+                                                cdict else '~!@#$%^&*)()' for sel in [getkey(cdict, sele)]][0]
     fullbreak = False
     seldict = copy.deepcopy(currdict)
     for ind, sel in enumerate(selector):
@@ -215,7 +224,7 @@ def navigatejson(selector, currdict, val=None):
             seldict = getval(seldict, sel)
             if seldict == '~!@#$%^&*)()':
                 return None
-            if val and ind == len(selector)-1:
+            if val and ind == len(selector) - 1:
                 cval = ",".join(seldict) if isinstance(seldict, (list, tuple)) else seldict
                 if not ((val[-1] == '*' and str(cval).lower().startswith(val[:-1].lower())) or
                         str(cval).lower() == val.lower()):
@@ -233,8 +242,8 @@ def navigatejson(selector, currdict, val=None):
             else:
                 fullbreak = True
             if seldict:
-                seldict = {selector[ind-1]:seldict}
-                selsdict = reduce(createdict, [seldict]+selector[:ind-1][::-1])
+                seldict = {selector[ind - 1]: seldict}
+                selsdict = reduce(createdict, [seldict] + selector[:ind - 1][::-1])
                 merge_dict(temp_dict, selsdict)
                 return temp_dict
             else:
@@ -245,9 +254,10 @@ def navigatejson(selector, currdict, val=None):
     if fullbreak:
         return None
     else:
-        selsdict = reduce(createdict, [seldict]+selector[::-1])
+        selsdict = reduce(createdict, [seldict] + selector[::-1])
         merge_dict(temp_dict, selsdict)
     return temp_dict
+
 
 def iterateandclear(dictbody, proplist):
     """Iterate over a dictionary and remove listed properties.
@@ -265,6 +275,7 @@ def iterateandclear(dictbody, proplist):
         for ind, val in enumerate(dictbody):
             dictbody[ind] = iterateandclear(val, proplist)
     return dictbody
+
 
 def skipnonsettingsinst(instances):
     """Removes non /settings sections. Useful for only returning settings monolith members.
@@ -284,8 +295,9 @@ def skipnonsettingsinst(instances):
     newinst = [inst for inst in instances if inst.path.lower() not in paths]
     return newinst
 
+
 def getattributeregistry(instances, adict=None):
-    #add try except return {} after test
+    # add try except return {} after test
     """Gets an attribute registry in given monolith instances.
 
     :param instances: list of :class:`redfish.ris.ris.RisMonolithMemberv100` instances to be
@@ -303,11 +315,16 @@ def getattributeregistry(instances, adict=None):
     for inst in instances:
         try:
             if 'AttributeRegistry' in inst.resp.dict:
+                if inst.defpath is not None:
+                    if not ("bios/settings" in inst.defpath):
+                        newdict[inst.maj_type] = inst.resp.obj["AttributeRegistry"]
+                        return newdict
                 newdict[inst.maj_type] = inst.resp.obj["AttributeRegistry"]
         except AttributeError as excp:
             LOGGER.warning("Invalid/Unpopulated Response: %s\nType:%s\nPath:%s\n" \
-                        % (inst.resp, inst.type, inst.path))
+                           % (inst.resp, inst.type, inst.path))
     return newdict
+
 
 def diffdict(newdict=None, oridict=None, settingskipped=[False]):
     """Diff two dictionaries, returning only the values that are different between the two.
@@ -339,11 +356,10 @@ def diffdict(newdict=None, oridict=None, settingskipped=[False]):
     oridictkeys = list(oridict.keys())
     newdictkeyslower = [ki.lower() for ki in newdictkeys]
     oridictkeyslower = [ki.lower() for ki in list(oridict.keys())]
-    missingkeys = list(set(newdictkeyslower)-set(oridictkeyslower))
+    missingkeys = list(set(newdictkeyslower) - set(oridictkeyslower))
     for kis in missingkeys:
         del newdict[newdictkeys[newdictkeyslower.index(kis)]]
-        warning_handler("Skipping property {0}, not " \
-                         "found in current server.\n".format(kis))
+        warning_handler("Attribute {0} not found in the selection...".format(kis))
         settingskipped = [True]
     for key, val in list(newdict.items()):
         if key not in oridict:
@@ -358,19 +374,24 @@ def diffdict(newdict=None, oridict=None, settingskipped=[False]):
             else:
                 del newdict[key]
         elif isinstance(val, list):
+            if val == oridict[key]:
+                del newdict[key]
+                continue
             if len(val) == 1 and isinstance(val[0], dict):
-                res = diffdict(newdict[key][0], oridict[key][0], settingskipped)
-                if res:
-                    newdict[key][0] = res
-                else:
-                    del newdict[key]
+                if newdict[key] and oridict[key]:
+                    res = diffdict(newdict[key][0], oridict[key][0], settingskipped)
+                    if res:
+                        newdict[key][0] = res
+                    else:
+                        del newdict[key]
             if [li for li in val if not isinstance(li, string_types)]:
                 continue
             else:
-                if [va.lower() for va in val] == [va.lower() if va else va \
-                                                  for va in oridict[key]]:
-                    del newdict[key]
-        #TODO: check if lowercase is correct or buggy for string types
+                if val:
+                    if [va.lower() for va in val] == [va.lower() if va else va \
+                                                      for va in oridict[key]]:
+                        del newdict[key]
+        # TODO: check if lowercase is correct or buggy for string types
         elif isinstance(val, (string_types, int, type(None))):
             if newdict[key] == oridict[key]:
                 del newdict[key]
@@ -378,6 +399,7 @@ def diffdict(newdict=None, oridict=None, settingskipped=[False]):
         return newdict
     else:
         return newdictlist
+
 
 def json_traversal(data, key_to_find, ret_dict=False):
     """
@@ -451,6 +473,7 @@ def json_traversal_delete_empty(data, old_key=None, _iter=None, remove_list=None
     """
     Recursive function to traverse a dictionary and delete things which
     match elements in the remove_list
+
     :param data: to be truncated
     :type data: list or dict
     :param old_key: key from previous recursive call (higher in stack)
@@ -483,8 +506,8 @@ def json_traversal_delete_empty(data, old_key=None, _iter=None, remove_list=None
     elif isinstance(data, dict):
         delete_list = []
         for key, value in data.items():
-            if (isinstance(value, dict) and len(value) < 1) or (isinstance(value, list)
-                                                                and len(value) < 1) or None or value in remove_list or key in remove_list:
+            if (isinstance(value, dict) and len(value) < 1) or (isinstance(value, list)\
+                    and len(value) < 1) or None or value in remove_list or key in remove_list:
                 delete_list.append(key)
 
             else:
