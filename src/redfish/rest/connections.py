@@ -138,7 +138,10 @@ class HttpConnection(object):
             except KeyError:
                 pass
             timeout = urllib3.util.Timeout(connect=40.0, read=None)
-            http = PoolManager(cert_reqs=cert_reqs, maxsize=6, timeout=timeout, **self._connection_properties)
+            if "timeout" not in self._connection_properties:
+                http = PoolManager(cert_reqs=cert_reqs, maxsize=6, timeout=timeout, **self._connection_properties)
+            else:
+                http = PoolManager(cert_reqs=cert_reqs, maxsize=6, **self._connection_properties)
 
         self._conn = http.request
 

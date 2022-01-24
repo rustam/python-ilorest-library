@@ -982,10 +982,10 @@ class RmcApp(object):
         members = self.get_handler(path, service=True, silent=True)
         if members and not fullresp:
             try:
-                members = members.dict['Members'] if self.typepath.defs. \
-                    isgen10 else members.dict['Items']
+                members = members.dict['Members'] if self.typepath.defs.\
+                                                                 isgen10 else members.dict['Current']
             except KeyError:
-                members = []
+                members = members
         elif fullresp:
             members = [members.dict]
 

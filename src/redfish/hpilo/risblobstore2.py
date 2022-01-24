@@ -865,7 +865,8 @@ class BlobStore2(object):
         if LOGGER.isEnabledFor(logging.DEBUG):
             dll.enabledebugoutput()
         dll.ChifInitialize(None)
-        if dll.ChifIsSecurityRequired() > 0 or username:
+        #if dll.ChifIsSecurityRequired() > 0 or username:
+        if dll.ChifIsSecurityRequired() > 0:
             if not username or not password:
                 return False
             dll.initiate_credentials.argtypes = [c_char_p, c_char_p]
