@@ -164,7 +164,7 @@ class HttpConnection(object):
         files = None
         request_args = {}
         if isinstance(path, bytes):
-            path = str(path, "utf-8")
+            path = str(path).encode("utf-8")
             external_uri = True if 'redfish.dmtf.org' in path else False
         else:
             external_uri = True if 'redfish.dmtf.org' in path else False
