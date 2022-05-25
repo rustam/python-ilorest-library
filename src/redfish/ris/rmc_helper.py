@@ -297,6 +297,10 @@ class RmcFileCacheManager(RmcCacheManager):
                         creds['password'] = self._rmc._cm.decodefunct(creds['password'])
                     login_data['username'] = creds['username']
                     login_data['password'] = creds['password']
+                    if isinstance(login_data['username'], bytes):
+                        login_data['username'] = login_data['username'].decode('utf-8')
+                    if isinstance(login_data['password'], bytes):
+                        login_data['password'] = login_data['password'].decode('utf-8')
 
                 redfishinst = RestClient(
                     username=login_data.get('username', 'Administrator'),

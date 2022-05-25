@@ -164,7 +164,7 @@ class HttpConnection(object):
         files = None
         request_args = {}
         if isinstance(path, bytes):
-            path = str(path).encode("utf-8")
+            path = str(path, "utf-8")
             external_uri = True if 'redfish.dmtf.org' in path else False
         else:
             external_uri = True if 'redfish.dmtf.org' in path else False
@@ -327,7 +327,11 @@ class Blobstore2Connection(object):
         """Initiate blobstore connection"""
         # mixed security modes require a password at all times
         username = kwargs.pop('username', 'nousername')
+        if isinstance(username, bytes):
+            username = username.decode('utf-8')
         password = kwargs.pop('password', 'nopassword')
+        if isinstance(password, bytes):
+            password = password.decode('utf-8')
         try:
             correctcreds = BlobStore2.initializecreds(username=username, password=password)
             bs2 = BlobStore2()

@@ -42,7 +42,8 @@ class JSONEncoder(json.JSONEncoder):
                 jsondict['Content'] = obj.dict
 
             return jsondict
-
+        if isinstance(obj, bytes):
+            obj = obj.decode('utf-8')
         return json.JSONEncoder.default(self, obj)
 
 class JSONDecoder(json.JSONDecoder):

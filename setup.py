@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 extras = {}
 
 setup(name='python-ilorest-library',
-      version='3.3.0.0',
+      version='3.5.1.0',
       description='iLO Rest Python Library',
 	  author = 'Hewlett Packard Enterprise',
 	  author_email = 'rajeevalochana.kallur@hpe.com',
