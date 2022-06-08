@@ -23,6 +23,7 @@ import json
 import base64
 import hashlib
 import logging
+from urllib.parse import urlparse
 
 from redfish.rest.connections import Blobstore2Connection, HttpConnection, InvalidCredentialsError
 
@@ -89,6 +90,12 @@ class RestClientBase(object):
         base_url = conn_kwargs.pop('base_url', None)
         if not base_url or base_url.startswith('blobstore://'):
             self.connection = Blobstore2Connection(**conn_kwargs)
+        elif not base_url.startswith('https://'):
+            base_url = "https://"+base_url
+            _ = conn_kwargs.pop('username', None)
+            _ = conn_kwargs.pop('password', None)
+            _ = conn_kwargs.pop('sessionid', None)
+            self.connection = HttpConnection(base_url, self._cert_data, **conn_kwargs)
         else:
             _ = conn_kwargs.pop('username', None)
             _ = conn_kwargs.pop('password', None)
@@ -289,7 +296,12 @@ class RestClient(RestClientBase):
                 session_loc = self._session_location.replace("https://", '')
                 session_loc = session_loc.replace(' ', '%20')
             else:
-                session_loc = self._session_location.replace(self.base_url, '')
+                parse_object = urlparse(self.base_url)
+                if parse_object.hostname != None:
+                    newurl = "https://"+parse_object.hostname
+                    session_loc = self._session_location.replace(newurl, '')
+                else:
+                    session_loc = self._session_location.replace(self.base_url, '')
         return session_loc
 
     @session_location.setter
@@ -474,8 +486,11 @@ class LegacyRestClient(RestClient):
     For full description of the arguments allowed see :class:`RestClient`"""
 
     def __init__(self, **client_kwargs):
-        super(LegacyRestClient, self).__init__(default_prefix='/rest/v1', is_redfish=False,
-                                               **client_kwargs)
+        kwargs = {
+            'default_prefix' : client_kwargs.pop('default_prefix', '/rest/v1'),
+            'is_redfish' : client_kwargs.pop('is_redfish', False),
+        }
+        super().__init__(**kwargs, **client_kwargs)
 
 
 class RedfishClient(RestClient):
@@ -492,5 +507,8 @@ class RedfishClient(RestClient):
     For full description of the arguments allowed see :class:`RestClient`"""
 
     def __init__(self, **client_kwargs):
-        super(RedfishClient, self).__init__(default_prefix='/redfish/v1/', is_redfish=True,
-                                            **client_kwargs)
+        kwargs = {
+            'default_prefix' : client_kwargs.pop('default_prefix', '/redfish/v1'),
+            'is_redfish' : client_kwargs.pop('is_redfish', True),
+        }
+        super().__init__(**kwargs, **client_kwargs)
