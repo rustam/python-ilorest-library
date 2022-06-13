@@ -143,7 +143,6 @@ The **body** property shows what body (if any) was passed along with the request
 >>> response.request.body
 '{"AssetTag": "new tag"}'
 
-<<<<<<< HEAD
 Certificate Based Authentication (HPE iLO Supported Authentication Only)
 ========================================================================
 
@@ -174,8 +173,6 @@ General steps to create the necessary steps include:
 #. Generate user certificate.
 #. Add user certificate mappings to iLO
 
-=======
->>>>>>> parent of 6298e23... Updates to Certificate Based Authentication Login and Docs:
 Multi-part Form Data
 ====================
 
