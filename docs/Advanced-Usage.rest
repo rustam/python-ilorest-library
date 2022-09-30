@@ -1,10 +1,5 @@
-.. image:: /images/hpe_logo2.png
+.. image:: images/hpe_logo2.png
    :width: 150pt
-
-|
-
-.. toctree::
-   :maxdepth: 1
 
 ==============
 Advanced Usage
