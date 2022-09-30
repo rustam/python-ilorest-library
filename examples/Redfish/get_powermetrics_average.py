@@ -22,13 +22,13 @@ import json
 from redfish import RedfishClient
 from redfish.rest.v1 import ServerDownOrUnreachableError
 
-from get_resource_directory import get_resource_directory
+#from get_resource_directory import get_resource_directory
 
 def get_powermetrics_average(_redfishobj):
 
     power_metrics_uri = None
 
-    resource_instances = get_resource_directory(_redfishobj)
+    resource_instances = _redfishobj.get_resource_directory()
     if DISABLE_RESOURCE_DIR or not resource_instances:
         #if we do not have a resource directory or want to force it's non use to find the
         #relevant URI
@@ -60,9 +60,9 @@ if __name__ == "__main__":
     # SYSTEM_URL acceptable examples:
     # "https://10.0.0.100"
     # "https://ilo.hostname"
-    SYSTEM_URL = "https://10.0.0.100"
-    LOGIN_ACCOUNT = "admin"
-    LOGIN_PASSWORD = "password"
+    SYSTEM_URL = input("Enter iLO IP address: ")
+    LOGIN_ACCOUNT = input("Enter Username: ")
+    LOGIN_PASSWORD = input("Enter password: ")
 
     # flag to force disable resource directory. Resource directory and associated operations are
     # intended for HPE servers.

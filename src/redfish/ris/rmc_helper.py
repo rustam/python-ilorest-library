@@ -28,8 +28,8 @@ import hashlib
 from redfish.rest.v1 import RestClient
 from redfish.rest.containers import StaticRestResponse, RestRequest
 
-from .ris import (RisMonolith)
-from .sharedtypes import (JSONEncoder)
+from .ris import RisMonolith
+from .sharedtypes import JSONEncoder
 
 # ---------End of imports---------
 
@@ -40,8 +40,10 @@ LOGGER = logging.getLogger(__name__)
 
 # ---------End of debug logger---------
 
+
 class RdmcError(Exception):
     """Base class for all RDMC Exceptions"""
+
     errcode = 1
 
     def __init__(self, message):
@@ -50,84 +52,103 @@ class RdmcError(Exception):
 
 class InvalidCommandLineError(RdmcError):
     """Raised when user enter incorrect command line arguments"""
+
     pass
 
 
 class FailureDuringCommitError(RdmcError):
     """Raised when there is an error while committing."""
+
     pass
 
 
 class UserNotAdminError(RdmcError):
     """Raised when user doesn't have admin priviledges, but they are required."""
+
     pass
+
 
 class IncompatibleiLOVersionError(RdmcError):
     """Raised when iLO version is incompatible."""
+
     pass
+
 
 class UndefinedClientError(Exception):
     """Raised when there are no clients active (usually when user hasn't logged in)."""
+
     pass
 
 
 class InstanceNotFoundError(Exception):
     """Raised when attempting to select an instance that does not exist."""
+
     pass
 
 
 class CurrentlyLoggedInError(Exception):
     """Raised when attempting to select an instance that does not exist"""
+
     pass
 
 
 class NothingSelectedError(Exception):
     """Raised when attempting to access an object without first selecting it."""
+
     pass
 
 
 class NothingSelectedFilterError(Exception):
     """Raised when the filter applied doesn't match any selection (general)."""
+
     pass
 
 
 class NothingSelectedSetError(Exception):
     """Raised when attempting to access an object without first selecting it (In set)."""
+
     pass
 
 
 class InvalidSelectionError(Exception):
     """Raised when selection argument fails to match anything."""
+
     pass
 
 
 class IdTokenError(Exception):
     """Raised when user is not authorized to complete the operation."""
+
     pass
 
 
 class ValueChangedError(Exception):
     """Raised if user tries to set/commit a value when monolith has older data."""
+
     pass
 
 
 class LoadSkipSettingError(Exception):
     """Raised when one or more settings are absent in given server."""
+
     pass
 
 
 class InvalidPathError(Exception):
     """Raised when requested path is not found."""
+
     pass
 
 
 class UnableToObtainIloVersionError(Exception):
     """Raised when iloversion is missing from default path."""
+
     pass
 
 
 class IncompatibleiLOVersionError(Exception):
     """Raised when the iLO version is above or below the required version."""
+
     pass
 
 
@@ -145,16 +166,19 @@ class ValidationError(Exception):
 
 class IloResponseError(Exception):
     """Raised when iLO returns with a non 2XX response."""
+
     pass
 
 
 class EmptyRaiseForEAFP(Exception):
     """Raised when you need to check for issues and take different action."""
+
     pass
 
 
 class IncorrectPropValue(Exception):
     """Raised when you pass an incorrect value to for the associated property."""
+
     pass
 
 
@@ -199,42 +223,53 @@ class RmcFileCacheManager(RmcCacheManager):
             cachedir = self._rmc.cachedir
             indexfn = os.path.join(cachedir, "index")  # %s\\index' % cachedir
         else:
-            indexfn = ''
+            indexfn = ""
         sessionlocs = []
 
         if os.path.isfile(indexfn):
             try:
-                indexfh = open(indexfn, 'r')
+                indexfh = open(indexfn, "r")
                 index_cache = json.load(indexfh)
                 indexfh.close()
 
                 for index in index_cache:
                     if url:
-                        if url in index['url']:
-                            os.remove(os.path.join(cachedir, index['href']))
+                        if url in index["url"]:
+                            os.remove(os.path.join(cachedir, index["href"]))
                             break
                     else:
-                        if os.path.isfile(os.path.join(cachedir, index['href'])):
-                            monolith = open(os.path.join(cachedir, index['href']), 'r')
+                        if os.path.isfile(os.path.join(cachedir, index["href"])):
+                            monolith = open(os.path.join(cachedir, index["href"]), "r")
                             data = json.load(monolith)
                             monolith.close()
                             for item in data:
-                                if 'login' in item and 'session_location' in data['login']:
-                                    if 'blobstore' in data['login']['url']:
-                                        loc = data['login']['session_location'] \
-                                            .split('//')[-1]
+                                if (
+                                    "login" in item
+                                    and "session_location" in data["login"]
+                                ):
+                                    if "blobstore" in data["login"]["url"]:
+                                        loc = data["login"]["session_location"].split(
+                                            "//"
+                                        )[-1]
                                         sesurl = None
                                     else:
-                                        loc = data['login']['session_location'] \
-                                            .split(data['login']['url'])[-1]
-                                        sesurl = data['login']['url']
-                                    sessionlocs.append((loc, sesurl,
-                                                        self._rmc._cm.decodefunct
-                                                        (data['login']['session_key'])))
+                                        loc = data["login"]["session_location"].split(
+                                            data["login"]["url"]
+                                        )[-1]
+                                        sesurl = data["login"]["url"]
+                                    sessionlocs.append(
+                                        (
+                                            loc,
+                                            sesurl,
+                                            self._rmc._cm.decodefunct(
+                                                data["login"]["session_key"]
+                                            ),
+                                        )
+                                    )
 
-                        os.remove(os.path.join(cachedir, index['href']))
+                        os.remove(os.path.join(cachedir, index["href"]))
             except BaseException as excp:
-                LOGGER.warning('Unable to read cache data %s', excp)
+                LOGGER.warning("Unable to read cache data %s", excp)
 
         return sessionlocs
 
@@ -248,19 +283,19 @@ class RmcFileCacheManager(RmcCacheManager):
         :type enc: bool
         """
         cachedir = self._rmc.cachedir
-        indexfn = '%s/index' % cachedir
+        indexfn = "%s/index" % cachedir
 
         if os.path.isfile(indexfn):
             try:
-                indexfh = open(indexfn, 'r')
+                indexfh = open(indexfn, "r")
                 index_cache = json.load(indexfh)
                 indexfh.close()
 
                 for index in index_cache:
-                    clientfn = index['href']
+                    clientfn = index["href"]
                     self._uncache_client(clientfn, creds=creds, enc=enc)
             except BaseException as excp:
-                LOGGER.warning('Unable to read cache data %s', excp)
+                LOGGER.warning("Unable to read cache data %s", excp)
 
     def _uncache_client(self, cachefn, creds=None, enc=False):
         """Monolith uncache function for parsing and passing all client data and associated
@@ -271,78 +306,83 @@ class RmcFileCacheManager(RmcCacheManager):
 
         """
         cachedir = self._rmc.cachedir
-        clientsfn = '%s/%s' % (cachedir, cachefn)
+        clientsfn = "%s/%s" % (cachedir, cachefn)
 
         if os.path.isfile(clientsfn):
             try:
-                clientsfh = open(clientsfn, 'r')
+                clientsfh = open(clientsfn, "r")
                 client = json.load(clientsfh)
                 clientsfh.close()
 
-                if 'login' not in client:
+                if "login" not in client:
                     return
 
-                login_data = client['login']
-                if 'url' not in login_data:
+                login_data = client["login"]
+                if "url" not in login_data:
                     return
 
-                self._rmc.typepath.getgen(login_data.get('ilo'),
-                                          url=login_data.get('url'),
-                                          isredfish=login_data.get('redfish', None),
-                                          ca_cert_data=login_data.get('ca_cert_data', {}))
+                self._rmc.typepath.getgen(
+                    login_data.get("ilo"),
+                    url=login_data.get("url"),
+                    isredfish=login_data.get("redfish", None),
+                    ca_cert_data=login_data.get("ca_cert_data", {}),
+                )
 
-                if creds and login_data.get('url', '').startswith('blobstore://'):
+                if creds and login_data.get("url", "").startswith("blobstore://"):
                     if enc:
-                        creds['username'] = self._rmc._cm.decodefunct(creds['username'])
-                        creds['password'] = self._rmc._cm.decodefunct(creds['password'])
-                    login_data['username'] = creds['username']
-                    login_data['password'] = creds['password']
-                    if isinstance(login_data['username'], bytes):
-                        login_data['username'] = login_data['username'].decode('utf-8')
-                    if isinstance(login_data['password'], bytes):
-                        login_data['password'] = login_data['password'].decode('utf-8')
+                        creds["username"] = self._rmc._cm.decodefunct(creds["username"])
+                        creds["password"] = self._rmc._cm.decodefunct(creds["password"])
+                    login_data["username"] = creds["username"]
+                    login_data["password"] = creds["password"]
+                    if isinstance(login_data["username"], bytes):
+                        login_data["username"] = login_data["username"].decode("utf-8")
+                    if isinstance(login_data["password"], bytes):
+                        login_data["password"] = login_data["password"].decode("utf-8")
 
                 redfishinst = RestClient(
-                    username=login_data.get('username', 'Administrator'),
-                    password=login_data.get('password', None),
-                    base_url=login_data.get('url', None),
-                    biospassword=login_data.get('bios_password', None),
-                    is_redfish=login_data.get('redfish', None),
+                    username=login_data.get("username", "Administrator"),
+                    password=login_data.get("password", None),
+                    base_url=login_data.get("url", None),
+                    biospassword=login_data.get("bios_password", None),
+                    is_redfish=login_data.get("redfish", None),
                     default_prefix=self._rmc.typepath.defs.startpath,
-                    proxy=login_data.get('proxy', None),
-                    ca_cert_data=login_data.get('ca_cert_data', {}))
-                if login_data.get('authorization_key'):
-                    redfishinst.basic_auth = login_data.get('authorization_key')
-                elif login_data.get('session_key'):
-                    redfishinst.session_key = self._rmc._cm.decodefunct(login_data.get('session_key'))
-                    # redfishinst.session_key = login_data.get('session_key')
+                    proxy=login_data.get("proxy", None),
+                    ca_cert_data=login_data.get("ca_cert_data", {}),
+                )
+                if login_data.get("authorization_key"):
+                    redfishinst.basic_auth = login_data.get("authorization_key")
+                elif login_data.get("session_key"):
+                    redfishinst.session_key = self._rmc._cm.decodefunct(
+                        login_data.get("session_key")
+                    )
                     if isinstance(redfishinst.session_key, bytes):
-                        redfishinst.session_key = redfishinst.session_key.decode('utf-8')
-                    redfishinst.session_location = login_data.get('session_location')
-                if 'selector' in client:
-                    self._rmc.selector = client['selector']
-                if login_data.get('iloversion'):
-                    redfishinst.iloversion = login_data.get('iloversion')
+                        redfishinst.session_key = redfishinst.session_key.decode("utf-8")
+                    redfishinst.session_location = login_data.get("session_location")
+
+                if "selector" in client:
+                    self._rmc.selector = client["selector"]
+                if login_data.get("iloversion"):
+                    redfishinst.iloversion = login_data.get("iloversion")
                 else:
                     redfishinst.iloversion = None
                 self._rmc.typepath.iloversion = redfishinst.iloversion
 
-                getdata = client['get']
+                getdata = client["get"]
                 for key in list(getdata.keys()):
                     if key == redfishinst.default_prefix:
-                        restreq = RestRequest(method='GET', path=key)
-                        getdata[key]['restreq'] = restreq
+                        restreq = RestRequest(method="GET", path=key)
+                        getdata[key]["restreq"] = restreq
                         redfishinst.root = StaticRestResponse(**getdata[key])
                         break
 
                 self._rmc.monolith = RisMonolith(redfishinst, self._rmc.typepath)
-                self._rmc.monolith.load_from_dict(client['monolith'])
+                self._rmc.monolith.load_from_dict(client["monolith"])
                 self._rmc.redfishinst = redfishinst
                 # make sure root is there
                 _ = redfishinst.root
                 self._rmc.typepath.defineregschemapath(redfishinst.root.dict)
             except BaseException as excp:
-                LOGGER.warning('Unable to read cache data %s', excp)
+                LOGGER.warning("Unable to read cache data %s", excp)
 
     def cache_rmc(self):
         """Saves monolith data to the file path specified in RmcApp."""
@@ -364,21 +404,25 @@ class RmcFileCacheManager(RmcCacheManager):
 
         if self._rmc.redfishinst:
             shaobj = hashlib.new("SHA256")
-            shaobj.update(self._rmc.redfishinst.base_url.encode('utf-8'))
+            shaobj.update(self._rmc.redfishinst.base_url.encode("utf-8"))
             md5str = shaobj.hexdigest()
 
             index_map[self._rmc.redfishinst.base_url] = md5str
-            index_data = dict(url=self._rmc.redfishinst.base_url, href='%s' % md5str, )
+            index_data = dict(
+                url=self._rmc.redfishinst.base_url,
+                href="%s" % md5str,
+            )
             index_cache.append(index_data)
 
-            indexfh = open('%s/index' % cachedir, 'w')
+            indexfh = open("%s/index" % cachedir, "w")
             json.dump(index_cache, indexfh, indent=2, cls=JSONEncoder)
             indexfh.close()
 
         if self._rmc.redfishinst:
             login_data = dict(
                 username=None,
-                password=None, url=self._rmc.redfishinst.base_url,
+                password=None,
+                url=self._rmc.redfishinst.base_url,
                 session_key=self._rmc._cm.encodefunct(self._rmc.redfishinst.session_key),
                 session_location=self._rmc.redfishinst.session_location,
                 authorization_key=self._rmc.redfishinst.basic_auth,
@@ -387,14 +431,23 @@ class RmcFileCacheManager(RmcCacheManager):
                 ilo=self._rmc.typepath.ilogen,
                 iloversion=self._rmc.typepath.iloversion,
                 proxy=self._rmc.redfishinst.proxy,
-                ca_cert_data=self._rmc.redfishinst.connection._connection_properties if
-                self._rmc.redfishinst.connection._connection_properties else dict())
+                ca_cert_data=self._rmc.redfishinst.connection._connection_properties
+                if self._rmc.redfishinst.connection._connection_properties
+                else dict(),
+            )
 
-            clients_data = dict(selector=self._rmc.selector, login=login_data,
-                                monolith=self._rmc.monolith, get=self._rmc.monolith.paths)
+            clients_data = dict(
+                selector=self._rmc.selector,
+                login=login_data,
+                monolith=self._rmc.monolith,
+                get=self._rmc.monolith.paths,
+            )
 
-            clientsfh = open('%s/%s' % (cachedir,
-                                        index_map[self._rmc.redfishinst.base_url]), 'w')
+            clientsfh = open(
+                "%s/%s" % (cachedir, index_map[self._rmc.redfishinst.base_url]), "w"
+            )
 
+            if isinstance(clients_data, bytes):
+                clients_data = clients_data.decode("utf-8")
             json.dump(clients_data, clientsfh, indent=2, cls=JSONEncoder)
             clientsfh.close()

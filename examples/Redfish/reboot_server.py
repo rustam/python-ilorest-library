@@ -46,16 +46,9 @@ def reboot_server(_redfishobj):
     if systems_response:
         system_reboot_uri = systems_response.obj['Actions']['#ComputerSystem.Reset']['target']
         body = dict()
-        resettype = ['ForceRestart','GracefulRestart']
         body['Action'] = 'ComputerSystem.Reset'
-        for reset in resettype:
-            if reset.lower() == "forcerestart":
-                body['ResetType'] = "ForceRestart"
-                resp = _redfishobj.post(system_reboot_uri, body)
-            elif reset.lower() == "gracefulrestart":
-                body['ResetType'] = "GracefulRestart"
-                resp = _redfishobj.post(system_reboot_uri, body)
-
+        body['ResetType'] = "ForceRestart"
+        resp = _redfishobj.post(system_reboot_uri, body)
         #If iLO responds with soemthing outside of 200 or 201 then lets check the iLO extended info
         #error message to see what went wrong
         if resp.status == 400:

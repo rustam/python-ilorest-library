@@ -23,14 +23,14 @@ import argparse
 from redfish import RedfishClient
 from redfish.rest.v1 import ServerDownOrUnreachableError
 global DISABLE_RESOURCE_DIR
-from ilorest_util import get_resource_directory
-from ilorest_util import get_gen
+#from ilorest_util import get_resource_directory
+#from ilorest_util import get_gen
 
 def get_bios_setting(_redfishobj):
 
     bios_uri = None
     bios_data = None
-    resource_instances = get_resource_directory(_redfishobj)
+    resource_instances = _redfishobj.get_resource_directory()
     if DISABLE_RESOURCE_DIR or not resource_instances:
         #if we do not have a resource directory or want to force it's non use to find the
         #relevant URI
@@ -65,47 +65,54 @@ def get_bios_setting_gen9(_redfishobj):
 
 
 if __name__ == "__main__":
-    # Initialize parser
-    parser = argparse.ArgumentParser(description = "Script to upload and flash NVMe FW")
 
-    parser.add_argument(
-        '-i',
-        '--ilo',
-        dest='ilo_ip',
-        action="store",
-        help="iLO IP of the server",
-        default=None)
-    parser.add_argument(
-        '-u',
-        '--user',
-        dest='ilo_user',
-        action="store",
-        help="iLO username to login",
-        default=None)
-    parser.add_argument(
-        '-p',
-        '--password',
-        dest='ilo_pass',
-        action="store",
-        help="iLO password to log in.",
-        default=None)
+    SYSTEM_URL = input("Enter iLO IP Address: ")
+    LOGIN_ACCOUNT = input("Enter Username: ")
+    LOGIN_PASSWORD = input("Enter password: ")
 
-    options = parser.parse_args()
-
-    system_url = "https://" + options.ilo_ip
-    print (system_url)
+#     Initialize parser
+##    parser = argparse.ArgumentParser(description = "Script to upload and flash NVMe FW")
+##
+##    parser.add_argument(
+##        '-i',
+##        '--ilo',
+##        dest='ilo_ip',
+##        action="store",
+##        help="iLO IP of the server",
+##        default=None)
+##    parser.add_argument(
+##        '-u',
+##        '--user',
+##        dest='ilo_user',
+##        action="store",
+##        help="iLO username to login",
+##        default=None)
+##    parser.add_argument(
+##        '-p',
+##        '--password',
+##        dest='ilo_pass',
+##        action="store",
+##        help="iLO password to log in.",
+##        default=None)
+##
+##    options = parser.parse_args()
+##
+##    system_url = "https://" + options.ilo_ip
+##    print (system_url)
 
     DISABLE_RESOURCE_DIR = False
 
     try:
         # Create a Redfish client object
-        redfish_obj = RedfishClient(base_url=system_url, username=options.ilo_user, password=options.ilo_pass)
+        #redfish_obj = RedfishClient(base_url=system_url, username=options.ilo_user, password=options.ilo_pass)
+        redfish_obj = RedfishClient(base_url=SYSTEM_URL, username=LOGIN_ACCOUNT, \
+                                                                            password=LOGIN_PASSWORD)
         # Login with the Redfish client
         redfish_obj.login()
     except ServerDownOrUnreachableError as excp:
         sys.stderr.write("ERROR: server not reachable or does not support RedFish.\n")
         sys.exit()
-    (ilogen,_) = get_gen(redfish_obj)
+    (ilogen,_) = redfish_obj.get_gen()
     print ("Generation is ", ilogen)
     if int(ilogen) == 5:
         get_bios_setting(redfish_obj)

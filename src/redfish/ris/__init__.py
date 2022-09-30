@@ -4,9 +4,7 @@ Expanded LegacyREST/Redfish interface for schema validation, database for respon
 and error registries.
 """
 
-from .sharedtypes import (
-    JSONEncoder
-)
+from .sharedtypes import JSONEncoder
 
 from .ris import (
     RisInstanceNotFoundError,
@@ -31,11 +29,6 @@ from .rmc_helper import (
     RmcFileCacheManager,
 )
 
-from .rmc import (
-    RmcApp
-)
+from .rmc import RmcApp
 
-from .validation import (
-    ValidationManager,
-    RegistryValidationError
-)
+from .validation import ValidationManager, RegistryValidationError

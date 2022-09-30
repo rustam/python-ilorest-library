@@ -25,7 +25,7 @@ import logging
 if six.PY3:
     from functools import reduce
 
-from collections import Mapping
+from collections.abc import Mapping
 
 import jsonpath_rw
 
@@ -46,6 +46,7 @@ LOGGER = logging.getLogger()
 
 
 # ---------End of debug logger---------
+
 
 def warning_handler(msg, override=False):
     """Helper function for handling warning messages appropriately. If LOGGER level is set to 40
@@ -75,11 +76,12 @@ def validate_headers(instance, verbose=False):
     try:
         headervals = instance.resp.getheaders()
         for kii, val in headervals.items():
-            if kii.lower() == 'allow':
+            if kii.lower() == "allow":
                 if not "PATCH" in val:
                     if verbose:
-                        warning_handler('Skipping read-only path: %s\n' % \
-                                        instance.resp.request.path)
+                        warning_handler(
+                            "Skipping read-only path: %s\n" % instance.resp.request.path
+                        )
                     skip = True
     except:
         pass
@@ -115,13 +117,13 @@ def get_errmsg_type(results):
 
     message_type = None
     try:
-        jsonpath_expr = jsonpath_rw.parse('$..MessageId')
+        jsonpath_expr = jsonpath_rw.parse("$..MessageId")
         messageid = [match.value for match in jsonpath_expr.find(results.dict)]
         if not messageid:
-            jsonpath_expr = jsonpath_rw.parse('$..MessageID')
+            jsonpath_expr = jsonpath_rw.parse("$..MessageID")
             messageid = [match.value for match in jsonpath_expr.find(results.dict)]
         if messageid:
-            message_type = messageid[0].split('.')[0]
+            message_type = messageid[0].split(".")[0]
     except:
         pass
 
@@ -146,8 +148,8 @@ def filter_output(output, sel, val):
     if isinstance(output, list):
         for entry in output:
             if isinstance(entry, dict):
-                if '/' in sel:
-                    sellist = sel.split('/')
+                if "/" in sel:
+                    sellist = sel.split("/")
                     newentry = copy.copy(entry)
 
                     for item in sellist:
@@ -174,27 +176,32 @@ def checkallowablevalues(newdict=None, oridict=None):
     :param oridict: Full dictionary with current state. (Includes @Redfish.AllowableValues)
     :type oridict: dict
     """
-    for strmatch in re.finditer('@Redfish.AllowableValues', str(oridict)):
-        propname = str(oridict)[:strmatch.start()].split("'")[-1]
+    for strmatch in re.finditer("@Redfish.AllowableValues", str(oridict)):
+        propname = str(oridict)[: strmatch.start()].split("'")[-1]
         strtomatch = "$..'{0}@Redfish.AllowableValues'".format(propname)
         jsonpath_expr = jsonpath_rw.parse(strtomatch)
         matches = jsonpath_expr.find(oridict)
         if matches:
             for match in matches:
                 fullpath = str(match.full_path)
-                if 'Actions' in fullpath:
+                if "Actions" in fullpath:
                     continue
-                checkpath = fullpath.split('@Redfish.AllowableValues')[0]
+                checkpath = fullpath.split("@Redfish.AllowableValues")[0]
                 jexpr2 = jsonpath_rw.parse(checkpath)
                 valmatches = jexpr2.find(newdict)
                 if valmatches:
                     for mat in valmatches:
-                        res = [val for val in match.value if mat.value.lower() == val.lower()]
+                        res = [
+                            val for val in match.value if mat.value.lower() == val.lower()
+                        ]
                         if not res:
-                            raise IncorrectPropValue("Incorrect Value " \
-                                                     "entered. Please enter one of the below " \
-                                                     "values for {0}:\n{1}".format \
-                                                         ('/'.join(checkpath.split('.')), str(match.value)[1:-1]))
+                            raise IncorrectPropValue(
+                                "Incorrect Value "
+                                "entered. Please enter one of the below "
+                                "values for {0}:\n{1}".format(
+                                    "/".join(checkpath.split(".")), str(match.value)[1:-1]
+                                )
+                            )
 
 
 def navigatejson(selector, currdict, val=None):
@@ -212,22 +219,28 @@ def navigatejson(selector, currdict, val=None):
     # TODO: Check for val of different types(bool, int, etc)
     temp_dict = dict()
     createdict = lambda y, x: {x: y}
-    getkey = lambda cdict, sel: next((item for item in iterkeys(cdict) \
-                                      if sel.lower() == item.lower()), sel)
-    getval = lambda cdict, sele: [cdict[sel] if sel in \
-                                                cdict else '~!@#$%^&*)()' for sel in [getkey(cdict, sele)]][0]
+    getkey = lambda cdict, sel: next(
+        (item for item in iterkeys(cdict) if sel.lower() == item.lower()), sel
+    )
+    getval = lambda cdict, sele: [
+        cdict[sel] if sel in cdict else "~!@#$%^&*)()" for sel in [getkey(cdict, sele)]
+    ][0]
     fullbreak = False
     seldict = copy.deepcopy(currdict)
     for ind, sel in enumerate(selector):
         if isinstance(seldict, dict):
             selector[ind] = getkey(seldict, sel)
             seldict = getval(seldict, sel)
-            if seldict == '~!@#$%^&*)()':
+            if seldict == "~!@#$%^&*)()":
                 return None
             if val and ind == len(selector) - 1:
-                cval = ",".join(seldict) if isinstance(seldict, (list, tuple)) else seldict
-                if not ((val[-1] == '*' and str(cval).lower().startswith(val[:-1].lower())) or
-                        str(cval).lower() == val.lower()):
+                cval = (
+                    ",".join(seldict) if isinstance(seldict, (list, tuple)) else seldict
+                )
+                if not (
+                    (val[-1] == "*" and str(cval).lower().startswith(val[:-1].lower()))
+                    or str(cval).lower() == val.lower()
+                ):
                     fullbreak = True
         elif isinstance(seldict, (list, tuple)):
             returndict = []
@@ -243,7 +256,7 @@ def navigatejson(selector, currdict, val=None):
                 fullbreak = True
             if seldict:
                 seldict = {selector[ind - 1]: seldict}
-                selsdict = reduce(createdict, [seldict] + selector[:ind - 1][::-1])
+                selsdict = reduce(createdict, [seldict] + selector[: ind - 1][::-1])
                 merge_dict(temp_dict, selsdict)
                 return temp_dict
             else:
@@ -291,7 +304,7 @@ def skipnonsettingsinst(instances):
     """
     instpaths = [inst.path.lower() for inst in instances]
     cond = list(filter(lambda x: x.endswith(("/settings", "settings/")), instpaths))
-    paths = [path.split('settings/')[0].split('/settings')[0] for path in cond]
+    paths = [path.split("settings/")[0].split("/settings")[0] for path in cond]
     newinst = [inst for inst in instances if inst.path.lower() not in paths]
     return newinst
 
@@ -314,15 +327,17 @@ def getattributeregistry(instances, adict=None):
     newdict = {}
     for inst in instances:
         try:
-            if 'AttributeRegistry' in inst.resp.dict:
+            if "AttributeRegistry" in inst.resp.dict:
                 if inst.defpath is not None:
                     if not ("bios/settings" in inst.defpath):
                         newdict[inst.maj_type] = inst.resp.obj["AttributeRegistry"]
                         return newdict
                 newdict[inst.maj_type] = inst.resp.obj["AttributeRegistry"]
         except AttributeError as excp:
-            LOGGER.warning("Invalid/Unpopulated Response: %s\nType:%s\nPath:%s\n" \
-                           % (inst.resp, inst.type, inst.path))
+            LOGGER.warning(
+                "Invalid/Unpopulated Response: %s\nType:%s\nPath:%s\n"
+                % (inst.resp, inst.type, inst.path)
+            )
     return newdict
 
 
@@ -388,8 +403,9 @@ def diffdict(newdict=None, oridict=None, settingskipped=[False]):
                 continue
             else:
                 if val:
-                    if [va.lower() for va in val] == [va.lower() if va else va \
-                                                      for va in oridict[key]]:
+                    if [va.lower() for va in val] == [
+                        va.lower() if va else va for va in oridict[key]
+                    ]:
                         del newdict[key]
         # TODO: check if lowercase is correct or buggy for string types
         elif isinstance(val, (string_types, int, type(None))):
@@ -469,6 +485,7 @@ def json_traversal(data, key_to_find, ret_dict=False):
     except Exception as exp:
         pass
 
+
 def json_traversal_delete_empty(data, old_key=None, _iter=None, remove_list=None):
     """
     Recursive function to traverse a dictionary and delete things which
@@ -506,16 +523,25 @@ def json_traversal_delete_empty(data, old_key=None, _iter=None, remove_list=None
     elif isinstance(data, dict):
         delete_list = []
         for key, value in data.items():
-            if (isinstance(value, dict) and len(value) < 1) or (isinstance(value, list)\
-                    and len(value) < 1) or None or value in remove_list or key in remove_list:
+            if (
+                (isinstance(value, dict) and len(value) < 1)
+                or (isinstance(value, list) and len(value) < 1)
+                or None
+                or value in remove_list
+                or key in remove_list
+            ):
                 delete_list.append(key)
 
             else:
                 json_traversal_delete_empty(value, key, remove_list=remove_list)
-                #would be great to not need this section; however,
-                #since recursive deletion is not possible, this is needed
-                #if you can figure out how to pass by reference then fix me!
-                if (isinstance(value, dict) and len(value) < 1) or None or value in remove_list:
+                # would be great to not need this section; however,
+                # since recursive deletion is not possible, this is needed
+                # if you can figure out how to pass by reference then fix me!
+                if (
+                    (isinstance(value, dict) and len(value) < 1)
+                    or None
+                    or value in remove_list
+                ):
                     delete_list.append(key)
         for dl_entry in delete_list:
             try:

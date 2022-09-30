@@ -34,6 +34,7 @@ LOGGER = logging.getLogger(__name__)
 
 # ---------End of debug logger---------
 
+
 class BlobReturnCodes(object):
     """Blob store return codes.
 
@@ -42,7 +43,7 @@ class BlobReturnCodes(object):
     """
 
     SUCCESS = 0
-    if os.name != 'nt':
+    if os.name != "nt":
         CHIFERR_NoDriver = 19
         CHIFERR_AccessDenied = 13
     else:
@@ -52,46 +53,57 @@ class BlobReturnCodes(object):
 
 class HpIloInitialError(Exception):
     """Raised when error during initialization of iLO Chif channel"""
+
     pass
 
 
 class HpIloNoChifDriverError(Exception):
     """Raised when error during initialization of iLO Chif channel"""
+
     pass
 
 
 class HpIloChifAccessDeniedError(Exception):
     """Raised when error during initialization of iLO Chif channel"""
+
     pass
 
 
 class HpIloPrepareAndCreateChannelError(Exception):
     """Raised when error during initialization of iLO Chif channel"""
+
     pass
 
 
 class HpIloChifPacketExchangeError(Exception):
     """Raised when errors encountered when exchanging chif packet"""
+
     pass
 
 
 class HpIloReadError(Exception):
     """Raised when errors encountered when reading from iLO"""
+
     pass
 
 
 class HpIloWriteError(Exception):
     """Raised when errors encountered when writing to iLO"""
+
     pass
 
 
 class HpIloSendReceiveError(Exception):
     """Raised when errors encountered when reading form iLO after sending"""
+
     pass
+
 
 class HpIloNoDriverError(Exception):
     """Raised when errors encountered when there is no ilo driver"""
+
     pass
+
 
 class HpIlo(object):
     """Base class of interaction with iLO"""
@@ -109,16 +121,19 @@ class HpIlo(object):
         try:
             status = self.dll.ChifCreate(byref(fhandle))
             if status != BlobReturnCodes.SUCCESS:
-                raise HpIloInitialError("Error %s occurred while trying " \
-                                        "to create a channel." % status)
+                raise HpIloInitialError(
+                    "Error %s occurred while trying " "to create a channel." % status
+                )
 
             self.fhandle = fhandle
 
             if not "skip_ping" in os.environ:
                 status = self.dll.ChifPing(self.fhandle)
                 if status != BlobReturnCodes.SUCCESS:
-                    errmsg = "Error {0} occurred while trying to open a " \
-                             "channel to iLO".format(status)
+                    errmsg = (
+                        "Error {0} occurred while trying to open a "
+                        "channel to iLO".format(status)
+                    )
                     if status == BlobReturnCodes.CHIFERR_NoDriver:
                         errmsg = "chif"
                     elif status == BlobReturnCodes.CHIFERR_AccessDenied:
@@ -130,7 +145,7 @@ class HpIlo(object):
             raise
 
     def chif_packet_exchange(self, data):
-        """ Function for handling chif packet exchange
+        """Function for handling chif packet exchange
 
         :param data: data to be sent for packet exchange
         :type data: str
@@ -141,10 +156,13 @@ class HpIlo(object):
 
         recbuff = create_string_buffer(datarecv)
 
-        error = self.dll.ChifPacketExchange(self.fhandle, byref(buff), byref(recbuff), datarecv)
+        error = self.dll.ChifPacketExchange(
+            self.fhandle, byref(buff), byref(recbuff), datarecv
+        )
         if error != BlobReturnCodes.SUCCESS:
-            raise HpIloChifPacketExchangeError("Error %s occurred while " \
-                                               "exchange chif packet" % error)
+            raise HpIloChifPacketExchangeError(
+                "Error %s occurred while " "exchange chif packet" % error
+            )
 
         pkt = bytearray()
 
@@ -156,7 +174,7 @@ class HpIlo(object):
         return pkt
 
     def send_receive_raw(self, data, retries=10):
-        """ Function implementing proper send receive retry protocol
+        """Function implementing proper send receive retry protocol
 
         :param data: data to be sent for packet exchange
         :type data: str
@@ -173,7 +191,7 @@ class HpIlo(object):
 
                 if sequence != struct.unpack("<H", bytes(resp[2:4]))[0]:
                     if LOGGER.isEnabledFor(logging.DEBUG):
-                        LOGGER.debug('Attempt %s has a bad sequence number.\n', tries + 1)
+                        LOGGER.debug("Attempt %s has a bad sequence number.\n", tries + 1)
                     continue
 
                 return resp
@@ -184,7 +202,7 @@ class HpIlo(object):
                     self.close()
 
                     if LOGGER.isEnabledFor(logging.DEBUG) and excp:
-                        LOGGER.debug('Error while reading iLO: %s', str(excp))
+                        LOGGER.debug("Error while reading iLO: %s", str(excp))
                     raise excp
 
             tries += 1

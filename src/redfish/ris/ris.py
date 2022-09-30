@@ -28,7 +28,7 @@ import weakref
 import logging
 import threading
 
-from collections import (OrderedDict, defaultdict)
+from collections import OrderedDict, defaultdict
 
 # Added for py3 compatibility
 import six
@@ -54,28 +54,34 @@ LOGGER = logging.getLogger(__name__)
 
 # ---------End of debug logger---------
 
+
 class BiosUnregisteredError(Exception):
     """Raised when BIOS has not been registered correctly in iLO"""
+
     pass
 
 
 class SchemaValidationError(Exception):
     """Schema Validation Class Error"""
+
     pass
 
 
 class SessionExpired(Exception):
     """Raised when session has expired"""
+
     pass
 
 
 class RisMonolithMemberBase(Dictable):
     """RIS monolith member base class"""
+
     pass
 
 
 class RisInstanceNotFoundError(Exception):
     """Raised when attempting to select an instance that does not exist"""
+
     pass
 
 
@@ -95,7 +101,7 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
         self._resp = restresp
         self._patches = list()
         # Check if typedef can be used here
-        self._typestring = '@odata.type' if isredfish else 'Type'
+        self._typestring = "@odata.type" if isredfish else "Type"
         self.modified = False
         self.defpath = self.deftype = self.defetag = self._type = None
         self.__bool__ = self.__nonzero__
@@ -107,19 +113,21 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
             if self and self._typestring in self.resp.dict:
                 return self.resp.dict[self._typestring]
             # Added for object type
-            elif self and 'type' in self.resp.dict:
-                return self.resp.dict['type']
+            elif self and "type" in self.resp.dict:
+                return self.resp.dict["type"]
         except (AttributeError, ValueError, TypeError):
-            return self.deftype  # data not yet fetched, probably empty dict, so assume deftype
+            return (
+                self.deftype
+            )  # data not yet fetched, probably empty dict, so assume deftype
         return None
 
     @property
     def maj_type(self):
         """Get major type of the monolith member's response"""
         if self.type:
-            if '.' in self.type:
+            if "." in self.type:
                 types = ".".join(self.type.split(".", 2)[:2])
-                retval = types[1:] if types.startswith('#') else types
+                retval = types[1:] if types.startswith("#") else types
             else:
                 retval = self.type
             return retval
@@ -163,7 +171,7 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
     @property
     def etag(self):
         """Get the etag of the response"""
-        return self.defetag if not self.resp else self.resp.getheader('etag')
+        return self.defetag if not self.resp else self.resp.getheader("etag")
 
     def popdefs(self, typename, pathval, etagval):
         """Populate the default values in the class
@@ -186,24 +194,24 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
         """
         result = OrderedDict()
         if self.maj_type:
-            result['Type'] = self.type
+            result["Type"] = self.type
 
             if self.resp:
-                if self.maj_type == 'Collection.1' and 'MemberType' in self.resp.dict:
-                    result['MemberType'] = self.resp.dict['MemberType']
+                if self.maj_type == "Collection.1" and "MemberType" in self.resp.dict:
+                    result["MemberType"] = self.resp.dict["MemberType"]
 
-            result['links'] = OrderedDict()
-            result['links']['href'] = ''
-            result['ETag'] = self.etag
+            result["links"] = OrderedDict()
+            result["links"]["href"] = ""
+            result["ETag"] = self.etag
 
             if self.resp:
-                result['Content'] = self.resp.dict
-                result['Status'] = self.resp.status
-                result['Headers'] = self.resp.getheaders()
-            result['OriginalUri'] = self.path
-            result['Patches'] = self._patches
-            result['modified'] = self.modified
-            result['MajType'] = self.maj_type
+                result["Content"] = self.resp.dict
+                result["Status"] = self.resp.status
+                result["Headers"] = self.resp.getheaders()
+            result["OriginalUri"] = self.path
+            result["Patches"] = self._patches
+            result["modified"] = self.modified
+            result["MajType"] = self.maj_type
 
         return result
 
@@ -214,17 +222,17 @@ class RisMonolithMemberv100(RisMonolithMemberBase):
         :param src: Source to load member data from.
         :type src: dict
         """
-        if 'Type' in src:
-            self._type = src['Type']
-            if 'Content' in src:
-                restreq = RestRequest(method='GET', path=src['OriginalUri'])
-                src['restreq'] = restreq
+        if "Type" in src:
+            self._type = src["Type"]
+            if "Content" in src:
+                restreq = RestRequest(method="GET", path=src["OriginalUri"])
+                src["restreq"] = restreq
                 self._resp = StaticRestResponse(**src)
-            self.deftype = src['MajType']
-            self.defpath = src['OriginalUri']
-            self.defetag = src['ETag']
-            self._patches = src['Patches']
-            self.modified = src['modified']
+            self.deftype = src["MajType"]
+            self.defpath = src["OriginalUri"]
+            self.defetag = src["ETag"]
+            self._patches = src["Patches"]
+            self.modified = src["modified"]
 
 
 class RisMonolith(Dictable):
@@ -258,11 +266,11 @@ class RisMonolith(Dictable):
 
         self.typepath = typepath
         self.collstr = self.typepath.defs.collectionstring
-        self.etagstr = 'ETag'
+        self.etagstr = "ETag"
         if self.is_redfish:
-            self._resourcedir = '/redfish/v1/ResourceDirectory/'
+            self._resourcedir = "/redfish/v1/ResourceDirectory/"
         else:
-            self._resourcedir = '/rest/v1/ResourceDirectory'
+            self._resourcedir = "/rest/v1/ResourceDirectory"
 
         # MultiThreading
         self.get_queue = Queue()
@@ -383,7 +391,9 @@ class RisMonolith(Dictable):
                     yield self.paths[item]
                 types = next(typeiter, None)
         else:
-            raise RisInstanceNotFoundError("Unable to locate instance for '%s'\n" % typeval)
+            raise RisInstanceNotFoundError(
+                "Unable to locate instance for '%s'\n" % typeval
+            )
 
     def typecheck(self, types):
         """Check if a member of given type exists in the monolith
@@ -429,7 +439,7 @@ class RisMonolith(Dictable):
             if not member:  # Assuming for lack of member and not member.type
                 return
             if not member.type:
-                member.deftype = 'object'  # Hack for general schema with no type
+                member.deftype = "object"  # Hack for general schema with no type
 
         self.types = member
 
@@ -438,8 +448,17 @@ class RisMonolith(Dictable):
             if LOGGER.getEffectiveLevel() == 40:
                 self._update_progress()
 
-    def load(self, path=None, includelogs=False, init=False,
-             crawl=True, loadtype='href', loadcomplete=False, path_refresh=False, json_out=False):
+    def load(
+        self,
+        path=None,
+        includelogs=False,
+        init=False,
+        crawl=True,
+        loadtype="href",
+        loadcomplete=False,
+        path_refresh=False,
+        json_out=False,
+    ):
         """Walks the entire data model and caches all responses or loads an individual path into
         the monolith. Supports both threaded and sequential crawling.
 
@@ -468,12 +487,12 @@ class RisMonolith(Dictable):
                 sys.stdout.write("Discovering data...")
             else:
                 LOGGER.info("Discovering data...")
-            self.name = self.name + ' at %s' % self.client.base_url
+            self.name = self.name + " at %s" % self.client.base_url
 
         selectivepath = path
         if not selectivepath:
             selectivepath = self.client.default_prefix
-        if loadtype == 'href' and not self.client.base_url.startswith("blobstore://."):
+        if loadtype == "href" and not self.client.base_url.startswith("blobstore://."):
             if not self.threads:
                 for _ in range(6):
                     workhand = LoadWorker(self.get_queue)
@@ -481,8 +500,19 @@ class RisMonolith(Dictable):
                     workhand.start()
                     self.threads.append(workhand)
 
-            self.get_queue.put((selectivepath, includelogs, loadcomplete, crawl,
-                                path_refresh, init, None, None, self))
+            self.get_queue.put(
+                (
+                    selectivepath,
+                    includelogs,
+                    loadcomplete,
+                    crawl,
+                    path_refresh,
+                    init,
+                    None,
+                    None,
+                    self,
+                )
+            )
             self.get_queue.join()
 
             # Raise any errors from threads, and set them back to None after
@@ -498,10 +528,17 @@ class RisMonolith(Dictable):
             # self.member_queue.join()
         else:
             # We can't load ref or local client in a threaded manner
-            self._load(selectivepath, originaluri=None, crawl=crawl,
-                       includelogs=includelogs, init=init, loadtype=loadtype,
-                       loadcomplete=loadcomplete, path_refresh=path_refresh,
-                       prevpath=None)
+            self._load(
+                selectivepath,
+                originaluri=None,
+                crawl=crawl,
+                includelogs=includelogs,
+                init=init,
+                loadtype=loadtype,
+                loadcomplete=loadcomplete,
+                path_refresh=path_refresh,
+                prevpath=None,
+            )
 
         if init:
             if LOGGER.getEffectiveLevel() == 40 and not json_out:
@@ -511,9 +548,18 @@ class RisMonolith(Dictable):
         if self.directory_load and init:
             self._populatecollections()
 
-    def _load(self, path, crawl=True, originaluri=None, includelogs=False,
-              init=True, loadtype='href', loadcomplete=False,
-              path_refresh=False, prevpath=None):
+    def _load(
+        self,
+        path,
+        crawl=True,
+        originaluri=None,
+        includelogs=False,
+        init=True,
+        loadtype="href",
+        loadcomplete=False,
+        path_refresh=False,
+        prevpath=None,
+    ):
         """Sequential version of loading monolith and parsing schemas.
 
         :param path: path to start load from.
@@ -547,7 +593,7 @@ class RisMonolith(Dictable):
         # remove fragments
         newpath = urlparse(path)
         newpath = list(newpath[:])
-        newpath[-1] = ''
+        newpath[-1] = ""
         path = urlunparse(tuple(newpath))
 
         if prevpath and prevpath != path:
@@ -555,14 +601,16 @@ class RisMonolith(Dictable):
         if not path_refresh:
             if path.lower() in self.visited_urls:
                 return
-        LOGGER.debug('_loading %s', path)
+        LOGGER.debug("_loading %s", path)
 
         resp = self.client.get(path)
         if resp.status != 200 and path.lower() == self.typepath.defs.biospath:
             raise BiosUnregisteredError()
         elif resp.status == 401:
-            raise SessionExpired("Invalid session. Please logout and "
-                                 "log back in or include credentials.")
+            raise SessionExpired(
+                "Invalid session. Please logout and "
+                "log back in or include credentials."
+            )
         elif resp.status not in (201, 200):
             self.removepath(path)
             return
@@ -577,45 +625,76 @@ class RisMonolith(Dictable):
 
         self.update_member(resp=resp, path=path, init=init)
 
-        fpath = lambda pa, path: path if pa.endswith(self.typepath.defs.hrefstring) and \
-                                         pa.startswith((self.collstr, 'Entries')) else None
+        fpath = (
+            lambda pa, path: path
+            if pa.endswith(self.typepath.defs.hrefstring)
+            and pa.startswith((self.collstr, "Entries"))
+            else None
+        )
 
-        if loadtype == 'href':
+        if loadtype == "href":
             # follow all the href attributes
             if self.is_redfish:
                 jsonpath_expr = jsonpath_rw.parse("$..'@odata.id'")
             else:
-                jsonpath_expr = jsonpath_rw.parse('$..href')
+                jsonpath_expr = jsonpath_rw.parse("$..href")
             matches = jsonpath_expr.find(resp.dict)
 
-            if 'links' in resp.dict and 'NextPage' in resp.dict['links']:
+            if "links" in resp.dict and "NextPage" in resp.dict["links"]:
                 if originaluri:
-                    next_link_uri = originaluri + '?page=' + \
-                                    str(resp.dict['links']['NextPage']['page'])
-                    href = '%s' % next_link_uri
+                    next_link_uri = (
+                        originaluri
+                        + "?page="
+                        + str(resp.dict["links"]["NextPage"]["page"])
+                    )
+                    href = "%s" % next_link_uri
 
-                    self._load(href, originaluri=originaluri,
-                               includelogs=includelogs, crawl=crawl,
-                               init=init, prevpath=None, loadcomplete=loadcomplete)
+                    self._load(
+                        href,
+                        originaluri=originaluri,
+                        includelogs=includelogs,
+                        crawl=crawl,
+                        init=init,
+                        prevpath=None,
+                        loadcomplete=loadcomplete,
+                    )
                 else:
-                    next_link_uri = path + '?page=' + str(resp.dict['links']['NextPage']['page'])
+                    next_link_uri = (
+                        path + "?page=" + str(resp.dict["links"]["NextPage"]["page"])
+                    )
 
-                    href = '%s' % next_link_uri
-                    self._load(href, originaluri=path, includelogs=includelogs,
-                               crawl=crawl, init=init, prevpath=None, loadcomplete=loadcomplete)
+                    href = "%s" % next_link_uri
+                    self._load(
+                        href,
+                        originaluri=path,
+                        includelogs=includelogs,
+                        crawl=crawl,
+                        init=init,
+                        prevpath=None,
+                        loadcomplete=loadcomplete,
+                    )
 
             # Only use monolith if we are set to
-            matchrdirpath = next((match for match in matches if match.value == \
-                                  self._resourcedir), None) if self.directory_load else None
+            matchrdirpath = (
+                next(
+                    (match for match in matches if match.value == self._resourcedir), None
+                )
+                if self.directory_load
+                else None
+            )
             if not matchrdirpath and crawl:
                 for match in matches:
                     if path == "/rest/v1" and not loadcomplete:
-                        if str(match.full_path) == "links.Schemas.href" or \
-                                str(match.full_path) == "links.Registries.href":
+                        if (
+                            str(match.full_path) == "links.Schemas.href"
+                            or str(match.full_path) == "links.Registries.href"
+                        ):
                             continue
                     elif not loadcomplete:
-                        if str(match.full_path) == "Registries.@odata.id" or \
-                                str(match.full_path) == "JsonSchemas.@odata.id":
+                        if (
+                            str(match.full_path) == "Registries.@odata.id"
+                            or str(match.full_path) == "JsonSchemas.@odata.id"
+                        ):
                             continue
 
                     if match.value == path:
@@ -623,27 +702,45 @@ class RisMonolith(Dictable):
                     elif not isinstance(match.value, six.string_types):
                         continue
 
-                    href = '%s' % match.value
-                    self._load(href, crawl=crawl,
-                               originaluri=originaluri, includelogs=includelogs,
-                               init=init, prevpath=fpath(str(match.full_path), path),
-                               loadcomplete=loadcomplete)
+                    href = "%s" % match.value
+                    self._load(
+                        href,
+                        crawl=crawl,
+                        originaluri=originaluri,
+                        includelogs=includelogs,
+                        init=init,
+                        prevpath=fpath(str(match.full_path), path),
+                        loadcomplete=loadcomplete,
+                    )
             elif crawl:
-                href = '%s' % matchrdirpath.value
-                self._load(href, crawl=crawl, originaluri=originaluri,
-                           includelogs=includelogs, init=init, prevpath=path, loadcomplete=loadcomplete)
+                href = "%s" % matchrdirpath.value
+                self._load(
+                    href,
+                    crawl=crawl,
+                    originaluri=originaluri,
+                    includelogs=includelogs,
+                    init=init,
+                    prevpath=path,
+                    loadcomplete=loadcomplete,
+                )
             if loadcomplete:
-                if path == '/rest/v1':
-                    schemamatch = jsonpath_rw.parse('$..extref')
+                if path == "/rest/v1":
+                    schemamatch = jsonpath_rw.parse("$..extref")
                 else:
-                    schemamatch = jsonpath_rw.parse('$..Uri')
+                    schemamatch = jsonpath_rw.parse("$..Uri")
                 smatches = schemamatch.find(resp.dict)
                 matches = matches + smatches
                 for match in matches:
                     if isinstance(match.value, six.string_types):
-                        self._load(match.value, crawl=crawl, originaluri=originaluri,
-                                   includelogs=includelogs, init=init, loadcomplete=loadcomplete,
-                                   prevpath=fpath(str(match.full_path), path))
+                        self._load(
+                            match.value,
+                            crawl=crawl,
+                            originaluri=originaluri,
+                            includelogs=includelogs,
+                            init=init,
+                            loadcomplete=loadcomplete,
+                            prevpath=fpath(str(match.full_path), path),
+                        )
 
     def _parse_schema(self, resp):
         """Function to get and replace schema $ref with data
@@ -657,68 +754,85 @@ class RisMonolith(Dictable):
         jsonpath_expr = jsonpath_rw.parse('$.."$ref"')
         matches = jsonpath_expr.find(resp.dict)
         respcopy = resp.dict
-        typeregex = '([#,@].*?\.)'
+        typeregex = "([#,@].*?\.)"
         if matches:
             for match in matches:
                 fullpath = str(match.full_path)
-                jsonfile = match.value.split('#')[0]
-                jsonpath = match.value.split('#')[1]
+                jsonfile = match.value.split("#")[0]
+                jsonpath = match.value.split("#")[1]
                 listmatch = None
                 found = None
 
-                if 'redfish.dmtf.org' in jsonfile:
-                    if 'odata' in jsonfile:
-                        jsonpath = jsonpath.replace(jsonpath.split('/')[-1],
-                                                    'odata' + jsonpath.split('/')[-1])
-                    jsonfile = 'Resource.json'
+                if "redfish.dmtf.org" in jsonfile:
+                    if "odata" in jsonfile:
+                        jsonpath = jsonpath.replace(
+                            jsonpath.split("/")[-1], "odata" + jsonpath.split("/")[-1]
+                        )
+                    jsonfile = "Resource.json"
 
                 found = re.search(typeregex, fullpath)
                 if found:
-                    repitem = fullpath[found.regs[0][0]:found.regs[0][1]]
-                    schemapath = '/' + fullpath.replace(repitem, '~'). \
-                        replace('.', '/').replace('~', repitem)
+                    repitem = fullpath[found.regs[0][0] : found.regs[0][1]]
+                    schemapath = "/" + fullpath.replace(repitem, "~").replace(
+                        ".", "/"
+                    ).replace("~", repitem)
                 else:
-                    schemapath = '/' + fullpath.replace('.', '/')
+                    schemapath = "/" + fullpath.replace(".", "/")
 
-                if '.json' in jsonfile:
+                if ".json" in jsonfile:
                     itempath = schemapath
 
                     if self.is_redfish:
-                        if resp.request.path[-1] == '/':
-                            newpath = '/'.join(resp.request.path.split('/') \
-                                                   [:-2]) + '/' + jsonfile + '/'
+                        if resp.request.path[-1] == "/":
+                            newpath = (
+                                "/".join(resp.request.path.split("/")[:-2])
+                                + "/"
+                                + jsonfile
+                                + "/"
+                            )
                         else:
-                            newpath = '/'.join(resp.request.path.split('/') \
-                                                   [:-1]) + '/' + jsonfile + '/'
+                            newpath = (
+                                "/".join(resp.request.path.split("/")[:-1])
+                                + "/"
+                                + jsonfile
+                                + "/"
+                            )
                     else:
-                        newpath = '/'.join(resp.request.path.split('/')[:-1]) + '/' + jsonfile
+                        newpath = (
+                            "/".join(resp.request.path.split("/")[:-1]) + "/" + jsonfile
+                        )
 
-                    if 'href.json' in newpath:
+                    if "href.json" in newpath:
                         continue
 
                     if newpath.lower() not in self.visited_urls:
-                        self.load(newpath, crawl=False, includelogs=False,
-                                  init=False, loadtype='ref')
+                        self.load(
+                            newpath,
+                            crawl=False,
+                            includelogs=False,
+                            init=False,
+                            loadtype="ref",
+                        )
 
                     instance = list()
 
                     # deprecated type "string" for Type.json
-                    if 'string' in self.types:
-                        for item in self.iter('string'):
+                    if "string" in self.types:
+                        for item in self.iter("string"):
                             instance.append(item)
-                    if 'object' in self.types:
-                        for item in self.iter('object'):
+                    if "object" in self.types:
+                        for item in self.iter("object"):
                             instance.append(item)
 
                     for item in instance:
                         if jsonfile in item.path:
-                            if 'anyOf' in fullpath:
+                            if "anyOf" in fullpath:
                                 break
 
                             dictcopy = item.dict
                             try:
                                 # TODO may need to really verify this is acceptable regex
-                                listmatch = re.search('[][0-9]+[]', itempath)
+                                listmatch = re.search("[][0-9]+[]", itempath)
                             except regexerr as excp:
                                 pass
                                 # LOGGER.info("An error occurred with regex match on path: %s\n%s\n"\
@@ -739,11 +853,12 @@ class RisMonolith(Dictable):
 
                                 for val in vals:
                                     try:
-                                        if '$ref' in six.iterkeys(end.resolve(val)):
-                                            end.resolve(val).pop('$ref')
+                                        if "$ref" in six.iterkeys(end.resolve(val)):
+                                            end.resolve(val).pop("$ref")
                                             end.resolve(val).update(dictcopy)
-                                            replace_pointer = jsonpointer. \
-                                                JsonPointer(end.path + jsonpath)
+                                            replace_pointer = jsonpointer.JsonPointer(
+                                                end.path + jsonpath
+                                            )
 
                                             data = replace_pointer.resolve(val)
                                             set_pointer(val, end.path, data)
@@ -757,32 +872,32 @@ class RisMonolith(Dictable):
                                 del itempath.parts[-1]
 
                                 try:
-                                    if '$ref' in six.iterkeys(itempath.resolve(respcopy)):
-                                        itempath.resolve(respcopy).pop('$ref')
+                                    if "$ref" in six.iterkeys(itempath.resolve(respcopy)):
+                                        itempath.resolve(respcopy).pop("$ref")
                                         itempath.resolve(respcopy).update(dictcopy)
                                         break
                                 except jsonpointer.JsonPointerException:
                                     pass
 
                 if jsonpath:
-                    if 'anyOf' in fullpath:
+                    if "anyOf" in fullpath:
                         continue
 
                     if not jsonfile:
                         replacepath = jsonpointer.JsonPointer(jsonpath)
-                        schemapath = schemapath.replace('/$ref', '')
-                        if re.search('\[\d]', schemapath):
-                            schemapath = schemapath.translate(str.maketrans('', '', '[]'))
+                        schemapath = schemapath.replace("/$ref", "")
+                        if re.search("\[\d]", schemapath):
+                            schemapath = schemapath.translate(str.maketrans("", "", "[]"))
                         schemapath = jsonpointer.JsonPointer(schemapath)
                         data = replacepath.resolve(respcopy)
 
-                        if '$ref' in schemapath.resolve(respcopy):
-                            schemapath.resolve(respcopy).pop('$ref')
+                        if "$ref" in schemapath.resolve(respcopy):
+                            schemapath.resolve(respcopy).pop("$ref")
                             schemapath.resolve(respcopy).update(data)
 
                     else:
                         if not listmatch:
-                            schemapath = schemapath.replace('/$ref', '')
+                            schemapath = schemapath.replace("/$ref", "")
                             replacepath = schemapath + jsonpath
                             replace_pointer = jsonpointer.JsonPointer(replacepath)
                             try:
@@ -804,8 +919,11 @@ class RisMonolith(Dictable):
 
         """
         # pylint: disable=maybe-no-member
-        getval = lambda inmat: getval(inmat.left) + '/' + str(inmat.right) \
-            if hasattr(inmat, 'left') else str(inmat)
+        getval = (
+            lambda inmat: getval(inmat.left) + "/" + str(inmat.right)
+            if hasattr(inmat, "left")
+            else str(inmat)
+        )
         respcopy = resp.dict
         jsonpath_expr = jsonpath_rw.parse('$.."anyOf"')
         while True:
@@ -816,79 +934,98 @@ class RisMonolith(Dictable):
             newval = None
             schlist = match.value
             schlist = [ele for ele in list(schlist) if ele != {"type": "null"}]
-            norefsch = [ele for ele in list(schlist) if isinstance(ele, dict) and \
-                        len(ele.keys()) > 1]
+            norefsch = [
+                ele
+                for ele in list(schlist)
+                if isinstance(ele, dict) and len(ele.keys()) > 1
+            ]
             if norefsch:
                 newval = norefsch[0]
             else:
-                newsc = [ele for ele in list(schlist) if not ele["$ref"].split('#')[0]]
+                newsc = [ele for ele in list(schlist) if not ele["$ref"].split("#")[0]]
                 newval = newsc[0] if newsc else None
                 if not newval:
-                    schlist = [ele["$ref"] for ele in list(schlist) if "$ref" in ele.keys() and \
-                               (ele["$ref"].split('#')[0].endswith('.json') and 'odata' not in
-                                ele["$ref"].split('#')[0])]
+                    schlist = [
+                        ele["$ref"]
+                        for ele in list(schlist)
+                        if "$ref" in ele.keys()
+                        and (
+                            ele["$ref"].split("#")[0].endswith(".json")
+                            and "odata" not in ele["$ref"].split("#")[0]
+                        )
+                    ]
                     maxsch = max(schlist)
                     newval = {"$ref": maxsch}
 
-            itempath = '/' + getval(match.full_path)
-            if re.search('\[\d+]', itempath):
-                itempath = itempath.translate(str.maketrans('', '', '[]'))
+            itempath = "/" + getval(match.full_path)
+            if re.search("\[\d+]", itempath):
+                itempath = itempath.translate(str.maketrans("", "", "[]"))
             itempath = jsonpointer.JsonPointer(itempath)
             del itempath.parts[-1]
-            if 'anyOf' in six.iterkeys(itempath.resolve(respcopy)):
-                itempath.resolve(respcopy).pop('anyOf')
+            if "anyOf" in six.iterkeys(itempath.resolve(respcopy)):
+                itempath.resolve(respcopy).pop("anyOf")
                 itempath.resolve(respcopy).update(newval)
 
         jsonpath_expr = jsonpath_rw.parse('$.."$ref"')
         matches = jsonpath_expr.find(respcopy)
         if matches:
             for _, match in enumerate(matches):
-                jsonfile = match.value.split('#')[0]
-                jsonfile = '' if jsonfile.lower() == resp.request.path.lower() else jsonfile
-                jsonpath = match.value.split('#')[1]
+                jsonfile = match.value.split("#")[0]
+                jsonfile = (
+                    "" if jsonfile.lower() == resp.request.path.lower() else jsonfile
+                )
+                jsonpath = match.value.split("#")[1]
 
-                schemapath = '/' + getval(match.full_path)
+                schemapath = "/" + getval(match.full_path)
                 if jsonfile:
                     itempath = schemapath
-                    if '/' not in jsonfile:
-                        inds = -2 if resp.request.path[-1] == '/' else -1
-                        jsonfile = '/'.join(resp.request.path.split('/')[:inds]) \
-                                   + '/' + jsonfile + '/'
+                    if "/" not in jsonfile:
+                        inds = -2 if resp.request.path[-1] == "/" else -1
+                        jsonfile = (
+                            "/".join(resp.request.path.split("/")[:inds])
+                            + "/"
+                            + jsonfile
+                            + "/"
+                        )
                     if jsonfile not in self.paths:
-                        self.load(jsonfile, crawl=False, includelogs=False,
-                                  init=False, loadtype='ref')
+                        self.load(
+                            jsonfile,
+                            crawl=False,
+                            includelogs=False,
+                            init=False,
+                            loadtype="ref",
+                        )
                     item = self.paths[jsonfile] if jsonfile in self.paths else None
 
                     if not item:
-                        if not 'anyOf' in schemapath:
+                        if not "anyOf" in schemapath:
                             raise SchemaValidationError()
                         continue
-                    if re.search('\[\d+]', itempath):
-                        itempath = itempath.translate(str.maketrans('', '', '[]'))
+                    if re.search("\[\d+]", itempath):
+                        itempath = itempath.translate(str.maketrans("", "", "[]"))
                     itempath = jsonpointer.JsonPointer(itempath)
                     del itempath.parts[-1]
                     try:
-                        if '$ref' in six.iterkeys(itempath.resolve(respcopy)):
-                            itempath.resolve(respcopy).pop('$ref')
+                        if "$ref" in six.iterkeys(itempath.resolve(respcopy)):
+                            itempath.resolve(respcopy).pop("$ref")
                             itempath.resolve(respcopy).update(item.dict)
                     except jsonpointer.JsonPointerException:
                         pass
 
                 if jsonpath:
-                    schemapath = schemapath.replace('/$ref', '')
-                    if re.search('\[\d+]', schemapath):
-                        schemapath = schemapath.translate(str.maketrans('', '', '[]'))
+                    schemapath = schemapath.replace("/$ref", "")
+                    if re.search("\[\d+]", schemapath):
+                        schemapath = schemapath.translate(str.maketrans("", "", "[]"))
                     if not jsonfile:
                         replacepath = jsonpointer.JsonPointer(jsonpath)
                         schemapath = jsonpointer.JsonPointer(schemapath)
                         data = replacepath.resolve(respcopy)
-                        if '$ref' in schemapath.resolve(respcopy):
-                            schemapath.resolve(respcopy).pop('$ref')
+                        if "$ref" in schemapath.resolve(respcopy):
+                            schemapath.resolve(respcopy).pop("$ref")
                             schemapath.resolve(respcopy).update(data)
                     else:
                         replacepath = schemapath + jsonpath
-                        replace_pointer = jsonpointer. \
-                            JsonPointer(replacepath)
+                        replace_pointer = jsonpointer.JsonPointer(replacepath)
                         data = replace_pointer.resolve(respcopy)
                         set_pointer(respcopy, schemapath, data)
 
@@ -903,12 +1040,16 @@ class RisMonolith(Dictable):
         :type src: str
 
         """
-        self._type = src['Type']
-        self._name = src['Name']
-        self.typesadded = defaultdict(set, {ki: set(val) for ki, val in src['typepath'].items()})
-        self.ctree = defaultdict(set, {ki: set(val) for ki, val in src['ctree'].items()})
-        self.colltypes = defaultdict(set, {ki: set(val) for ki, val in src['colls'].items()})
-        for _, resp in list(src['resps'].items()):
+        self._type = src["Type"]
+        self._name = src["Name"]
+        self.typesadded = defaultdict(
+            set, {ki: set(val) for ki, val in src["typepath"].items()}
+        )
+        self.ctree = defaultdict(set, {ki: set(val) for ki, val in src["ctree"].items()})
+        self.colltypes = defaultdict(
+            set, {ki: set(val) for ki, val in src["colls"].items()}
+        )
+        for _, resp in list(src["resps"].items()):
             member = RisMonolithMemberv100(None, self.is_redfish)
             member.load_from_dict(resp)
             self.update_member(member=member, init=False)
@@ -916,11 +1057,11 @@ class RisMonolith(Dictable):
     def to_dict(self):
         """Convert data to a dict from monolith. This is the reverse of :func:`load_from_dict`."""
         result = OrderedDict()
-        result['Type'] = self.type
-        result['Name'] = self.name
+        result["Type"] = self.type
+        result["Name"] = self.name
         result["typepath"] = self.typesadded
-        result['ctree'] = self.ctree
-        result['colls'] = self.colltypes
+        result["ctree"] = self.ctree
+        result["colls"] = self.colltypes
         result["resps"] = {x: v.to_dict() for x, v in list(self.paths.items())}
         return result
 
@@ -937,8 +1078,11 @@ class RisMonolith(Dictable):
             return
         modpaths.update(self.ctree[path] if path in self.ctree else set())
         self.paths[path].modified = True
-        for npath in [unmodpath for unmodpath in modpaths if unmodpath \
-                                                             in self.paths and not self.paths[unmodpath].modified]:
+        for npath in [
+            unmodpath
+            for unmodpath in modpaths
+            if unmodpath in self.paths and not self.paths[unmodpath].modified
+        ]:
             self.markmodified(opath, path=npath, modpaths=modpaths)
         return modpaths
 
@@ -956,8 +1100,16 @@ class RisMonolith(Dictable):
         if not path:
             return
         if path in self.paths and self.paths[path].modified:
-            newpaths = set([conn for conn in self.ctree[path] if conn in \
-                            self.paths and self.paths[path].modified]) - modpaths
+            newpaths = (
+                set(
+                    [
+                        conn
+                        for conn in self.ctree[path]
+                        if conn in self.paths and self.paths[path].modified
+                    ]
+                )
+                - modpaths
+            )
             modpaths.update(newpaths | set([path]))
         for npath in [unmodpath for unmodpath in newpaths]:
             self.checkmodified(opath, path=npath, modpaths=modpaths)
@@ -980,7 +1132,11 @@ class RisMonolith(Dictable):
         del self.paths[path]
         if path in self.ctree:
             del self.ctree[path]
-        _ = [self.ctree[paths].remove(path) for paths in self.ctree if path in self.ctree[paths]]
+        _ = [
+            self.ctree[paths].remove(path)
+            for paths in self.ctree
+            if path in self.ctree[paths]
+        ]
 
     def _populatecollections(self):
         """Populate the collections type and types depending on resourcedirectory"""
@@ -991,20 +1147,27 @@ class RisMonolith(Dictable):
         colls = []
         for item in self.paths[self._resourcedir].dict["Instances"]:
             # Fix for incorrect RDir instances.
-            if not self.typepath.defs.typestring in item or item[self.typepath.defs.hrefstring] \
-                    in self.paths:
+            if (
+                not self.typepath.defs.typestring in item
+                or item[self.typepath.defs.hrefstring] in self.paths
+            ):
                 continue
-            typename = ".".join(item[self.typepath.defs.typestring].split(".", 2)[:2]) \
-                .split('#')[-1]
-            _ = [alltypes.append(typename) if not 'Collection' in typename else None]
-            _ = [colls.append(typename) if 'Collection' in typename else None]
+            typename = ".".join(
+                item[self.typepath.defs.typestring].split(".", 2)[:2]
+            ).split("#")[-1]
+            _ = [alltypes.append(typename) if not "Collection" in typename else None]
+            _ = [colls.append(typename) if "Collection" in typename else None]
             member = RisMonolithMemberv100(None, self.is_redfish)
-            member.popdefs(typename, item[self.typepath.defs.hrefstring], item[self.etagstr])
+            member.popdefs(
+                typename, item[self.typepath.defs.hrefstring], item[self.etagstr]
+            )
             self.update_member(member=member, init=False)
         for coll in colls:
-            collname = coll.split('Collection')[0].split('#')[-1]
-            typename = next((name for name in alltypes if name.startswith(collname)), None)
-            colltype = ".".join(coll.split(".", 2)[:2]).split('#')[-1]
+            collname = coll.split("Collection")[0].split("#")[-1]
+            typename = next(
+                (name for name in alltypes if name.startswith(collname)), None
+            )
+            colltype = ".".join(coll.split(".", 2)[:2]).split("#")[-1]
             self.colltypes[typename].add(colltype)
 
     def capture(self, redmono=False):
@@ -1015,18 +1178,38 @@ class RisMonolith(Dictable):
         :type redmono: bool
         :rtype: dict
         """
-        self.load(includelogs=True, crawl=True, loadcomplete=True, path_refresh=True, init=True)
-        return self.to_dict() if not redmono else {x: {"Headers": v.resp.getheaders(),
-                                                       "Response": v.resp.dict} for x, v in list(self.paths.items()) if
-                                                   v}
+        self.load(
+            includelogs=True, crawl=True, loadcomplete=True, path_refresh=True, init=True
+        )
+        return (
+            self.to_dict()
+            if not redmono
+            else {
+                x: {"Headers": v.resp.getheaders(), "Response": v.resp.dict}
+                for x, v in list(self.paths.items())
+                if v
+            }
+        )
 
     def killthreads(self):
         """Function to kill threads on logout"""
         threads = []
         for thread in threading.enumerate():
             if isinstance(thread, LoadWorker):
-                self.get_queue.put(('KILL', 'KILL', 'KILL', 'KILL',
-                                    'KILL', 'KILL', 'KILL', 'KILL', 'KILL', 'KILL'))
+                self.get_queue.put(
+                    (
+                        "KILL",
+                        "KILL",
+                        "KILL",
+                        "KILL",
+                        "KILL",
+                        "KILL",
+                        "KILL",
+                        "KILL",
+                        "KILL",
+                        "KILL",
+                    )
+                )
                 threads.append(thread)
 
         for thread in threads:
@@ -1035,4 +1218,4 @@ class RisMonolith(Dictable):
     def _update_progress(self):
         """Simple function to increment the dot progress"""
         if self.progress % 6 == 0:
-            sys.stdout.write('.')
+            sys.stdout.write(".")

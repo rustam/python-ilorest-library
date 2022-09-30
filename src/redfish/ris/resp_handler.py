@@ -21,8 +21,12 @@ import logging
 
 from redfish.ris.ris import SessionExpired
 from redfish.ris.utils import warning_handler, get_errmsg_type, json_traversal
-from redfish.ris.rmc_helper import IloResponseError, IdTokenError, ValueChangedError, \
-    EmptyRaiseForEAFP
+from redfish.ris.rmc_helper import (
+    IloResponseError,
+    IdTokenError,
+    ValueChangedError,
+    EmptyRaiseForEAFP,
+)
 
 # ---------Debug logger---------
 
@@ -30,6 +34,7 @@ LOGGER = logging.getLogger()
 
 
 # ---------End of debug logger---------
+
 
 class ResponseHandler(object):
     """Class to handle error responses from the server.
@@ -67,27 +72,44 @@ class ResponseHandler(object):
         else:
             message_text = "The operation completed successfully."
 
-        if response.status < 300 and (response._rest_request.method == 'GET' or not response.read):
-            warning_handler(self.verbosity_levels(message=message_text, response_status=response.status,
-                                                  verbosity=verbosity, dl_reg=dl_reg), override=True)
+        if response.status < 300 and (
+            response._rest_request.method == "GET" or not response.read
+        ):
+            warning_handler(
+                self.verbosity_levels(
+                    message=message_text,
+                    response_status=response.status,
+                    verbosity=verbosity,
+                    dl_reg=dl_reg,
+                ),
+                override=True,
+            )
         elif response.status == 401:
             raise SessionExpired()
         elif response.status == 403:
             raise IdTokenError()
         elif response.status == 412:
-            warning_handler("The property you are trying to change has been updated. "
-                            "Please check entry again before manipulating it.\n", override=True)
+            warning_handler(
+                "The property you are trying to change has been updated. "
+                "Please check entry again before manipulating it.\n",
+                override=True,
+            )
             raise ValueChangedError()
         else:
-            retdata = self.message_handler(response_data=response, verbosity=verbosity,
-                                           message_text=message_text, dl_reg=dl_reg)
+            retdata = self.message_handler(
+                response_data=response,
+                verbosity=verbosity,
+                message_text=message_text,
+                dl_reg=dl_reg,
+            )
         if response.status > 299:
             raise IloResponseError("")
         else:
             return retdata
 
-    def message_handler(self, response_data, verbosity=0, message_text="No Response",
-                        dl_reg=False):
+    def message_handler(
+        self, response_data, verbosity=0, message_text="No Response", dl_reg=False
+    ):
         """Prints or logs parsed MessageId response based on verbosity level and returns the
         following message information in a list:
 
@@ -124,14 +146,15 @@ class ResponseHandler(object):
             for inst in self.get_message_data(response_data, dl_reg):
                 try:
                     for _key in inst.keys():
-                        if 'messageid' in str(_key.lower()):
+                        if "messageid" in str(_key.lower()):
                             _tmp_message_id = inst[_key]
-                        if 'description' in str(_key.lower()):
+                        if "description" in str(_key.lower()):
                             _tmp_description = inst[_key]
                     if inst.get("Message") and inst.get("MessageArgs"):
                         for i in range(inst["Message"].count("%")):
-                            inst["Message"] = inst["Message"].replace('%' + str(i + 1),
-                                                                      '"' + inst['MessageArgs'][i] + '"')
+                            inst["Message"] = inst["Message"].replace(
+                                "%" + str(i + 1), '"' + inst["MessageArgs"][i] + '"'
+                            )
                         message_text = inst.get("Message", " ")
                     elif inst.get("Message"):
                         message_text = inst.get("Message", " ")
@@ -142,17 +165,35 @@ class ResponseHandler(object):
                     pass
                 finally:
                     response_error_str += "[%s] %s\n" % (response_status, message_text)
-                    warning_handler(self.verbosity_levels(message_text, _tmp_message_id,
-                                                          _tmp_description, _tmp_resolution,
-                                                          response_status, verbosity, dl_reg), override=True)
+                    warning_handler(
+                        self.verbosity_levels(
+                            message_text,
+                            _tmp_message_id,
+                            _tmp_description,
+                            _tmp_resolution,
+                            response_status,
+                            verbosity,
+                            dl_reg,
+                        ),
+                        override=True,
+                    )
                     retlist.append(inst)
         except Exception:
             if not message_text:
                 message_text = _tmp_message_id
             response_error_str += "[%s] %s\n" % (response_status, message_text)
-            warning_handler(self.verbosity_levels(message_text, _tmp_message_id,
-                                                  _tmp_description, _tmp_resolution, response_status, verbosity,
-                                                  dl_reg), override=True)
+            warning_handler(
+                self.verbosity_levels(
+                    message_text,
+                    _tmp_message_id,
+                    _tmp_description,
+                    _tmp_resolution,
+                    response_status,
+                    verbosity,
+                    dl_reg,
+                ),
+                override=True,
+            )
             retlist.append(inst)
         finally:
             return retlist
@@ -164,21 +205,22 @@ class ResponseHandler(object):
         :type resp: :class:`redfish.rest.containers.RestResponse`
         :returns: list of error response dictionaries
         """
-        err_response_keys = ['MessageId', 'Message', 'MessageArgs', 'Resolution']
+        err_response_keys = ["MessageId", "Message", "MessageArgs", "Resolution"]
         try:
-            if 'messageid' in [_key.lower() for _key in resp_data.keys()]:
+            if "messageid" in [_key.lower() for _key in resp_data.keys()]:
                 data_extract = [resp_data]
             else:
                 raise TypeError
         except (TypeError, KeyError):
-            data_extract = json_traversal(resp_data, 'messageid', ret_dict=True)
+            data_extract = json_traversal(resp_data, "messageid", ret_dict=True)
         if data_extract:
             try:
                 if not dl_reg:
                     for inst in data_extract:
-                        if [key.lower() for key in inst.keys()] not in [erk.lower() for erk in \
-                                                                        err_response_keys]:
-                            if 'messageid' in [str(_key.lower()) for _key in inst.keys()]:
+                        if [key.lower() for key in inst.keys()] not in [
+                            erk.lower() for erk in err_response_keys
+                        ]:
+                            if "messageid" in [str(_key.lower()) for _key in inst.keys()]:
                                 inst.update(self.get_error_messages(inst[_key]))
                                 continue
             finally:
@@ -186,8 +228,16 @@ class ResponseHandler(object):
         else:
             return None
 
-    def verbosity_levels(self, message, messageid=" ", description=" ", resolution=" ",
-                         response_status=None, verbosity=0, dl_reg=False):
+    def verbosity_levels(
+        self,
+        message,
+        messageid=" ",
+        description=" ",
+        resolution=" ",
+        response_status=None,
+        verbosity=0,
+        dl_reg=False,
+    ):
         """Formatting based on verbosity level.
 
         :param message: Message from BMC response combined with the registry model/schema.
@@ -208,15 +258,25 @@ class ResponseHandler(object):
             resp_str = "[" + str(response_status) + "] "
 
         if (verbosity == 1 or dl_reg) and message:
-            return resp_str + message + '\n'
+            return resp_str + message + "\n"
         elif verbosity > 1 and messageid and message and resolution:
             if not resp_str:
                 resp_str = "None "
-            return "\nHTTP Response Code: " + resp_str[:-1] + "\nMessageId: " + \
-                   messageid + "\nDescription: " + description + "\nMessage: " + message + \
-                   "\nResolution: " + resolution + '\n'
+            return (
+                "\nHTTP Response Code: "
+                + resp_str[:-1]
+                + "\nMessageId: "
+                + messageid
+                + "\nDescription: "
+                + description
+                + "\nMessage: "
+                + message
+                + "\nResolution: "
+                + resolution
+                + "\n"
+            )
         else:
-            return '' + message + '\n'
+            return "" + message + "\n"
 
     # unused? (removal pending)
     @staticmethod
@@ -245,42 +305,49 @@ class ResponseHandler(object):
         # An error occurred during the shortcut method so let's go through each registry,
         # obtain the schema and narrow down the selected schema for the registry type provided
         try:
-            _regtype = regtype.split('.')[0]
+            _regtype = regtype.split(".")[0]
             for reg in self.validation_mgr.iterregmems():
                 # gen 10 / gen 9 rest
                 if _regtype:
-                    if reg and 'Id' in reg and reg['Id'] == _regtype:
+                    if reg and "Id" in reg and reg["Id"] == _regtype:
                         try:
-                            reglist.append(reg['Registry'])
+                            reglist.append(reg["Registry"])
                         except KeyError:
-                            reglist.append(reg['Schema'])
+                            reglist.append(reg["Schema"])
                         break
                     else:
                         continue
 
             if not reglist:
                 # gen 9 redfish
-                regval = [reg.get(arg, None) for arg in ['Registry', 'Schema', 'Id']]
-                regval = next((val for val in regval if val and \
-                               'biosattributeregistry' not in val), None)
+                regval = [reg.get(arg, None) for arg in ["Registry", "Schema", "Id"]]
+                regval = next(
+                    (val for val in regval if val and "biosattributeregistry" not in val),
+                    None,
+                )
                 if not regval and reg:
-                    reg = reg['@odata.id'].split('/')
+                    reg = reg["@odata.id"].split("/")
                     reg = reg[len(reg) - 2]
-                    if not 'biosattributeregistry' in reg.lower():
+                    if not "biosattributeregistry" in reg.lower():
                         reglist.append(reg)
                 elif regval:
                     reglist.append(regval)
 
             for reg in reglist:
                 reg = reg.replace("%23", "#")
-                messages = self.validation_mgr.get_registry_model(getmsg=True, currtype=reg,
-                                                                  searchtype=self.msg_reg_type)
+                messages = self.validation_mgr.get_registry_model(
+                    getmsg=True, currtype=reg, searchtype=self.msg_reg_type
+                )
                 if messages:
-                    errmessages.update(messages.get(next(iter(messages)))[regtype.split('.')[-1]])
+                    errmessages.update(
+                        messages.get(next(iter(messages)))[regtype.split(".")[-1]]
+                    )
             if not reglist or not errmessages:
                 raise Exception
         except Exception:
-            raise EmptyRaiseForEAFP("Unable to find registry schema with provided registry " \
-                                    "type: %s" % regtype)
+            raise EmptyRaiseForEAFP(
+                "Unable to find registry schema with provided registry "
+                "type: %s" % regtype
+            )
         else:
             return errmessages

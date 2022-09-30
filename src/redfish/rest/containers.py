@@ -19,13 +19,15 @@
 import sys
 import json
 
-from collections import (OrderedDict)
+from collections import OrderedDict
 
 from six import text_type, string_types, StringIO, BytesIO
 from six.moves import http_client
 
+
 class JSONEncoder(json.JSONEncoder):
     """JSON Encoder class"""
+
     def default(self, obj):
         """Set defaults in JSON encoder class
 
@@ -35,19 +37,21 @@ class JSONEncoder(json.JSONEncoder):
         """
         if isinstance(obj, RestResponse):
             jsondict = OrderedDict()
-            jsondict['Status'] = obj.status
-            jsondict['Headers'] = obj.getheaders()
+            jsondict["Status"] = obj.status
+            jsondict["Headers"] = obj.getheaders()
 
             if obj.read:
-                jsondict['Content'] = obj.dict
+                jsondict["Content"] = obj.dict
 
             return jsondict
         if isinstance(obj, bytes):
-            obj = obj.decode('utf-8')
+            obj = obj.decode("utf-8")
         return json.JSONEncoder.default(self, obj)
+
 
 class JSONDecoder(json.JSONDecoder):
     """Custom JSONDecoder that understands our types"""
+
     def decode(self, json_string):
         """Decode JSON string
 
@@ -58,12 +62,15 @@ class JSONDecoder(json.JSONDecoder):
         parsed_dict = super(JSONDecoder, self).decode(json_string)
         return parsed_dict
 
+
 class _FakeSocket(BytesIO):
     """slick way to parse a http response.
-       http://pythonwise.blogspot.com/2010/02/parse-http-response.html"""
+    http://pythonwise.blogspot.com/2010/02/parse-http-response.html"""
+
     def makefile(self, *args, **kwargs):
         """Return self object"""
         return self
+
 
 class RisObject(dict):
     """Converts a JSON/Rest dict into a object so you can use .property notation
@@ -71,11 +78,11 @@ class RisObject(dict):
     :param d: dictionary to be converted
     :type d: dict
     """
+
     __getattr__ = dict.__getitem__
 
     def __init__(self, d):
-        """Initialize RisObject
-        """
+        """Initialize RisObject"""
         super(RisObject, self).__init__()
         self.update(**dict((k, self.parse(value)) for k, value in list(d.items())))
 
@@ -96,6 +103,7 @@ class RisObject(dict):
 
         return value
 
+
 class RestRequest(object):
     """Holder for Request information
 
@@ -107,7 +115,7 @@ class RestRequest(object):
     :type data: dict
     """
 
-    def __init__(self, path, method='GET', data='', url=None):
+    def __init__(self, path, method="GET", data="", url=None):
         self._path = path
         self._body = data
         self._method = method
@@ -130,11 +138,12 @@ class RestRequest(object):
 
     def __str__(self):
         """Format string"""
-        body = '' if not self._body else self._body
+        body = "" if not self._body else self._body
         try:
             return "{} {}\n\n{}".format(self.method, self.path, body)
         except:
-            return "{} {}\n\n{}".format(self.method, self.path, '')
+            return "{} {}\n\n{}".format(self.method, self.path, "")
+
 
 class RestResponse(object):
     """Returned by Rest requests
@@ -144,6 +153,7 @@ class RestResponse(object):
     :param http_response: Response from HTTP
     :type http_response: :class:`HTTPResponse` object
     """
+
     def __init__(self, rest_request, http_response):
         self._read = None
         self._status = None
@@ -176,8 +186,11 @@ class RestResponse(object):
 
     def getheaders(self):
         """Get all headers included in the response."""
-        return dict(self._http_response.headers) if self._http_response\
-                                            is not None else self._headers
+        return (
+            dict(self._http_response.headers)
+            if self._http_response is not None
+            else self._headers
+        )
 
     def getheader(self, name):
         """Case-insensitive search for an individual header
@@ -186,6 +199,7 @@ class RestResponse(object):
         :type name: str
         :returns: returns a header from HTTP response or None if not found.
         """
+
         def search_dict(search_key, dct):
             for key, val in dct.items():
                 if key.lower() == search_key.lower():
@@ -210,7 +224,7 @@ class RestResponse(object):
         try:
             return json.loads(self.read)
         except ValueError as exp:
-            if self.path != '/smbios':
+            if self.path != "/smbios":
                 sys.stderr.write("An invalid response body was returned: %s" % exp)
             return None
 
@@ -230,7 +244,11 @@ class RestResponse(object):
         if self._status:
             return self._status
 
-        return self._http_response.status if self._http_response is not None else self._status
+        return (
+            self._http_response.status
+            if self._http_response is not None
+            else self._status
+        )
 
     @property
     def session_key(self):
@@ -238,7 +256,7 @@ class RestResponse(object):
         if self._session_key:
             return self._session_key
 
-        self._session_key = self.getheader('x-auth-token')
+        self._session_key = self.getheader("x-auth-token")
         return self._session_key
 
     @property
@@ -247,7 +265,7 @@ class RestResponse(object):
         if self._session_location:
             return self._session_location
 
-        self._session_location = self.getheader('location')
+        self._session_location = self.getheader("location")
         return self._session_location
 
     @property
@@ -262,12 +280,16 @@ class RestResponse(object):
 
     def __str__(self):
         """Class string formatter"""
-        headerstr = ''
+        headerstr = ""
         for kiy, val in self.getheaders().items():
-            headerstr += '%s %s\n' % (kiy, val)
+            headerstr += "%s %s\n" % (kiy, val)
 
-        return "%(status)s\n%(headerstr)s\n\n%(body)s" % \
-                            {'status': self.status, 'headerstr': headerstr, 'body': self.read}
+        return "%(status)s\n%(headerstr)s\n\n%(body)s" % {
+            "status": self.status,
+            "headerstr": headerstr,
+            "body": self.read,
+        }
+
 
 class RisRestResponse(RestResponse):
     """Returned by Rest requests from CHIF
@@ -277,6 +299,7 @@ class RisRestResponse(RestResponse):
     :param resp_text: text from response to be buffered and read
     :type resp_text: str
     """
+
     def __init__(self, rest_request, resp_txt):
         """Initialization of RisRestResponse"""
         if not isinstance(resp_txt, string_types):
@@ -287,40 +310,42 @@ class RisRestResponse(RestResponse):
         response = http_client.HTTPResponse(self._socket)
         response.begin()
         response.data = response.read()
-        response.headers = {ki[0]:ki[1] for ki in response.getheaders()}
+        response.headers = {ki[0]: ki[1] for ki in response.getheaders()}
         super(RisRestResponse, self).__init__(rest_request, response)
+
 
 class StaticRestResponse(RestResponse):
     """A RestResponse object used when data is being cached."""
+
     def __init__(self, **kwargs):
         restreq = None
 
-        if 'restreq' in kwargs:
-            restreq = kwargs['restreq']
+        if "restreq" in kwargs:
+            restreq = kwargs["restreq"]
 
         super(StaticRestResponse, self).__init__(restreq, None)
 
-        if 'Status' in kwargs:
-            self._status = kwargs['Status']
+        if "Status" in kwargs:
+            self._status = kwargs["Status"]
 
-        if 'Headers' in kwargs:
-            self._headers = kwargs['Headers']
+        if "Headers" in kwargs:
+            self._headers = kwargs["Headers"]
 
-        if 'session_key' in kwargs:
-            self._session_key = kwargs['session_key']
+        if "session_key" in kwargs:
+            self._session_key = kwargs["session_key"]
 
-        if 'session_location' in kwargs:
-            self._session_location = kwargs['session_location']
+        if "session_location" in kwargs:
+            self._session_location = kwargs["session_location"]
 
-        if 'Content' in kwargs:
-            content = kwargs['Content']
+        if "Content" in kwargs:
+            content = kwargs["Content"]
 
             if isinstance(content, string_types):
                 self._read = content
             else:
                 self._read = json.dumps(content)
         else:
-            self._read = ''
+            self._read = ""
 
     def getheaders(self):
         """Function for accessing the headers"""
@@ -329,7 +354,7 @@ class StaticRestResponse(RestResponse):
         if isinstance(self._headers, dict):
             returnlist = self._headers
         elif isinstance(self._headers, (list, tuple)):
-            returnlist = {ki[0]:ki[1] for ki in self._headers}
+            returnlist = {ki[0]: ki[1] for ki in self._headers}
         else:
             for item in self._headers:
                 returnlist.update(item.items()[0])

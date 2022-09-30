@@ -26,13 +26,21 @@ import random
 import string
 import logging
 
-from ctypes import c_char_p, c_ubyte, c_uint, cdll, POINTER, \
-    create_string_buffer, c_ushort, c_void_p
+from ctypes import (
+    c_char_p,
+    c_ubyte,
+    c_uint,
+    cdll,
+    POINTER,
+    create_string_buffer,
+    c_ushort,
+    c_void_p,
+)
 
 from redfish.hpilo.rishpilo import HpIlo, HpIloInitialError, HpIloChifPacketExchangeError
 from redfish.hpilo.rishpilo import BlobReturnCodes as hpiloreturncodes
 
-if os.name == 'nt':
+if os.name == "nt":
     from ctypes import windll
 else:
     from _ctypes import dlclose
@@ -46,84 +54,101 @@ LOGGER = logging.getLogger(__name__)
 # ---------End of debug logger---------
 # -----------------------Error Returns----------------------
 
+
 class UnexpectedResponseError(Exception):
     """Raise when we get data that we don't expect from iLO"""
+
     pass
 
 
 class HpIloError(Exception):
     """Raised when iLO returns non-zero error code"""
+
     pass
 
 
 class Blob2CreateError(Exception):
     """Raised when create operation fails"""
+
     pass
 
 
 class Blob2InfoError(Exception):
     """Raised when create operation fails"""
+
     pass
 
 
 class Blob2ReadError(Exception):
     """Raised when read operation fails"""
+
     pass
 
 
 class Blob2WriteError(Exception):
     """Raised when write operation fails"""
+
     pass
 
 
 class Blob2DeleteError(Exception):
     """Raised when delete operation fails"""
+
     pass
 
 
 class Blob2OverrideError(Exception):
     """Raised when delete operation fails because of it been overwritten"""
+
     pass
 
 
 class BlobRetriesExhaustedError(Exception):
     """Raised when max retries have been attempted for same operation"""
+
     pass
 
 
 class Blob2FinalizeError(Exception):
     """Raised when finalize operation fails"""
+
     pass
 
 
 class Blob2ListError(Exception):
     """Raised when list operation fails"""
+
     pass
 
 
 class Blob2SecurityError(Exception):
     """Raised when there is an issue with security"""
+
     pass
 
 
 class BlobNotFoundError(Exception):
     """Raised when blob not found in key/namespace"""
+
     pass
 
 
 class ChifDllMissingError(Exception):
     """Raised when unable to obtain ilorest_chif dll handle"""
+
     pass
 
 
 class EncryptionEnabledError(Exception):
     """Raised when high security encryption is enabled"""
+
     pass
 
 
 # ----------------------------------------------------------
 
 # -------------------Helper functions-------------------------
+
 
 class BlobReturnCodes(object):
     """Blob store return codes.
@@ -151,7 +176,7 @@ class BlobStore2(object):
 
     def __del__(self):
         """Blob store 2 close channel function"""
-        if hasattr(self, 'channel'):
+        if hasattr(self, "channel"):
             self.channel.close()
 
     def create(self, key, namespace):
@@ -167,17 +192,20 @@ class BlobStore2(object):
         lib.create_not_blobentry.argtypes = [c_char_p, c_char_p]
         lib.create_not_blobentry.restype = POINTER(c_ubyte)
 
-        name = create_string_buffer(key.encode('utf-8'))
-        namespace = create_string_buffer(namespace.encode('utf-8'))
+        name = create_string_buffer(key.encode("utf-8"))
+        namespace = create_string_buffer(namespace.encode("utf-8"))
 
         ptr = lib.create_not_blobentry(name, namespace)
-        data = ptr[:lib.size_of_createRequest()]
+        data = ptr[: lib.size_of_createRequest()]
         data = bytearray(data)
 
         resp = self._send_receive_raw(data)
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
-        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (
+            errorcode == BlobReturnCodes.SUCCESS
+            or errorcode == BlobReturnCodes.NOTMODIFIED
+        ):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -197,11 +225,11 @@ class BlobStore2(object):
         lib.get_info.argtypes = [c_char_p, c_char_p]
         lib.get_info.restype = POINTER(c_ubyte)
 
-        name = create_string_buffer(key.encode('utf-8'))
-        namspace = create_string_buffer(namespace.encode('utf-8'))
+        name = create_string_buffer(key.encode("utf-8"))
+        namspace = create_string_buffer(namespace.encode("utf-8"))
 
         ptr = lib.get_info(name, namspace)
-        data = ptr[:lib.size_of_infoRequest()]
+        data = ptr[: lib.size_of_infoRequest()]
         data = bytearray(data)
 
         resp = self._send_receive_raw(data)
@@ -215,10 +243,13 @@ class BlobStore2(object):
         elif errorcode == BlobReturnCodes.NOTFOUND:
             raise BlobNotFoundError(key, namespace)
 
-        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (
+            errorcode == BlobReturnCodes.SUCCESS
+            or errorcode == BlobReturnCodes.NOTMODIFIED
+        ):
             raise HpIloError(errorcode)
 
-        response = resp[lib.size_of_responseHeaderBlob():]
+        response = resp[lib.size_of_responseHeaderBlob() :]
 
         self.unloadchifhandle(lib)
 
@@ -265,7 +296,7 @@ class BlobStore2(object):
                 else:
                     raise BlobRetriesExhaustedError()
 
-            data.extend(recvpkt[newreadsize:newreadsize + bytesread])
+            data.extend(recvpkt[newreadsize : newreadsize + bytesread])
             bytes_read += bytesread
 
         return data
@@ -287,11 +318,11 @@ class BlobStore2(object):
         lib.read_fragment.argtypes = [c_uint, c_uint, c_char_p, c_char_p]
         lib.read_fragment.restype = POINTER(c_ubyte)
 
-        name = create_string_buffer(key.encode('utf-8'))
-        namespace = create_string_buffer(namespace.encode('utf-8'))
+        name = create_string_buffer(key.encode("utf-8"))
+        namespace = create_string_buffer(namespace.encode("utf-8"))
 
         ptr = lib.read_fragment(offset, count, name, namespace)
-        data = ptr[:lib.size_of_readRequest()]
+        data = ptr[: lib.size_of_readRequest()]
         data = bytearray(data)
 
         resp = self._send_receive_raw(data)
@@ -329,9 +360,13 @@ class BlobStore2(object):
 
                 write_blob_size = bytes_written
 
-                self.write_fragment(key, namespace=namespace,
-                                    data=data[write_blob_size:write_blob_size + count],
-                                    offset=write_blob_size, count=count)
+                self.write_fragment(
+                    key,
+                    namespace=namespace,
+                    data=data[write_blob_size : write_blob_size + count],
+                    offset=write_blob_size,
+                    count=count,
+                )
 
                 bytes_written += count
 
@@ -356,14 +391,14 @@ class BlobStore2(object):
         lib.write_fragment.argtypes = [c_uint, c_uint, c_char_p, c_char_p]
         lib.write_fragment.restype = POINTER(c_ubyte)
 
-        name = create_string_buffer(key.encode('utf-8'))
-        namespace = create_string_buffer(namespace.encode('utf-8'))
+        name = create_string_buffer(key.encode("utf-8"))
+        namespace = create_string_buffer(namespace.encode("utf-8"))
 
         ptr = lib.write_fragment(offset, count, name, namespace)
-        sendpacket = ptr[:lib.size_of_writeRequest()]
+        sendpacket = ptr[: lib.size_of_writeRequest()]
 
         if isinstance(data, str):
-            data = data.encode('utf-8')
+            data = data.encode("utf-8")
 
         dataarr = bytearray(sendpacket)
         dataarr.extend(memoryview(data))
@@ -371,7 +406,10 @@ class BlobStore2(object):
         resp = self._send_receive_raw(dataarr)
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
-        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (
+            errorcode == BlobReturnCodes.SUCCESS
+            or errorcode == BlobReturnCodes.NOTMODIFIED
+        ):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -391,11 +429,11 @@ class BlobStore2(object):
         lib.delete_blob.argtypes = [c_char_p, c_char_p]
         lib.delete_blob.restype = POINTER(c_ubyte)
 
-        name = create_string_buffer(key.encode('utf-8'))
-        namspace = create_string_buffer(namespace.encode('utf-8'))
+        name = create_string_buffer(key.encode("utf-8"))
+        namspace = create_string_buffer(namespace.encode("utf-8"))
 
         ptr = lib.delete_blob(name, namspace)
-        data = ptr[:lib.size_of_deleteRequest()]
+        data = ptr[: lib.size_of_deleteRequest()]
         data = bytearray(data)
 
         resp = self._send_receive_raw(data)
@@ -403,11 +441,13 @@ class BlobStore2(object):
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
         if errorcode == BlobReturnCodes.BADPARAMETER:
             if retries < self.max_retries:
-                self.delete(key=key, namespace=namespace, retries= \
-                    retries + 1)
+                self.delete(key=key, namespace=namespace, retries=retries + 1)
             else:
                 raise Blob2OverrideError(errorcode)
-        elif not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
+        elif not (
+            errorcode == BlobReturnCodes.SUCCESS
+            or errorcode == BlobReturnCodes.NOTMODIFIED
+        ):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -425,16 +465,19 @@ class BlobStore2(object):
         lib.list_blob.argtypes = [c_char_p]
         lib.list_blob.restype = POINTER(c_ubyte)
 
-        namespace = create_string_buffer(namespace.encode('utf-8'))
+        namespace = create_string_buffer(namespace.encode("utf-8"))
 
         ptr = lib.list_blob(namespace)
-        data = ptr[:lib.size_of_listRequest()]
+        data = ptr[: lib.size_of_listRequest()]
         data = bytearray(data)
 
         resp = self._send_receive_raw(data)
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
-        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (
+            errorcode == BlobReturnCodes.SUCCESS
+            or errorcode == BlobReturnCodes.NOTMODIFIED
+        ):
             raise HpIloError(errorcode)
 
         resp = resp + b"\0" * (lib.size_of_listResponse() - len(resp))
@@ -456,25 +499,33 @@ class BlobStore2(object):
         lib.finalize_blob.argtypes = [c_char_p, c_char_p]
         lib.finalize_blob.restype = POINTER(c_ubyte)
 
-        name = create_string_buffer(key.encode('utf-8'))
-        namespace = create_string_buffer(namespace.encode('utf-8'))
+        name = create_string_buffer(key.encode("utf-8"))
+        namespace = create_string_buffer(namespace.encode("utf-8"))
 
         ptr = lib.finalize_blob(name, namespace)
-        data = ptr[:lib.size_of_finalizeRequest()]
+        data = ptr[: lib.size_of_finalizeRequest()]
         data = bytearray(data)
 
         resp = self._send_receive_raw(data)
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
-        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (
+            errorcode == BlobReturnCodes.SUCCESS
+            or errorcode == BlobReturnCodes.NOTMODIFIED
+        ):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
 
         return errorcode
 
-    def rest_immediate(self, req_data, rqt_key="RisRequest",
-                       rsp_key="RisResponse", rsp_namespace="volatile"):
+    def rest_immediate(
+        self,
+        req_data,
+        rqt_key="RisRequest",
+        rsp_key="RisResponse",
+        rsp_namespace="volatile",
+    ):
         """Read/write blob via immediate operation
 
         :param req_data: The blob data to be read/written.
@@ -487,8 +538,12 @@ class BlobStore2(object):
         :type rsp_namespace: str.
 
         """
-        rqt_key = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(10))
-        rsp_key = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(10))
+        rqt_key = "".join(
+            random.choice(string.ascii_letters + string.digits) for _ in range(10)
+        )
+        rsp_key = "".join(
+            random.choice(string.ascii_letters + string.digits) for _ in range(10)
+        )
 
         lib = self.gethprestchifhandle()
 
@@ -496,11 +551,11 @@ class BlobStore2(object):
             lib.rest_immediate.argtypes = [c_uint, c_char_p, c_char_p]
             lib.rest_immediate.restype = POINTER(c_ubyte)
 
-            name = create_string_buffer(rsp_key.encode('utf-8'))
-            namespace = create_string_buffer(rsp_namespace.encode('utf-8'))
+            name = create_string_buffer(rsp_key.encode("utf-8"))
+            namespace = create_string_buffer(rsp_namespace.encode("utf-8"))
 
             ptr = lib.rest_immediate(len(req_data), name, namespace)
-            sendpacket = ptr[:lib.size_of_restImmediateRequest()]
+            sendpacket = ptr[: lib.size_of_restImmediateRequest()]
             mode = False
         else:
             self.create(rqt_key, rsp_namespace)
@@ -509,12 +564,12 @@ class BlobStore2(object):
             lib.rest_immediate_blobdesc.argtypes = [c_char_p, c_char_p, c_char_p]
             lib.rest_immediate_blobdesc.restype = POINTER(c_ubyte)
 
-            name = create_string_buffer(rqt_key.encode('utf-8'))
-            namespace = create_string_buffer(rsp_namespace.encode('utf-8'))
-            rspname = create_string_buffer(rsp_key.encode('utf-8'))
+            name = create_string_buffer(rqt_key.encode("utf-8"))
+            namespace = create_string_buffer(rsp_namespace.encode("utf-8"))
+            rspname = create_string_buffer(rsp_key.encode("utf-8"))
 
             ptr = lib.rest_immediate_blobdesc(name, rspname, namespace)
-            sendpacket = ptr[:lib.size_of_restBlobRequest()]
+            sendpacket = ptr[: lib.size_of_restBlobRequest()]
             mode = True
 
         data = bytearray(sendpacket)
@@ -531,18 +586,18 @@ class BlobStore2(object):
         recvmode = struct.unpack("<I", bytes(resp[12:16]))[0]
 
         fixdlen = lib.size_of_restResponseFixed()
-        response = resp[fixdlen:struct.unpack("<I", bytes(resp[16:20]))[0] + fixdlen]
+        response = resp[fixdlen : struct.unpack("<I", bytes(resp[16:20]))[0] + fixdlen]
 
         tmpresponse = None
         if errorcode == BlobReturnCodes.SUCCESS and not mode:
             if recvmode == 0:
-                tmpresponse = ''.join(map(chr, response))
+                tmpresponse = "".join(map(chr, response))
         elif errorcode == BlobReturnCodes.NOTMODIFIED and not mode:
             if recvmode == 0:
-                tmpresponse = ''.join(map(chr, response))
+                tmpresponse = "".join(map(chr, response))
         elif errorcode == BlobReturnCodes.SUCCESS:
             if recvmode == 0:
-                tmpresponse = ''.join(map(chr, response))
+                tmpresponse = "".join(map(chr, response))
         elif recvmode == 0:
             raise HpIloError(errorcode)
 
@@ -574,13 +629,16 @@ class BlobStore2(object):
         lib.get_security_state.restype = POINTER(c_ubyte)
 
         ptr = lib.get_security_state()
-        data = ptr[:lib.size_of_securityStateRequest()]
+        data = ptr[: lib.size_of_securityStateRequest()]
         data = bytearray(data)
 
         resp = self._send_receive_raw(data)
 
         errorcode = struct.unpack("<I", bytes(resp[8:12]))[0]
-        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (
+            errorcode == BlobReturnCodes.SUCCESS
+            or errorcode == BlobReturnCodes.NOTMODIFIED
+        ):
             raise HpIloError(errorcode)
 
         try:
@@ -599,13 +657,16 @@ class BlobStore2(object):
         lib.blackbox_media_mount.restype = POINTER(c_ubyte)
 
         ptr = lib.blackbox_media_mount()
-        data = ptr[:lib.size_of_embeddedMediaRequest()]
+        data = ptr[: lib.size_of_embeddedMediaRequest()]
         data = bytearray(data)
 
         resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
-        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (
+            errorcode == BlobReturnCodes.SUCCESS
+            or errorcode == BlobReturnCodes.NOTMODIFIED
+        ):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -619,13 +680,16 @@ class BlobStore2(object):
         lib.absaroka_media_mount.restype = POINTER(c_ubyte)
 
         ptr = lib.absaroka_media_mount()
-        data = ptr[:lib.size_of_embeddedMediaRequest()]
+        data = ptr[: lib.size_of_embeddedMediaRequest()]
         data = bytearray(data)
 
         resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
-        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (
+            errorcode == BlobReturnCodes.SUCCESS
+            or errorcode == BlobReturnCodes.NOTMODIFIED
+        ):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -639,13 +703,16 @@ class BlobStore2(object):
         lib.gaius_media_mount.restype = POINTER(c_ubyte)
 
         ptr = lib.gaius_media_mount()
-        data = ptr[:lib.size_of_embeddedMediaRequest()]
+        data = ptr[: lib.size_of_embeddedMediaRequest()]
         data = bytearray(data)
 
         resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
-        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (
+            errorcode == BlobReturnCodes.SUCCESS
+            or errorcode == BlobReturnCodes.NOTMODIFIED
+        ):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -659,13 +726,16 @@ class BlobStore2(object):
         lib.vid_media_mount.restype = POINTER(c_ubyte)
 
         ptr = lib.vid_media_mount()
-        data = ptr[:lib.size_of_embeddedMediaRequest()]
+        data = ptr[: lib.size_of_embeddedMediaRequest()]
         data = bytearray(data)
 
         resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
-        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (
+            errorcode == BlobReturnCodes.SUCCESS
+            or errorcode == BlobReturnCodes.NOTMODIFIED
+        ):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -679,13 +749,16 @@ class BlobStore2(object):
         lib.flat_media_mount.restype = POINTER(c_ubyte)
 
         ptr = lib.flat_media_mount()
-        data = ptr[:lib.size_of_embeddedMediaRequest()]
+        data = ptr[: lib.size_of_embeddedMediaRequest()]
         data = bytearray(data)
 
         resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
-        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (
+            errorcode == BlobReturnCodes.SUCCESS
+            or errorcode == BlobReturnCodes.NOTMODIFIED
+        ):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -699,13 +772,16 @@ class BlobStore2(object):
         lib.media_unmount.restype = POINTER(c_ubyte)
 
         ptr = lib.media_unmount()
-        data = ptr[:lib.size_of_embeddedMediaRequest()]
+        data = ptr[: lib.size_of_embeddedMediaRequest()]
         data = bytearray(data)
 
         resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
-        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (
+            errorcode == BlobReturnCodes.SUCCESS
+            or errorcode == BlobReturnCodes.NOTMODIFIED
+        ):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -719,13 +795,16 @@ class BlobStore2(object):
         lib.bb_media_unmount.restype = POINTER(c_ubyte)
 
         ptr = lib.bb_media_unmount()
-        data = ptr[:lib.size_of_embeddedMediaRequest()]
+        data = ptr[: lib.size_of_embeddedMediaRequest()]
         data = bytearray(data)
 
         resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
-        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (
+            errorcode == BlobReturnCodes.SUCCESS
+            or errorcode == BlobReturnCodes.NOTMODIFIED
+        ):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -739,13 +818,16 @@ class BlobStore2(object):
         lib.vid_media_unmount.restype = POINTER(c_ubyte)
 
         ptr = lib.vid_media_unmount()
-        data = ptr[:lib.size_of_embeddedMediaRequest()]
+        data = ptr[: lib.size_of_embeddedMediaRequest()]
         data = bytearray(data)
 
         resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
-        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (
+            errorcode == BlobReturnCodes.SUCCESS
+            or errorcode == BlobReturnCodes.NOTMODIFIED
+        ):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -759,13 +841,16 @@ class BlobStore2(object):
         lib.gaius_media_unmount.restype = POINTER(c_ubyte)
 
         ptr = lib.gaius_media_unmount()
-        data = ptr[:lib.size_of_embeddedMediaRequest()]
+        data = ptr[: lib.size_of_embeddedMediaRequest()]
         data = bytearray(data)
 
         resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
-        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (
+            errorcode == BlobReturnCodes.SUCCESS
+            or errorcode == BlobReturnCodes.NOTMODIFIED
+        ):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -779,13 +864,16 @@ class BlobStore2(object):
         lib.absaroka_media_unmount.restype = POINTER(c_ubyte)
 
         ptr = lib.absaroka_media_unmount()
-        data = ptr[:lib.size_of_embeddedMediaRequest()]
+        data = ptr[: lib.size_of_embeddedMediaRequest()]
         data = bytearray(data)
 
         resp = self._send_receive_raw(data)
 
         errorcode = resp[12]
-        if not (errorcode == BlobReturnCodes.SUCCESS or errorcode == BlobReturnCodes.NOTMODIFIED):
+        if not (
+            errorcode == BlobReturnCodes.SUCCESS
+            or errorcode == BlobReturnCodes.NOTMODIFIED
+        ):
             raise HpIloError(errorcode)
 
         self.unloadchifhandle(lib)
@@ -825,9 +913,16 @@ class BlobStore2(object):
         """Multi platform handle for chif hprest library"""
         excp = None
         libhandle = None
-        libnames = ["ilorest_chif.dll", "hprest_chif.dll"] if os.name == \
-                                                              'nt' else ["ilorest_chif_dev.so", "hprest_chif_dev.so",
-                                                                         "ilorest_chif.so", "hprest_chif.so"]
+        libnames = (
+            ["ilorest_chif.dll", "hprest_chif.dll"]
+            if os.name == "nt"
+            else [
+                "ilorest_chif_dev.so",
+                "hprest_chif_dev.so",
+                "ilorest_chif.so",
+                "hprest_chif.so",
+            ]
+        )
         for libname in libnames:
             try:
                 libpath = BlobStore2.checkincurrdirectory(libname)
@@ -860,32 +955,39 @@ class BlobStore2(object):
         :param password: The password to login.
         :type password: str.
         """
-        # TODO: initialize credentials for certificate
         dll = BlobStore2.gethprestchifhandle()
         if LOGGER.isEnabledFor(logging.DEBUG):
             dll.enabledebugoutput()
         dll.ChifInitialize(None)
-        #if dll.ChifIsSecurityRequired() > 0 or username:
-        if dll.ChifIsSecurityRequired() > 0:
-            if not username or not password:
+        if username:
+            if not password:
                 return False
-            dll.initiate_credentials.argtypes = [c_char_p, c_char_p]
-            dll.initiate_credentials.restype = POINTER(c_ubyte)
+            if dll.ChifIsSecurityRequired() > 0:
+                dll.initiate_credentials.argtypes = [c_char_p, c_char_p]
+                dll.initiate_credentials.restype = POINTER(c_ubyte)
 
-            usernew = create_string_buffer(username.encode('utf-8'))
-            passnew = create_string_buffer(password.encode('utf-8'))
+                usernew = create_string_buffer(username.encode("utf-8"))
+                passnew = create_string_buffer(password.encode("utf-8"))
 
-            dll.initiate_credentials(usernew, passnew)
-            credreturn = dll.ChifVerifyCredentials()
-            if not credreturn == BlobReturnCodes.SUCCESS:
-                if credreturn == hpiloreturncodes.CHIFERR_AccessDenied:
-                    raise Blob2SecurityError()
-                else:
-                    raise HpIloInitialError("Error %s occurred while trying " \
-                                            "to open a channel to iLO" % credreturn)
+                dll.initiate_credentials(usernew, passnew)
+                credreturn = dll.ChifVerifyCredentials()
+                if not credreturn == BlobReturnCodes.SUCCESS:
+                    if credreturn == hpiloreturncodes.CHIFERR_AccessDenied:
+                        raise Blob2SecurityError()
+                    else:
+                        raise HpIloInitialError(
+                            "Error %s occurred while trying "
+                            "to open a channel to iLO" % credreturn
+                        )
+            else:
+                dll.ChifDisableSecurity()
         else:
-            # so we don't have extra overhead if we don't have to
-            dll.ChifDisableSecurity()
+            # if high security return False
+            if dll.ChifIsSecurityRequired() > 0:
+                return False
+            else:
+                dll.ChifDisableSecurity()
+
         BlobStore2.unloadchifhandle(dll)
 
         return True
@@ -902,9 +1004,12 @@ class BlobStore2(object):
         elif os.path.isfile(os.path.join(os.getcwd(), libpath)):
             libpath = os.path.join(os.getcwd(), libpath)
         elif os.environ.get("LD_LIBRARY_PATH"):
-            paths = os.getenv("LD_LIBRARY_PATH", libpath).split(';')
-            libpath = [os.path.join(pat, libname) for pat in paths if \
-                       os.path.isfile(os.path.join(pat, libname))]
+            paths = os.getenv("LD_LIBRARY_PATH", libpath).split(";")
+            libpath = [
+                os.path.join(pat, libname)
+                for pat in paths
+                if os.path.isfile(os.path.join(pat, libname))
+            ]
             libpath = libpath[0] if libpath else libname
 
         return libpath
@@ -919,7 +1024,7 @@ class BlobStore2(object):
         """
         try:
             libhandle = lib._handle
-            if os.name == 'nt':
+            if os.name == "nt":
                 windll.kernel32.FreeLibrary(None, handle=libhandle)
             else:
                 dlclose(libhandle)

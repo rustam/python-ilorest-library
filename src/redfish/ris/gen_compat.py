@@ -23,7 +23,11 @@ import logging
 
 from redfish import RedfishClient, LegacyRestClient
 from redfish.rest.v1 import ServerDownOrUnreachableError
-from redfish.ris.rmc_helper import UnableToObtainIloVersionError, NothingSelectedError, UserNotAdminError
+from redfish.ris.rmc_helper import (
+    UnableToObtainIloVersionError,
+    NothingSelectedError,
+    UserNotAdminError,
+)
 
 # ---------End of imports---------
 
@@ -56,8 +60,17 @@ class Typesandpathdefines(object):
         self.flagiften = False
         self.adminpriv = True
 
-    def getgen(self, gen=None, url=None, username=None, password=None, logger=None,
-               proxy=None, ca_cert_data={}, isredfish=True):
+    def getgen(
+        self,
+        gen=None,
+        url=None,
+        username=None,
+        password=None,
+        logger=None,
+        proxy=None,
+        ca_cert_data={},
+        isredfish=True,
+    ):
         """Function designed to verify the servers platform. Will generate the `Typeandpathdefines`
         variables based on the system type that is detected.
 
@@ -89,13 +102,18 @@ class Typesandpathdefines(object):
         logger = logger if not logger else LOGGER
         client = None
         self.noschemas = False
-        self.schemapath = self.regpath = ''
+        self.schemapath = self.regpath = ""
 
         if not gen:
             try_count = 0
             try:
-                client = RedfishClient(base_url=self.url, username=username, password=password,
-                                       proxy=proxy, ca_cert_data=ca_cert_data)
+                client = RedfishClient(
+                    base_url=self.url,
+                    username=username,
+                    password=password,
+                    proxy=proxy,
+                    ca_cert_data=ca_cert_data,
+                )
                 client._get_root()
             except ServerDownOrUnreachableError as excp:
                 if self.is_redfish:
@@ -103,8 +121,13 @@ class Typesandpathdefines(object):
                 try_count += 1
             if not self.is_redfish:
                 try:
-                    restclient = LegacyRestClient(base_url=self.url, username=username,
-                                                  password=password, proxy=proxy, ca_cert_data=ca_cert_data)
+                    restclient = LegacyRestClient(
+                        base_url=self.url,
+                        username=username,
+                        password=password,
+                        proxy=proxy,
+                        ca_cert_data=ca_cert_data,
+                    )
                     restclient._get_root()
                     # Check that the response is actually legacy rest and not a redirect
                     _ = restclient.root.obj.Type
@@ -119,41 +142,55 @@ class Typesandpathdefines(object):
                         self.is_redfish = True
 
             if try_count > 1:
-                raise ServerDownOrUnreachableError("Server not reachable or does not support " \
-                                                   "HPRest or Redfish: %s\n" % str(excp))
+                raise ServerDownOrUnreachableError(
+                    "Server not reachable or does not support "
+                    "HPRest or Redfish: %s\n" % str(excp)
+                )
 
             rootresp = client.root.obj
             self.rootresp = rootresp
             client.logout()
 
-            self.gencompany = next(iter(self.rootresp.get("Oem", {}).keys()), None) in ('Hpe', 'Hp')
-            comp = 'Hp' if self.gencompany else None
-            comp = 'Hpe' if rootresp.get("Oem", {}).get('Hpe', None) else comp
-            if comp and next(iter(rootresp.get("Oem", {}).get(comp, {}).get("Manager", {}))). \
-                    get('ManagerType', None):
-                self.ilogen = next(iter(rootresp.get("Oem", {}).get(comp, {}).get("Manager", {}))) \
-                    .get("ManagerType")
-                self.ilover = next(iter(rootresp.get("Oem", {}).get(comp, {}).get("Manager", {}))). \
-                    get("ManagerFirmwareVersion")
-                if self.ilogen.split(' ')[-1] == "CM":
+            self.gencompany = next(iter(self.rootresp.get("Oem", {}).keys()), None) in (
+                "Hpe",
+                "Hp",
+            )
+            comp = "Hp" if self.gencompany else None
+            comp = "Hpe" if rootresp.get("Oem", {}).get("Hpe", None) else comp
+            if comp and next(
+                iter(rootresp.get("Oem", {}).get(comp, {}).get("Manager", {}))
+            ).get("ManagerType", None):
+                self.ilogen = next(
+                    iter(rootresp.get("Oem", {}).get(comp, {}).get("Manager", {}))
+                ).get("ManagerType")
+                self.ilover = next(
+                    iter(rootresp.get("Oem", {}).get(comp, {}).get("Manager", {}))
+                ).get("ManagerFirmwareVersion")
+                if self.ilogen.split(" ")[-1] == "CM":
                     # Assume iLO 4 types in Moonshot
                     self.ilogen = 4
                     self.iloversion = None
                 else:
-                    self.iloversion = float(self.ilogen.split(' ')[-1] + '.' + \
-                                            ''.join(self.ilover.split('.')))
+                    self.iloversion = float(
+                        self.ilogen.split(" ")[-1] + "." + "".join(self.ilover.split("."))
+                    )
         else:
             self.ilogen = int(gen)
 
         try:
             if not isinstance(self.ilogen, int):
-                self.ilogen = int(self.ilogen.split(' ')[-1])
+                self.ilogen = int(self.ilogen.split(" ")[-1])
             self.flagiften = True if int(self.ilogen) >= 5 else False
         except:
             raise UnableToObtainIloVersionError("Unable to find the iLO generation.")
 
-        self.noschemas = True if self.rootresp and "JsonSchemas" in self.rootresp and not \
-            self.rootresp.get("JsonSchemas", None) else False
+        self.noschemas = (
+            True
+            if self.rootresp
+            and "JsonSchemas" in self.rootresp
+            and not self.rootresp.get("JsonSchemas", None)
+            else False
+        )
         if self.noschemas:
             self.ilogen = self.ilover = self.iloversion = None
         if self.rootresp and not self.noschemas:
@@ -170,15 +207,27 @@ class Typesandpathdefines(object):
         :param rootobj: The root path data.
         :type rootobj: dict.
         """
-        self.gencompany = next(iter(rootobj.get("Oem", {}).keys()), None) in ('Hpe', 'Hp')
-        self.schemapath = rootobj["JsonSchemas"]["@odata.id"] if rootobj. \
-            get("JsonSchemas", None) else rootobj["links"]["Schemas"]["href"]
-        self.schemapath = self.schemapath.rstrip('/') + "/?$expand=." if \
-            self.is_redfish and self.flagiften and self.gencompany else self.schemapath
-        self.regpath = rootobj["Registries"]["@odata.id"] if rootobj.get \
-            ("Registries", None) else rootobj["links"]["Registries"]["href"]
-        self.regpath = self.regpath.rstrip('/') + "/?$expand=." if \
-            self.is_redfish and self.flagiften and self.gencompany else self.regpath
+        self.gencompany = next(iter(rootobj.get("Oem", {}).keys()), None) in ("Hpe", "Hp")
+        self.schemapath = (
+            rootobj["JsonSchemas"]["@odata.id"]
+            if rootobj.get("JsonSchemas", None)
+            else rootobj["links"]["Schemas"]["href"]
+        )
+        self.schemapath = (
+            self.schemapath.rstrip("/") + "/?$expand=."
+            if self.is_redfish and self.flagiften and self.gencompany
+            else self.schemapath
+        )
+        self.regpath = (
+            rootobj["Registries"]["@odata.id"]
+            if rootobj.get("Registries", None)
+            else rootobj["links"]["Registries"]["href"]
+        )
+        self.regpath = (
+            self.regpath.rstrip("/") + "/?$expand=."
+            if self.is_redfish and self.flagiften and self.gencompany
+            else self.regpath
+        )
 
     # TODO: Move these to a compatability class
     def updatedefinesflag(self, redfishflag=None):
@@ -218,7 +267,7 @@ class Typesandpathdefines(object):
 
         if sel.startswith(("hpeeskm", "#hpeeskm", "hpeskm", "#hpeskm")):
             returnval = self.defs.hpeskmtype
-        elif 'bios.' in sel[:9].lower():
+        elif "bios." in sel[:9].lower():
             returnval = self.defs.biostype
         elif sel.startswith(("hpe", "#hpe")) and self.defs and self.defs.isgen9:
             returnval = sel[:4].replace("hpe", "hp") + sel[4:]
@@ -293,8 +342,7 @@ class Definevalstenplus(Definevals):
         super(Definevalstenplus, self).__init__()
 
     def redfishchange(self):
-        """Empty function to update redfish variables (unneeded when the system is already redfish).
-        """
+        """Empty function to update redfish variables (unneeded when the system is already redfish)."""
         pass
 
 
