@@ -19,6 +19,7 @@
 with registries available on system, otherwise will return generic error responses."""
 import logging
 
+from rdmc_helper import IloLicenseError, ScepenabledError
 from redfish.ris.ris import SessionExpired
 from redfish.ris.utils import warning_handler, get_errmsg_type, json_traversal
 from redfish.ris.rmc_helper import (
@@ -87,6 +88,13 @@ class ResponseHandler(object):
         elif response.status == 401:
             raise SessionExpired()
         elif response.status == 403:
+            results = response.dict["error"]["@Message.ExtendedInfo"]
+            for result in results:
+                if (
+                    "License" in list(result.values())[0]
+                    or "license" in list(result.values())[0]
+                ):
+                    raise IloLicenseError("")
             raise IdTokenError()
         elif response.status == 412:
             warning_handler(
@@ -102,6 +110,16 @@ class ResponseHandler(object):
                 message_text=message_text,
                 dl_reg=dl_reg,
             )
+        if response.status == 400:
+            results = response.dict["error"]["@Message.ExtendedInfo"]
+            for result in results:
+                if (
+                    "License" in list(result.values())[0]
+                    or "license" in list(result.values())[0]
+                ):
+                    raise IloLicenseError("")
+                if "UnsupportedOperationACEEnabled" in list(result.values())[0]:
+                    raise ScepenabledError("")
         if response.status > 299:
             raise IloResponseError("")
         else:

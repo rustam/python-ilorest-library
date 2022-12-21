@@ -913,24 +913,29 @@ class BlobStore2(object):
         """Multi platform handle for chif hprest library"""
         excp = None
         libhandle = None
-        libnames = (
-            ["ilorest_chif.dll", "hprest_chif.dll"]
-            if os.name == "nt"
-            else [
-                "ilorest_chif_dev.so",
-                "hprest_chif_dev.so",
-                "ilorest_chif.so",
-                "hprest_chif.so",
-            ]
-        )
-        for libname in libnames:
-            try:
-                libpath = BlobStore2.checkincurrdirectory(libname)
+        if os.name != "nt":
+            libpath = '/opt/ilorest/lib64/libilorestchif.so'
+            if os.path.isfile(libpath):
                 libhandle = cdll.LoadLibrary(libpath)
-                if libhandle:
-                    break
-            except Exception as exp:
-                excp = exp
+        if not libhandle:
+            libnames = (
+                ["ilorest_chif.dll", "hprest_chif.dll"]
+                if os.name == "nt"
+                else [
+                    "ilorest_chif_dev.so",
+                    "hprest_chif_dev.so",
+                    "ilorest_chif.so",
+                    "hprest_chif.so",
+                ]
+            )
+            for libname in libnames:
+                try:
+                    libpath = BlobStore2.checkincurrdirectory(libname)
+                    libhandle = cdll.LoadLibrary(libpath)
+                    if libhandle:
+                        break
+                except Exception as exp:
+                    excp = exp
 
         if libhandle:
             BlobStore2.setglobalhprestchifrandnumber(libhandle)

@@ -91,6 +91,7 @@ if __name__ == "__main__":
     LOGIN_PASSWORD = "password"
 
     MEDIA_URL = "http://<SERVER_URL>/media.iso"
+
     #specify the type of content the media represents
     MEDIA_TYPE = "CD" #current possible options: Floppy, USBStick, CD, DVD
     #specify if the server should attempt to boot this media on system restart

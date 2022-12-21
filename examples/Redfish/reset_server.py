@@ -42,9 +42,15 @@ def reset_server(_redfishobj):
     if managers_members_response:
         path = managers_members_response.obj["Actions"]["#ComputerSystem.Reset"]["target"]
         body = dict()
+        resettype = ['ForceRestart','GracefulRestart']
         body["Action"] = "ComputerSystem.Reset"
-        body["ResetType"] = "ForceRestart"
-        resp = _redfishobj.post(path, body)
+        for reset in resettype:
+            if reset.lower() == "forcerestart":
+                body['ResetType'] = "ForceRestart"
+                resp = _redfishobj.post(path, body)
+            elif reset.lower() == "gracefulrestart":
+                body['ResetType'] = "GracefulRestart"
+                resp = _redfishobj.post(path, body)
 
     #If iLO responds with soemthing outside of 200 or 201 then lets check the iLO extended info
     #error message to see what went wrong

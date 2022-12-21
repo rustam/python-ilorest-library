@@ -324,6 +324,7 @@ class Definevalstenplus(Definevals):
         self.regfilecollectiontype = "#MessageRegistryFileCollection."
         self.hpilolicensecollectiontype = "HpeiLOLicenseCollection."
         self.hpiloactivehealthsystemtype = "#HpeiLOActiveHealthSystem."
+        self.securityservice = "HpeSecurityService."
         self.hpiscsisoftwareinitiatortype = "HpeiSCSISoftwareInitiator."
         self.hpilofederationgrouptypecoll = "HpeiLOFederationGroupCollection."
         self.bootoverridetargettype = "BootSourceOverrideTarget@Redfish.AllowableValues"

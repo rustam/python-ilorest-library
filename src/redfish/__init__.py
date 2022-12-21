@@ -1,7 +1,7 @@
 """ Redfish restful library """
 
 __all__ = ["rest", "ris", "hpilo"]
-__version__ = "3.6.0.0"
+__version__ = "3.3.0"
 
 import logging
 from redfish.rest.v1 import AuthMethod, LegacyRestClient, RedfishClient

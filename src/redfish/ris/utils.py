@@ -25,6 +25,8 @@ import logging
 if six.PY3:
     from functools import reduce
 
+if six.PY2:
+    from collections import Mapping
 from collections.abc import Mapping
 
 import jsonpath_rw

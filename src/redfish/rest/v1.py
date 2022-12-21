@@ -610,9 +610,11 @@ class LegacyRestClient(RestClient):
     For full description of the arguments allowed see :class:`RestClient`"""
 
     def __init__(self, **client_kwargs):
-        super(LegacyRestClient, self).__init__(
-            default_prefix="/rest/v1", is_redfish=False, **client_kwargs
-        )
+        kwargs = {
+            "default_prefix": client_kwargs.pop("default_prefix", "/rest/v1"),
+            "is_redfish": client_kwargs.pop("is_redfish", False),
+        }
+        super().__init__(**kwargs, **client_kwargs)
 
 
 class RedfishClient(RestClient):
@@ -629,6 +631,8 @@ class RedfishClient(RestClient):
     For full description of the arguments allowed see :class:`RestClient`"""
 
     def __init__(self, **client_kwargs):
-        super(RedfishClient, self).__init__(
-            default_prefix="/redfish/v1/", is_redfish=True, **client_kwargs
-        )
+        kwargs = {
+            "default_prefix": client_kwargs.pop("default_prefix", "/redfish/v1"),
+            "is_redfish": client_kwargs.pop("is_redfish", True),
+        }
+        super().__init__(**kwargs, **client_kwargs)

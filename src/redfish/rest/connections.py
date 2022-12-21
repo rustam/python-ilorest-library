@@ -156,17 +156,19 @@ class HttpConnection(object):
                 self._connection_properties.pop("ca_cert_data")
             except KeyError:
                 pass
-            timeout = urllib3.util.Timeout(connect=40.0, read=None)
+            timeout = urllib3.Timeout(connect=60.0, read=60.0)
             if "timeout" not in self._connection_properties:
                 http = PoolManager(
                     cert_reqs=cert_reqs,
                     maxsize=6,
                     timeout=timeout,
+                    retries=urllib3.Retry(connect=50, read=50, redirect=2),
                     **self._connection_properties
                 )
             else:
                 http = PoolManager(
-                    cert_reqs=cert_reqs, maxsize=6, **self._connection_properties
+                    cert_reqs=cert_reqs, maxsize=6, **self._connection_properties,
+                    retries=urllib3.Retry(connect=50, read=50, redirect=2)
                 )
 
         self._conn = http.request
