@@ -26,6 +26,8 @@ from .rmc_helper import (
     ValidationError,
     ValueChangedError,
     RmcCacheManager,
+    ScepenabledError,
+    IloLicenseError,
     RmcFileCacheManager,
 )
 

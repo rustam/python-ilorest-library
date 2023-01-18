@@ -25,9 +25,10 @@ import logging
 if six.PY3:
     from functools import reduce
 
-if six.PY2:
+try:
     from collections import Mapping
-from collections.abc import Mapping
+except ImportError:
+    from collections.abc import Mapping
 
 import jsonpath_rw
 
@@ -50,6 +51,19 @@ LOGGER = logging.getLogger()
 # ---------End of debug logger---------
 
 
+def print_handler(msg):
+    """Helper function for handling warning messages appropriately. If LOGGER level is set to 40
+    print out the warnings, else log them as a warning.
+
+    :param msg: The warning message.
+    :type msg: str
+    """
+    #if override:
+    sys.stdout.write(msg)
+    #else:
+    #if LOGGER.getEffectiveLevel() == 40:
+    #LOGGER.warning(msg)
+
 def warning_handler(msg, override=False):
     """Helper function for handling warning messages appropriately. If LOGGER level is set to 40
     print out the warnings, else log them as a warning.
@@ -57,12 +71,11 @@ def warning_handler(msg, override=False):
     :param msg: The warning message.
     :type msg: str
     """
-    if override:
-        sys.stderr.write(msg)
-    if LOGGER.getEffectiveLevel() > 40:
-        sys.stderr.write(msg)
-    else:
-        LOGGER.warning(msg)
+    #if override:
+    #sys.stdout.write(msg)
+    #else:
+    #if LOGGER.getEffectiveLevel() == 40:
+    LOGGER.warning(msg)
 
 
 def validate_headers(instance, verbose=False):

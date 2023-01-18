@@ -66,6 +66,7 @@ class Typesandpathdefines(object):
         url=None,
         username=None,
         password=None,
+        sessionid=None,
         logger=None,
         proxy=None,
         ca_cert_data={},
@@ -111,6 +112,7 @@ class Typesandpathdefines(object):
                     base_url=self.url,
                     username=username,
                     password=password,
+                    sessionid=sessionid,
                     proxy=proxy,
                     ca_cert_data=ca_cert_data,
                 )
@@ -125,6 +127,7 @@ class Typesandpathdefines(object):
                         base_url=self.url,
                         username=username,
                         password=password,
+                        sessionid=sessionid,
                         proxy=proxy,
                         ca_cert_data=ca_cert_data,
                     )

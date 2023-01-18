@@ -91,6 +91,16 @@ class CurrentlyLoggedInError(Exception):
 
     pass
 
+class IloLicenseError(Exception):
+    """Raised when the proper iLO license is not available for a command"""
+
+    pass
+
+
+class ScepenabledError(Exception):
+    """Raised when the generation csr or deletion of https cert is issues when scep is enabled"""
+
+    pass
 
 class NothingSelectedError(Exception):
     """Raised when attempting to access an object without first selecting it."""

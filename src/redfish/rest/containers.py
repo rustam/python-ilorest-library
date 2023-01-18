@@ -18,8 +18,12 @@
 """Containers used for REST requests and responses."""
 import sys
 import json
+import six
 
-from collections import OrderedDict
+try:
+    from collections import OrderedDict
+except ImportError:
+    from collections.abc import OrderedDict
 
 from six import text_type, string_types, StringIO, BytesIO
 from six.moves import http_client

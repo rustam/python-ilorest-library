@@ -27,11 +27,13 @@ import sys
 import weakref
 import logging
 import threading
-
-from collections import OrderedDict, defaultdict
-
 # Added for py3 compatibility
 import six
+
+try:
+    from collections import OrderedDict, defaultdict
+except ImportError:
+    from collections.abc import OrderedDict, defaultdict
 
 from queue import Queue
 from six.moves.urllib.parse import urlparse, urlunparse

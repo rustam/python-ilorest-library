@@ -24,10 +24,13 @@ import copy
 import shutil
 import logging
 import hashlib
-
-from collections import OrderedDict
-
 import six
+
+try:
+    from collections import OrderedDict
+except ImportError:
+    from collections.abc import OrderedDict
+
 import jsonpatch
 import jsonpointer
 import redfish.ris.gen_compat
@@ -86,6 +89,7 @@ class RmcApp(object):
     def __init__(self, showwarnings=False, cache_dir=None):
         self.logger = LOGGER
         self.redfishinst = None
+        self.sessioninst = None
         self._cm = RmcFileCacheManager(self)
         self.monolith = None
         self._iloversion = None
@@ -93,6 +97,7 @@ class RmcApp(object):
         self._selector = None
         self._cachedir = cache_dir
         self.verbose = 1
+        self._sessionid = None
         self.typepath = redfish.ris.gen_compat.Typesandpathdefines()
         Typepathforval(typepathobj=self.typepath)
 
@@ -199,6 +204,7 @@ class RmcApp(object):
         self,
         username=None,
         password=None,
+        sessionid=None,
         base_url="blobstore://.",
         path=None,
         skipbuild=False,
@@ -248,6 +254,7 @@ class RmcApp(object):
             url=base_url,
             username=username,
             password=password,
+            sessionid=sessionid,
             ca_cert_data=user_ca_cert_data,
             proxy=proxy,
             isredfish=is_redfish,
@@ -266,6 +273,7 @@ class RmcApp(object):
             base_url=base_url,
             username=username,
             password=password,
+            session_key=sessionid,
             default_prefix=self.typepath.defs.startpath,
             biospassword=biospassword,
             is_redfish=is_redfish,
